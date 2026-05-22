@@ -31,6 +31,7 @@ import { pedidosApi } from '../api/pedidos'
 import { janelasApi, type MinhaJanela } from '../api/janelas'
 import { operacoesApi, type Operacao } from '../api/operacoes'
 import { LoadingSpinner } from '../components/shared/LoadingSpinner'
+import { CadeiaAprovacao } from '../components/shared/CadeiaAprovacao'
 import { useAuthStore } from '../store/authStore'
 import type { Pedido, ItemPedido } from '../types/pedido'
 import { TIPO_PRODUTO_LABELS, getStatusSolicitante } from '../types/pedido'
@@ -313,6 +314,11 @@ function SortablePedidoRow_Base({
                   <ExternalLink className="h-3.5 w-3.5" />
                   Acessar dados no BDGEx
                 </a>
+              </div>
+            )}
+            {p.cadeia_aprovacao && p.cadeia_aprovacao.length > 0 && (
+              <div className="col-span-2 sm:col-span-3">
+                <CadeiaAprovacao cadeia={p.cadeia_aprovacao} status={p.status} />
               </div>
             )}
           </div>

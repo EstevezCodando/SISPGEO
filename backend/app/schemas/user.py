@@ -15,10 +15,16 @@ class UsuarioOut(BaseModel):
     posto_graduacao: str | None
     perfil: PerfilEnum
     orgao_vinculante: OrgaoVinculanteEnum | None
+    cgeo_id: int | None
     ativo: bool
+    email_confirmado: bool
+    ultima_senha_alterada: datetime | None
     ultima_confirmacao_dados: datetime | None
     pedidos_transferidos_em: datetime | None
+    tentativas_login: int
+    bloqueado_ate: datetime | None
     criado_em: datetime
+    atualizado_em: datetime
 
     model_config = {"from_attributes": True}
 

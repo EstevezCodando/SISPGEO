@@ -1,160 +1,425 @@
 from app.config import settings
 
+# ── Paleta Militar Oliva ──────────────────────────────────────────────────────
+# Fundo geral:   #eae8de  (pergaminho/areia)
+# Cabeçalho:     #3a4c22  (verde oliva escuro — uniforme)
+# Destaque:      #5a7030  (oliva médio)
+# Botão CTA:     #4a6028  (oliva forte)
+# Rodapé:        #d6d2c4  (areia clara)
+# Borda tabela:  #b0aa90
+# ─────────────────────────────────────────────────────────────────────────────
+
 
 def _base(title: str, body: str) -> str:
     return f"""
 <!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><title>{title}</title></head>
-<body style="font-family:Arial,sans-serif;background:#f4f4f4;margin:0;padding:20px">
-<div style="max-width:600px;margin:0 auto;background:#fff;border-radius:8px;overflow:hidden">
-  <div style="background:#1a3a5c;padding:20px;text-align:center">
-    <h1 style="color:#fff;margin:0;font-size:20px">Sistema COTER - DSG/EB</h1>
-  </div>
-  <div style="padding:30px">
-    {body}
-  </div>
-  <div style="background:#f4f4f4;padding:15px;text-align:center;font-size:12px;color:#666">
-    Exército Brasileiro - Diretoria de Serviço Geográfico<br>
-    Este é um email automático. Não responda.
-  </div>
-</div>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{title}</title>
+</head>
+<body style="margin:0;padding:0;background:#eae8de;font-family:Arial,Helvetica,sans-serif">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#eae8de;padding:32px 16px">
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0"
+             style="max-width:600px;width:100%;background:#ffffff;border-radius:4px;
+                    overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,0.18);
+                    border:1px solid #b0aa90">
+
+        <!-- Cabeçalho -->
+        <tr>
+          <td style="background:#3a4c22;padding:0">
+            <!-- faixa dourada -->
+            <div style="height:4px;background:linear-gradient(90deg,#8b7d3a 0%,#c9b86c 50%,#8b7d3a 100%)"></div>
+            <div style="padding:24px 32px 20px 32px;text-align:center">
+              <p style="margin:0 0 2px 0;color:#c9b86c;font-size:10px;
+                        letter-spacing:3px;text-transform:uppercase;font-weight:700">
+                Diretoria de Serviço Geográfico
+              </p>
+              <h1 style="margin:4px 0 2px 0;color:#e8e4d0;font-size:17px;
+                         font-weight:700;letter-spacing:0.8px;text-transform:uppercase">
+                SisPGeo
+              </h1>
+              <p style="margin:0;color:#a0b070;font-size:11px;letter-spacing:0.5px">
+                Sistema de Pedidos de Geoinformação
+              </p>
+              <p style="margin:6px 0 0 0;color:#8a9e60;font-size:10px">
+                Exército Brasileiro · DSG · Brasília/DF
+              </p>
+            </div>
+            <!-- faixa dourada inferior -->
+            <div style="height:2px;background:linear-gradient(90deg,#8b7d3a 0%,#c9b86c 50%,#8b7d3a 100%)"></div>
+          </td>
+        </tr>
+
+        <!-- Corpo -->
+        <tr>
+          <td style="padding:36px 40px 28px 40px;background:#ffffff">
+            {body}
+          </td>
+        </tr>
+
+        <!-- Rodapé -->
+        <tr>
+          <td style="background:#e8e4d6;border-top:2px solid #b0aa90;padding:18px 40px;text-align:center">
+            <p style="margin:0 0 4px 0;color:#6b6550;font-size:10px;
+                      letter-spacing:1px;text-transform:uppercase;font-weight:700">
+              Comunicação Automática de Sistema
+            </p>
+            <p style="margin:0;color:#8a8470;font-size:11px;line-height:1.7">
+              Não responda a este e-mail — mensagens não são monitoradas.<br>
+              Exército Brasileiro · Diretoria de Serviço Geográfico · Brasília/DF
+            </p>
+          </td>
+        </tr>
+
+      </table>
+    </td></tr>
+  </table>
 </body>
 </html>
 """
 
 
-def cadastro_recebido(nome: str, email: str) -> tuple[str, str]:
-    """E-mail de boas-vindas enviado imediatamente após o cadastro.
+def _btn(href: str, label: str, color: str = "#4a6028") -> str:
+    return (
+        f'<p style="text-align:center;margin:28px 0">'
+        f'<a href="{href}" style="background:{color};color:#e8e4d0;padding:13px 36px;'
+        f'text-decoration:none;border-radius:3px;display:inline-block;font-weight:700;'
+        f'font-size:14px;letter-spacing:1px;text-transform:uppercase;'
+        f'border:1px solid rgba(0,0,0,0.25);'
+        f'box-shadow:0 2px 6px rgba(0,0,0,0.3)">{label}</a></p>'
+    )
 
-    Não exige confirmação de link — o acesso é liberado pelo administrador.
-    """
-    subject = "SISGEO — Cadastro recebido"
+
+def _info_row(label: str, value: str) -> str:
+    return (
+        f'<tr>'
+        f'<td style="padding:8px 12px;color:#4a4838;font-size:12px;width:150px;'
+        f'background:#f0ede2;border:1px solid #c8c4b0;font-weight:700;'
+        f'letter-spacing:0.3px;text-transform:uppercase">{label}</td>'
+        f'<td style="padding:8px 12px;color:#2a2820;font-size:13px;'
+        f'background:#faf9f4;border:1px solid #c8c4b0">{value}</td>'
+        f'</tr>'
+    )
+
+
+def _divider() -> str:
+    return (
+        '<tr><td colspan="2" style="padding:0">'
+        '<hr style="border:none;border-top:1px solid #d4d0c0;margin:0">'
+        '</td></tr>'
+    )
+
+
+# ── Ativação de conta (email de confirmação) ──────────────────────────────────
+
+def ativacao_conta(nome: str, token: str) -> tuple[str, str]:
+    """Enviado imediatamente após o cadastro — contém link de ativação único."""
+    link = f"{settings.FRONTEND_URL}/ativar/{token}"
+    link_ajuda = f"{settings.FRONTEND_URL}/ajuda"
+    subject = "SisPGeo — Ative sua conta de acesso"
     body = f"""
-<h2>Olá, {nome}!</h2>
-<p>Seu cadastro no <strong>SISGEO — Sistema Integrado de Solicitações de Geoinformação</strong>
-foi recebido com sucesso.</p>
-<table style="margin:24px 0;border-collapse:collapse;width:100%">
-  <tr>
-    <td style="padding:8px 0;color:#666;width:120px"><strong>Email:</strong></td>
-    <td style="padding:8px 0">{email}</td>
-  </tr>
-  <tr>
-    <td style="padding:8px 0;color:#666"><strong>Status:</strong></td>
-    <td style="padding:8px 0;color:#e67e00"><strong>Aguardando ativação pelo administrador</strong></td>
-  </tr>
+<h2 style="margin:0 0 4px 0;color:#3a4c22;font-size:18px;font-weight:700;
+           letter-spacing:0.3px">Prezado(a) {nome},</h2>
+<p style="margin:0 0 20px 0;color:#5a5a48;font-size:13px;
+          line-height:1.7;border-bottom:1px solid #e0ddd0;padding-bottom:16px">
+  Seu cadastro no <strong>SisPGeo</strong> foi registrado com sucesso.
+  Clique no botão abaixo para ativar sua conta. O link é válido por <strong>24 horas</strong>.
+</p>
+
+{_btn(link, "▶ Ativar Minha Conta")}
+
+<table cellpadding="0" cellspacing="0"
+       style="width:100%;border-collapse:collapse;margin-bottom:24px;
+              border:1px solid #c8c4b0">
+  {_info_row("Validade do link", '<strong>24 horas</strong> a partir deste envio')}
+  {_info_row("Status", '<span style="color:#8b6914;font-weight:700">● Aguardando ativação de e-mail</span>')}
 </table>
-<p>Assim que o administrador aprovar o seu acesso, você poderá fazer login normalmente em:</p>
-<p style="text-align:center;margin:24px 0">
-  <a href="{settings.FRONTEND_URL}/login"
-     style="background:#059669;color:#fff;padding:12px 28px;text-decoration:none;border-radius:6px;display:inline-block;font-weight:600">
-    Acessar o SISGEO
-  </a>
+
+<!-- Sobre o sistema -->
+<div style="background:#f5f8f0;border:1px solid #b8c8a0;border-radius:3px;
+            padding:16px 20px;margin-bottom:20px">
+  <p style="margin:0 0 8px 0;color:#3a4c22;font-size:12px;font-weight:700;
+            text-transform:uppercase;letter-spacing:0.8px">
+    Sobre o SisPGeo
+  </p>
+  <p style="margin:0 0 10px 0;color:#4a5a38;font-size:13px;line-height:1.7">
+    O SisPGeo é o sistema oficial da <strong>Diretoria de Serviço Geográfico</strong>
+    para solicitação de produtos de geoinformação do Exército Brasileiro.
+    Por meio do sistema você pode solicitar:
+  </p>
+  <table cellpadding="0" cellspacing="0" style="width:100%">
+    <tr>
+      <td style="padding:3px 0;color:#4a5a38;font-size:12px;width:50%;vertical-align:top">
+        ▸ Cartas Topográficas
+      </td>
+      <td style="padding:3px 0;color:#4a5a38;font-size:12px;width:50%;vertical-align:top">
+        ▸ Cartas Ortoimagem
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:3px 0;color:#4a5a38;font-size:12px;vertical-align:top">
+        ▸ Impressão de Cartas (CT e COI)
+      </td>
+      <td style="padding:3px 0;color:#4a5a38;font-size:12px;vertical-align:top">
+        ▸ Ortoimagens e MDT/MDS
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:3px 0;color:#4a5a38;font-size:12px;vertical-align:top">
+        ▸ Conjunto de Dados Geoespaciais Vetoriais
+      </td>
+      <td style="padding:3px 0;color:#4a5a38;font-size:12px;vertical-align:top">
+        ▸ Produtos especiais sob demanda
+      </td>
+    </tr>
+  </table>
+</div>
+
+<!-- Dúvidas -->
+<div style="background:#f0ede2;border-left:4px solid #6b8040;
+            padding:12px 16px;border-radius:0 3px 3px 0;margin-bottom:20px">
+  <p style="margin:0 0 4px 0;color:#3a4c22;font-size:12px;font-weight:700;
+            text-transform:uppercase;letter-spacing:0.5px">Dúvidas?</p>
+  <p style="margin:0;color:#4a5a38;font-size:13px;line-height:1.6">
+    Acesse o painel de ajuda do sistema para conhecer os tipos de produtos,
+    fluxo de solicitação e perguntas frequentes:<br>
+    <a href="{link_ajuda}" style="color:#3a6020;font-weight:700">{link_ajuda}</a>
+  </p>
+</div>
+
+<p style="margin:0 0 6px 0;color:#6a6858;font-size:11px">
+  Caso o botão não funcione, copie e cole o link abaixo no navegador:
 </p>
-<p style="color:#888;font-size:13px">Caso não tenha realizado este cadastro, ignore este e-mail.</p>
+<p style="margin:0 0 20px 0;word-break:break-all;background:#f0ede2;
+          padding:8px 12px;border-radius:3px;border:1px solid #c8c4b0">
+  <a href="{link}" style="color:#3a6020;font-size:11px;font-family:monospace">{link}</a>
+</p>
+
+<p style="margin:0;color:#a0a090;font-size:11px;font-style:italic">
+  Se você não realizou este cadastro, desconsidere esta mensagem.
+  Nenhuma ação é necessária.
+</p>
 """
     return subject, _base(subject, body)
 
 
-def confirmacao_email(nome: str, token: str) -> tuple[str, str]:
-    """Mantido por compatibilidade — não é mais utilizado no fluxo principal."""
-    link = f"{settings.FRONTEND_URL}/confirmar-email/{token}"
-    subject = "SISGEO — Confirme seu cadastro"
+# ── Cadastro recebido (informativo — não envia mais, substituído por ativacao_conta) ──
+
+def cadastro_recebido(nome: str, email: str) -> tuple[str, str]:
+    """Legado — mantido para compatibilidade. Usar ativacao_conta() no novo fluxo."""
+    subject = "SisPGeo — Cadastro recebido"
     body = f"""
-<h2>Olá, {nome}!</h2>
-<p>Clique no botão abaixo para confirmar seu email:</p>
-<p style="text-align:center;margin:30px 0">
-  <a href="{link}" style="background:#059669;color:#fff;padding:12px 24px;text-decoration:none;border-radius:4px;display:inline-block">
-    Confirmar Email
-  </a>
+<h2 style="margin:0 0 6px 0;color:#3a4c22;font-size:18px;font-weight:700">
+  Cadastro recebido, {nome}.</h2>
+<p style="margin:0 0 20px 0;color:#5a5a48;font-size:13px;line-height:1.7">
+  Seu pedido de acesso ao <strong>SisPGeo</strong> foi registrado.
+  Um administrador irá analisar e ativar sua conta em até <strong>2 dias úteis</strong>.
 </p>
-<p><strong>Este link expira em 24 horas.</strong></p>
+
+<table cellpadding="0" cellspacing="0"
+       style="width:100%;border-collapse:collapse;margin-bottom:24px;
+              border:1px solid #c8c4b0">
+  {_info_row("E-mail", email)}
+  {_info_row("Status", '<span style="color:#8b6914;font-weight:700">● Aguardando ativação</span>')}
+</table>
+
+{_btn(f"{settings.FRONTEND_URL}/login", "Acessar o SisPGeo")}
+
+<p style="margin:16px 0 0 0;color:#a0a090;font-size:11px;font-style:italic">
+  Caso não tenha realizado este cadastro, desconsidere esta mensagem.
+</p>
 """
     return subject, _base(subject, body)
 
+
+# ── Conta ativada pelo administrador ─────────────────────────────────────────
+
+def conta_ativada(nome: str, email: str) -> tuple[str, str]:
+    subject = "SisPGeo — Acesso autorizado"
+    body = f"""
+<h2 style="margin:0 0 6px 0;color:#3a4c22;font-size:18px;font-weight:700">
+  Acesso autorizado, {nome}.</h2>
+<p style="margin:0 0 20px 0;color:#5a5a48;font-size:13px;line-height:1.7;
+          border-bottom:1px solid #e0ddd0;padding-bottom:16px">
+  Sua conta no <strong>SisPGeo</strong> foi
+  <strong style="color:#3a7030">aprovada e ativada</strong> pelo administrador do sistema.
+  Você já pode realizar login e solicitar produtos de geoinformação.
+</p>
+
+<table cellpadding="0" cellspacing="0"
+       style="width:100%;border-collapse:collapse;margin-bottom:24px;
+              border:1px solid #c8c4b0">
+  {_info_row("E-mail de acesso", email)}
+  {_info_row("Status", '<span style="color:#3a7030;font-weight:700">✓ Conta ativa</span>')}
+</table>
+
+<div style="background:#f0f8e8;border-left:4px solid #5a7030;
+            padding:14px 16px;border-radius:0 3px 3px 0;margin-bottom:24px">
+  <p style="margin:0 0 6px 0;color:#2a4010;font-size:12px;font-weight:700;
+            text-transform:uppercase;letter-spacing:0.5px">Missão disponível</p>
+  <p style="margin:0;color:#3a5020;font-size:13px;line-height:1.6">
+    Você pode agora submeter pedidos de produtos cartográficos, acompanhar
+    o status das solicitações e consultar o histórico da sua OM.
+  </p>
+</div>
+
+{_btn(f"{settings.FRONTEND_URL}/login", "▶ Acessar o SisPGeo")}
+
+<p style="margin:16px 0 0 0;color:#a0a090;font-size:11px;font-style:italic">
+  Em caso de dúvidas, entre em contato com o administrador do sistema.
+</p>
+"""
+    return subject, _base(subject, body)
+
+
+# ── Redefinição de senha ──────────────────────────────────────────────────────
 
 def reset_senha(nome: str, token: str) -> tuple[str, str]:
     link = f"{settings.FRONTEND_URL}/redefinir-senha/{token}"
-    subject = "COTER - Redefinição de senha"
+    subject = "SisPGeo — Redefinição de senha solicitada"
     body = f"""
-<h2>Olá, {nome}!</h2>
-<p>Recebemos uma solicitação de redefinição de senha para sua conta.</p>
-<p style="text-align:center;margin:30px 0">
-  <a href="{link}" style="background:#1a3a5c;color:#fff;padding:12px 24px;text-decoration:none;border-radius:4px;display:inline-block">
-    Redefinir Senha
-  </a>
+<h2 style="margin:0 0 6px 0;color:#3a4c22;font-size:18px;font-weight:700">
+  Redefinição de senha — {nome}.</h2>
+<p style="margin:0 0 20px 0;color:#5a5a48;font-size:13px;line-height:1.7;
+          border-bottom:1px solid #e0ddd0;padding-bottom:16px">
+  Recebemos uma solicitação de <strong>redefinição de senha</strong> para esta conta.
+  Clique no botão abaixo para definir uma nova senha de acesso.
 </p>
-<p><strong>Este link expira em 1 hora.</strong></p>
-<p>Se não solicitou, ignore este email.</p>
+
+{_btn(link, "▶ Redefinir Minha Senha", color="#6b4020")}
+
+<div style="background:#fdf6e8;border-left:4px solid #8b7d3a;
+            padding:14px 16px;border-radius:0 3px 3px 0;margin-bottom:20px">
+  <p style="margin:0 0 6px 0;color:#4a3c10;font-size:12px;font-weight:700;
+            text-transform:uppercase;letter-spacing:0.5px">⚠ Atenção</p>
+  <p style="margin:0;color:#5a4c1a;font-size:13px;line-height:1.6">
+    Este link é de <strong>uso único</strong> e expira em <strong>1 hora</strong>.
+    Após expirar, será necessário solicitar um novo link.
+  </p>
+</div>
+
+<p style="margin:0 0 4px 0;color:#6a6858;font-size:11px">
+  Ou copie e cole o link no navegador:
+</p>
+<p style="margin:0 0 20px 0;word-break:break-all;background:#f0ede2;
+          padding:8px 12px;border-radius:3px;border:1px solid #c8c4b0">
+  <a href="{link}" style="color:#3a6020;font-size:11px;font-family:monospace">{link}</a>
+</p>
+
+<p style="margin:0;color:#a0a090;font-size:11px;font-style:italic">
+  Se você não solicitou a redefinição, desconsidere esta mensagem.
+  Sua senha permanece inalterada.
+</p>
 """
     return subject, _base(subject, body)
 
 
+# ── Confirmação de e-mail (alias legado) ─────────────────────────────────────
+
+def confirmacao_email(nome: str, token: str) -> tuple[str, str]:
+    """Alias legado — delega para ativacao_conta."""
+    return ativacao_conta(nome, token)
+
+
+# ── Notificações de pedidos ───────────────────────────────────────────────────
+
 def pedido_submetido(nome: str, pedido_id: int, operacao: str) -> tuple[str, str]:
-    subject = f"COTER - Pedido #{pedido_id} recebido"
+    subject = f"SisPGeo — Pedido #{pedido_id} recebido"
     body = f"""
-<h2>Olá, {nome}!</h2>
-<p>Seu pedido <strong>#{pedido_id}</strong> da operação <strong>{operacao}</strong> foi submetido com sucesso.</p>
-<p>Ele está aguardando análise do Gestor Demandante.</p>
-<p>Você pode acompanhar o status em: <a href="{settings.FRONTEND_URL}/meus-pedidos">{settings.FRONTEND_URL}/meus-pedidos</a></p>
+<h2 style="margin:0 0 12px 0;color:#3a4c22;font-size:18px;font-weight:700">
+  Pedido #{pedido_id} registrado.</h2>
+<p style="margin:0 0 16px 0;color:#5a5a48;font-size:13px;line-height:1.7">
+  {nome}, seu pedido <strong>#{pedido_id}</strong> da operação
+  <strong>{operacao}</strong> foi submetido e aguarda análise do Gestor Demandante.
+</p>
+{_btn(f"{settings.FRONTEND_URL}/meus-pedidos", "▶ Acompanhar Pedido")}
 """
     return subject, _base(subject, body)
 
 
 def pedido_aprovado(nome: str, pedido_id: int) -> tuple[str, str]:
-    subject = f"COTER - Pedido #{pedido_id} aprovado"
+    subject = f"SisPGeo — Pedido #{pedido_id} aprovado"
     body = f"""
-<h2>Olá, {nome}!</h2>
-<p>Seu pedido <strong>#{pedido_id}</strong> foi <strong style="color:green">aprovado</strong> pelo DSG.</p>
-<p>Acompanhe a produção em: <a href="{settings.FRONTEND_URL}/meus-pedidos">{settings.FRONTEND_URL}/meus-pedidos</a></p>
+<h2 style="margin:0 0 12px 0;color:#3a4c22;font-size:18px;font-weight:700">
+  Pedido #{pedido_id} aprovado.</h2>
+<p style="margin:0 0 16px 0;color:#5a5a48;font-size:13px;line-height:1.7">
+  {nome}, seu pedido <strong>#{pedido_id}</strong> foi
+  <strong style="color:#3a7030">aprovado pelo DSG</strong> e está em produção.
+</p>
+{_btn(f"{settings.FRONTEND_URL}/meus-pedidos", "▶ Ver Status do Pedido")}
 """
     return subject, _base(subject, body)
 
 
 def pedido_reprovado(nome: str, pedido_id: int, motivo: str) -> tuple[str, str]:
-    subject = f"COTER - Pedido #{pedido_id} não aprovado"
+    subject = f"SisPGeo — Pedido #{pedido_id} não aprovado"
     body = f"""
-<h2>Olá, {nome}!</h2>
-<p>Seu pedido <strong>#{pedido_id}</strong> <strong style="color:red">não foi aprovado</strong>.</p>
-<p><strong>Motivo:</strong> {motivo}</p>
-<p>Em caso de dúvidas, entre em contato com o seu Gestor Demandante.</p>
+<h2 style="margin:0 0 12px 0;color:#3a4c22;font-size:18px;font-weight:700">
+  Pedido #{pedido_id} — não aprovado.</h2>
+<p style="margin:0 0 16px 0;color:#5a5a48;font-size:13px;line-height:1.7">
+  {nome}, seu pedido <strong>#{pedido_id}</strong>
+  <strong style="color:#8b2020">não foi aprovado</strong>.
+</p>
+<div style="background:#fdf2f2;border-left:4px solid #8b2020;
+            padding:14px 16px;border-radius:0 3px 3px 0;margin-bottom:20px">
+  <p style="margin:0 0 4px 0;color:#5a1010;font-size:12px;font-weight:700;
+            text-transform:uppercase;letter-spacing:0.5px">Motivo</p>
+  <p style="margin:0;color:#6b2020;font-size:13px">{motivo}</p>
+</div>
+<p style="margin:0 0 16px 0;color:#5a5a48;font-size:13px">
+  Em caso de dúvidas, entre em contato com o Gestor Demandante.
+</p>
+{_btn(f"{settings.FRONTEND_URL}/meus-pedidos", "▶ Ver Meus Pedidos")}
 """
     return subject, _base(subject, body)
 
 
 def pedido_produzido(nome: str, pedido_id: int, link_bdgex: str | None) -> tuple[str, str]:
-    subject = f"COTER - Pedido #{pedido_id} produzido e disponível no BDGEx"
+    subject = f"SisPGeo — Pedido #{pedido_id} disponível no BDGEx"
     link_html = (
-        f'<p style="text-align:center;margin:24px 0">'
-        f'<a href="{link_bdgex}" style="background:#1a3a5c;color:#fff;padding:12px 24px;text-decoration:none;border-radius:4px;display:inline-block">'
-        f'Acessar dados no BDGEx</a></p>'
+        _btn(link_bdgex, "▶ Acessar Dados no BDGEx")
         if link_bdgex else
-        '<p>O link de acesso aos dados será fornecido pelo CGEO em breve.</p>'
+        '<p style="color:#5a5a48;font-size:13px;text-align:center">O link de acesso será fornecido pelo CGEO em breve.</p>'
     )
     body = f"""
-<h2>Olá, {nome}!</h2>
-<p>Seu pedido <strong>#{pedido_id}</strong> foi <strong style="color:green">concluído</strong> e os dados estão disponíveis no BDGEx.</p>
+<h2 style="margin:0 0 12px 0;color:#3a4c22;font-size:18px;font-weight:700">
+  Pedido #{pedido_id} — produção concluída.</h2>
+<p style="margin:0 0 16px 0;color:#5a5a48;font-size:13px;line-height:1.7">
+  {nome}, seu pedido <strong>#{pedido_id}</strong> foi
+  <strong style="color:#3a7030">concluído</strong> e os dados estão disponíveis no BDGEx.
+</p>
 {link_html}
-<p>Acompanhe também em: <a href="{settings.FRONTEND_URL}/meus-pedidos">{settings.FRONTEND_URL}/meus-pedidos</a></p>
+{_btn(f"{settings.FRONTEND_URL}/meus-pedidos", "▶ Ver Meus Pedidos", color="#5a6848")}
 """
     return subject, _base(subject, body)
 
 
 def pedido_transferido(nome_novo: str, nome_anterior: str, count: int) -> tuple[str, str]:
-    subject = f"COTER - {count} pedido(s) transferidos para você"
+    subject = f"SisPGeo — {count} pedido(s) transferidos para você"
     body = f"""
-<h2>Olá, {nome_novo}!</h2>
-<p>O usuário <strong>{nome_anterior}</strong> transferiu <strong>{count} pedido(s)</strong> para a sua responsabilidade.</p>
-<p>Acesse o sistema para visualizar: <a href="{settings.FRONTEND_URL}/meus-pedidos">{settings.FRONTEND_URL}/meus-pedidos</a></p>
+<h2 style="margin:0 0 12px 0;color:#3a4c22;font-size:18px;font-weight:700">
+  Transferência de pedidos.</h2>
+<p style="margin:0 0 16px 0;color:#5a5a48;font-size:13px;line-height:1.7">
+  {nome_novo}, o usuário <strong>{nome_anterior}</strong> transferiu
+  <strong>{count} pedido(s)</strong> para sua responsabilidade.
+</p>
+{_btn(f"{settings.FRONTEND_URL}/meus-pedidos", "▶ Ver Pedidos Transferidos")}
 """
     return subject, _base(subject, body)
 
 
 def notificar_gestor(nome_gestor: str, nome_usuario: str, pedido_id: int, om: str) -> tuple[str, str]:
-    subject = f"COTER - Novo pedido #{pedido_id} aguardando revisão"
+    subject = f"SisPGeo — Pedido #{pedido_id} aguardando revisão"
     body = f"""
-<h2>Olá, {nome_gestor}!</h2>
-<p>O usuário <strong>{nome_usuario}</strong> da OM <strong>{om}</strong> submeteu o pedido <strong>#{pedido_id}</strong> para análise.</p>
-<p>Acesse o sistema para revisar: <a href="{settings.FRONTEND_URL}/gestor/pedidos">{settings.FRONTEND_URL}/gestor/pedidos</a></p>
+<h2 style="margin:0 0 12px 0;color:#3a4c22;font-size:18px;font-weight:700">
+  Novo pedido aguardando revisão.</h2>
+<p style="margin:0 0 16px 0;color:#5a5a48;font-size:13px;line-height:1.7">
+  {nome_gestor}, o usuário <strong>{nome_usuario}</strong> da OM <strong>{om}</strong>
+  submeteu o pedido <strong>#{pedido_id}</strong> para análise.
+</p>
+{_btn(f"{settings.FRONTEND_URL}/gestor/pedidos", "▶ Revisar Pedido")}
 """
     return subject, _base(subject, body)

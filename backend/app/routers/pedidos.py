@@ -20,7 +20,7 @@ from app.dependencies import get_current_user, require_profiles
 from app.models.pedido import Pedido, ItemPedido
 from app.models.operacao import Operacao
 from app.models.user import Usuario
-from app.models.enums import StatusPedidoEnum, PerfilEnum, OrgaoVinculanteEnum
+from app.models.enums import StatusPedidoEnum, PerfilEnum, OrgaoVinculanteEnum, SUPERVISOR_PROFILES, CONSOLIDADOR_PROFILES
 from app.schemas.pedido import (
     PedidoCreate, PedidoUpdate, PedidoOut,
     ReviewPedidoRequest, AssignCGEORequest, CGEOReviewRequest,
@@ -96,6 +96,8 @@ async def _enrich(db: AsyncSession, pedidos: list[Pedido]) -> list[PedidoOut]:
         out.operacao_nome = ops.get(p.operacao_id) if p.operacao_id else None
         out.criador_id = p.criador_id
         out.criador_nome = users.get(p.criador_id, {}).get("nome") if p.criador_id else None
+        ov = p.orgao_vinculante.value if p.orgao_vinculante else ""
+        out.cadeia_aprovacao = pedido_service.cadeia_aprovacao(ov, p.regiao_militar)
         result.append(out)
     return result
 
@@ -140,14 +142,8 @@ async def _check_janela_open(db: AsyncSession, user: Usuario) -> None:
 
 router = APIRouter(prefix="/pedidos", tags=["Pedidos"])
 
-GESTOR_PROFILES = (
-    PerfilEnum.CONSOLIDADOR,
-    PerfilEnum.SUPERVISOR,
-)
+GESTOR_PROFILES = tuple(SUPERVISOR_PROFILES | CONSOLIDADOR_PROFILES)
 
-# Gestores roteados por Região Militar (não possuem campo orgao_vinculante).
-# CONSOLIDADOR+ usam orgao_vinculante; SUPERVISOR usa regiao_militar do pedido.
-_GESTORES_POR_RM = {PerfilEnum.SUPERVISOR}
 
 
 @router.post("/", response_model=PedidoOut, status_code=201)
@@ -185,6 +181,9 @@ async def create_pedido(
         finalidade=body.finalidade,
         orgao_vinculante=ov,
         regiao_militar=current_user.regiao_militar,
+        impressao_solicitada=body.impressao_solicitada,
+        impressao_quantidade=body.impressao_quantidade if body.impressao_solicitada else None,
+        impressao_tipo_material=body.impressao_tipo_material if body.impressao_solicitada else None,
     )
     db.add(pedido)
     await db.flush()

@@ -21,7 +21,10 @@ from fastapi import HTTPException
 from app.models.pedido import Pedido
 from app.models.operacao import Operacao
 from app.models.user import Usuario
-from app.models.enums import StatusPedidoEnum, PerfilEnum, TipoProdutoEnum
+from app.models.enums import (
+    StatusPedidoEnum, PerfilEnum, TipoProdutoEnum,
+    SUPERVISOR_PROFILES, CONSOLIDADOR_PROFILES,
+)
 from app.services.email_service import send_email
 from app.services.notification_service import NotificationService
 from app.services.historico_service import registrar_historico
@@ -47,35 +50,68 @@ FATOR_PRAZO: dict[TipoProdutoEnum, int] = {
     TipoProdutoEnum.IMPRESSAO:          30,
 }
 
-# Perfis de gestor intermediário que NÃO possuem campo orgao_vinculante.
-# Esses perfis são encontrados por regiao_militar do pedido.
-# CONSOLIDADOR e acima usam o campo orgao_vinculante.
-_GESTORES_POR_RM: frozenset[PerfilEnum] = frozenset({PerfilEnum.SUPERVISOR})
-
 # Perfis globais — não devem ser filtrados por orgao_vinculante nem regiao_militar.
-# A DSG atende todos os órgãos vinculantes.
 _PERFIS_GLOBAIS: frozenset[PerfilEnum] = frozenset({PerfilEnum.GESTOR_CARTOGRAFICO})
 
-# Mapeamento perfil → (próximo status, perfil a notificar)
-# Ao solicitar produtos, SUPERVISOR e CONSOLIDADOR têm seus próprios pedidos
-# roteados para a fila do próprio perfil (aparece em "Pedidos Pendentes").
-# Eles então encaminham todos os pedidos consolidados para o escalão seguinte.
-_SUBMIT_ROUTING: dict[PerfilEnum, tuple[StatusPedidoEnum, PerfilEnum]] = {
-    PerfilEnum.SOLICITANTE:  (StatusPedidoEnum.AGUARDANDO_SUPERVISOR,   PerfilEnum.SUPERVISOR),
-    PerfilEnum.SUPERVISOR:   (StatusPedidoEnum.AGUARDANDO_SUPERVISOR,   PerfilEnum.SUPERVISOR),
-    PerfilEnum.CONSOLIDADOR: (StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR, PerfilEnum.CONSOLIDADOR),
+# CMilA → perfil de supervisor responsável
+RM_TO_SUPERVISOR: dict[str, PerfilEnum] = {
+    "CMP":   PerfilEnum.SUPERVISOR_CMP,
+    "CML":   PerfilEnum.SUPERVISOR_CML,
+    "CMS":   PerfilEnum.SUPERVISOR_CMS,
+    "CMO":   PerfilEnum.SUPERVISOR_CMO,
+    "CMAO":  PerfilEnum.SUPERVISOR_CMAO,
+    "CMA":   PerfilEnum.SUPERVISOR_CMA,
+    "CMNE":  PerfilEnum.SUPERVISOR_CMNE,
+    "CMSE":  PerfilEnum.SUPERVISOR_CMSE,
+}
+
+# Órgão vinculante → perfil de consolidador responsável
+ORG_TO_CONSOLIDADOR: dict[str, PerfilEnum] = {
+    "COTER": PerfilEnum.CONSOLIDADOR_COTER,
+    "DSG":   PerfilEnum.CONSOLIDADOR_DSG,
+    "DEC":   PerfilEnum.CONSOLIDADOR_DEC,
+    "COLOG": PerfilEnum.CONSOLIDADOR_COLOG,
+    "DECEx": PerfilEnum.CONSOLIDADOR_DECEX,
 }
 
 # Mapeamento perfil → (status atual esperado, próximo status, perfil a notificar)
+# Supervisores regionais todos avançam para CONSOLIDADOR_COTER.
+# Consolidadores de qualquer órgão avançam para GESTOR_CARTOGRAFICO.
 _CONSOLIDATE_ROUTING: dict[PerfilEnum, tuple[StatusPedidoEnum, StatusPedidoEnum, PerfilEnum]] = {
-    PerfilEnum.SUPERVISOR:   (StatusPedidoEnum.AGUARDANDO_SUPERVISOR,   StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR, PerfilEnum.CONSOLIDADOR),
-    PerfilEnum.CONSOLIDADOR: (StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR, StatusPedidoEnum.AGUARDANDO_CARTOGRAFICO, PerfilEnum.GESTOR_CARTOGRAFICO),
+    **{p: (StatusPedidoEnum.AGUARDANDO_SUPERVISOR,   StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR, PerfilEnum.CONSOLIDADOR_COTER) for p in SUPERVISOR_PROFILES},
+    **{p: (StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR, StatusPedidoEnum.AGUARDANDO_CARTOGRAFICO, PerfilEnum.GESTOR_CARTOGRAFICO) for p in CONSOLIDADOR_PROFILES},
 }
 
 _CONSOLIDATE_LABELS: dict[PerfilEnum, str] = {
-    PerfilEnum.SUPERVISOR:   "encaminhado ao Consolidador (COTER)",
-    PerfilEnum.CONSOLIDADOR: "submetido ao Gestor Cartográfico (DSG)",
+    **{p: "encaminhado ao Consolidador COTER" for p in SUPERVISOR_PROFILES},
+    **{p: "submetido ao Gestor Cartográfico (DSG)" for p in CONSOLIDADOR_PROFILES},
 }
+
+
+def cadeia_aprovacao(orgao_vinculante: str, regiao_militar: str | None) -> list[str]:
+    """Retorna a cadeia de aprovação de um pedido conforme seu órgão vinculante."""
+    cmila_label = regiao_militar or "CMilA"
+    if orgao_vinculante == "COTER":
+        return [
+            "Solicitante",
+            f"Supervisor {cmila_label}",
+            "Consolidador COTER",
+            "Gestor Cartográfico (DSG)",
+            "Analista CGEO",
+        ]
+    consolidador_labels = {
+        "DSG":   "Consolidador DSG",
+        "DEC":   "Consolidador DEC",
+        "COLOG": "Consolidador COLOG",
+        "DECEx": "Consolidador DECEx",
+    }
+    consolidador = consolidador_labels.get(orgao_vinculante, f"Consolidador {orgao_vinculante}")
+    return [
+        "Solicitante",
+        consolidador,
+        "Gestor Cartográfico (DSG)",
+        "Analista CGEO",
+    ]
 
 
 # ---------------------------------------------------------------------------
@@ -110,11 +146,46 @@ async def submit_pedido(db: AsyncSession, pedido: Pedido, current_user: Usuario)
     if not pedido.itens:
         raise HTTPException(status_code=400, detail="Adicione ao menos um produto ao pedido")
 
-    routing = _SUBMIT_ROUTING.get(current_user.perfil)
-    if not routing:
+    perfil = current_user.perfil
+    ov = str(pedido.orgao_vinculante.value if pedido.orgao_vinculante else "") or (
+        str(current_user.orgao_vinculante.value) if current_user.orgao_vinculante else ""
+    )
+
+    # Determina próximo status e perfil a notificar conforme perfil + órgão
+    if perfil == PerfilEnum.SOLICITANTE:
+        if ov == "COTER":
+            supervisor_perfil = RM_TO_SUPERVISOR.get(pedido.regiao_militar or "")
+            if not supervisor_perfil:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Região Militar não configurada ou não mapeada para supervisor. "
+                           "Atualize seu cadastro com o Comando Militar de Área.",
+                )
+            next_status = StatusPedidoEnum.AGUARDANDO_SUPERVISOR
+            notify_perfil = supervisor_perfil
+        elif ov in ORG_TO_CONSOLIDADOR:
+            next_status = StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR
+            notify_perfil = ORG_TO_CONSOLIDADOR[ov]
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail="Órgão vinculante não configurado. Contate o administrador.",
+            )
+    elif perfil in SUPERVISOR_PROFILES:
+        next_status = StatusPedidoEnum.AGUARDANDO_SUPERVISOR
+        notify_perfil = perfil
+    elif perfil in CONSOLIDADOR_PROFILES:
+        next_status = StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR
+        notify_perfil = perfil
+    elif perfil == PerfilEnum.SUPERVISOR:   # legado
+        next_status = StatusPedidoEnum.AGUARDANDO_SUPERVISOR
+        notify_perfil = perfil
+    elif perfil == PerfilEnum.CONSOLIDADOR:  # legado
+        next_status = StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR
+        notify_perfil = perfil
+    else:
         raise HTTPException(status_code=403, detail="Perfil não autorizado a submeter pedidos")
 
-    next_status, notify_perfil = routing
     status_anterior = pedido.status
     pedido.status = next_status
     pedido.submetido_gestor_em = datetime.now(timezone.utc)
@@ -132,17 +203,11 @@ async def submit_pedido(db: AsyncSession, pedido: Pedido, current_user: Usuario)
     subject, html = pedido_submetido(current_user.nome, pedido.id, operacao_nome)
     await send_email(current_user.email, subject, html)
 
-    # Notificar gestores do escalão seguinte por e-mail + in-app.
-    # Supervisor (C. Mil. A) — localizado por regiao_militar.
-    # Consolidador (COTER/etc.) — localizado por orgao_vinculante.
-    # Gestor Cartográfico (DSG) — global, sem filtro (atende todos).
-    if notify_perfil in _GESTORES_POR_RM:
-        gestor_query = select(Usuario).where(
-            Usuario.perfil == notify_perfil,
-            Usuario.regiao_militar == pedido.regiao_militar,
-            Usuario.ativo == True,
-        )
-    elif notify_perfil in _PERFIS_GLOBAIS:
+    # Notifica o perfil do próximo escalão por e-mail + in-app.
+    # Supervisores regionais → localizados apenas pelo perfil (já encapsula o CMilA).
+    # Consolidadores específicos → localizados pelo perfil (já encapsula o órgão).
+    # Gestor Cartográfico → global.
+    if notify_perfil in _PERFIS_GLOBAIS:
         gestor_query = select(Usuario).where(
             Usuario.perfil == notify_perfil,
             Usuario.ativo == True,
@@ -150,7 +215,6 @@ async def submit_pedido(db: AsyncSession, pedido: Pedido, current_user: Usuario)
     else:
         gestor_query = select(Usuario).where(
             Usuario.perfil == notify_perfil,
-            Usuario.orgao_vinculante == pedido.orgao_vinculante,
             Usuario.ativo == True,
         )
 
@@ -171,12 +235,6 @@ async def submit_pedido(db: AsyncSession, pedido: Pedido, current_user: Usuario)
         titulo=f"Novo pedido #{pedido.id}",
         mensagem=f"Pedido de {current_user.nome} ({current_user.om}) aguarda revisão.",
         pedido_id=pedido.id,
-        regiao_militar=pedido.regiao_militar if notify_perfil in _GESTORES_POR_RM else None,
-        orgao_vinculante=(
-            pedido.orgao_vinculante
-            if notify_perfil not in _GESTORES_POR_RM and notify_perfil not in _PERFIS_GLOBAIS
-            else None
-        ),
     )
     await db.commit()
 
@@ -229,11 +287,18 @@ async def review_pedido(
 
     status_anterior = pedido.status
 
-    # Próximo status para "aprovar" depende do perfil do gestor
-    _REVIEW_APROVAR_STATUS: dict[PerfilEnum, StatusPedidoEnum] = {
-        PerfilEnum.SUPERVISOR:   StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR,
-        PerfilEnum.CONSOLIDADOR: StatusPedidoEnum.AGUARDANDO_CARTOGRAFICO,
-    }
+    # Próximo status para "aprovar" depende do grupo de perfil do gestor
+    if gestor.perfil in SUPERVISOR_PROFILES:
+        _aprovar_status = StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR
+    elif gestor.perfil in CONSOLIDADOR_PROFILES:
+        _aprovar_status = StatusPedidoEnum.AGUARDANDO_CARTOGRAFICO
+    else:
+        # Legado / fallback
+        _REVIEW_APROVAR_STATUS: dict[PerfilEnum, StatusPedidoEnum] = {
+            PerfilEnum.SUPERVISOR:   StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR,
+            PerfilEnum.CONSOLIDADOR: StatusPedidoEnum.AGUARDANDO_CARTOGRAFICO,
+        }
+        _aprovar_status = _REVIEW_APROVAR_STATUS.get(gestor.perfil, StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR)
 
     if acao == "reprovar":
         pedido.status = StatusPedidoEnum.CANCELADO
@@ -249,8 +314,7 @@ async def review_pedido(
         pedido.gestor_demandante_id = gestor.id
 
     elif acao == "aprovar":
-        next_status = _REVIEW_APROVAR_STATUS.get(gestor.perfil, StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR)
-        pedido.status = next_status
+        pedido.status = _aprovar_status
         pedido.gestor_demandante_id = gestor.id
 
     elif acao == "observar":
@@ -319,14 +383,6 @@ async def consolidate_pedidos(
         perfil=notify_perfil,
         titulo=f"{submetidos} pedido(s) {label}",
         mensagem=f"Gestor {gestor.nome} encaminhou {submetidos} pedido(s).",
-        # SUPERVISOR usa regiao_militar; GESTOR_CARTOGRAFICO é global (sem filtro);
-        # CONSOLIDADOR usa orgao_vinculante.
-        regiao_militar=gestor.regiao_militar if notify_perfil in _GESTORES_POR_RM else None,
-        orgao_vinculante=(
-            gestor.orgao_vinculante
-            if notify_perfil not in _GESTORES_POR_RM and notify_perfil not in _PERFIS_GLOBAIS
-            else None
-        ),
     )
     await db.commit()
 

@@ -25,14 +25,42 @@ import { useAuthStore } from '../../store/authStore'
 import { useExportRelatorio } from '../../hooks/useExportRelatorio'
 
 const CONSOLIDATE_LABELS: Record<string, string> = {
-  SUPERVISOR:   'Encaminhar ao COTER',
-  CONSOLIDADOR: 'Enviar à DSG',
+  // Supervisores regionais encaminham para COTER
+  SUPERVISOR_CMP:  'Encaminhar ao COTER',
+  SUPERVISOR_CML:  'Encaminhar ao COTER',
+  SUPERVISOR_CMS:  'Encaminhar ao COTER',
+  SUPERVISOR_CMO:  'Encaminhar ao COTER',
+  SUPERVISOR_CMAO: 'Encaminhar ao COTER',
+  SUPERVISOR_CMA:  'Encaminhar ao COTER',
+  SUPERVISOR_CMNE: 'Encaminhar ao COTER',
+  SUPERVISOR_CMSE: 'Encaminhar ao COTER',
+  SUPERVISOR:      'Encaminhar ao COTER',
+  // Consolidadores encaminham para DSG
+  CONSOLIDADOR_COTER:  'Enviar à DSG',
+  CONSOLIDADOR_DSG:    'Enviar à DSG',
+  CONSOLIDADOR_DEC:    'Enviar à DSG',
+  CONSOLIDADOR_COLOG:  'Enviar à DSG',
+  CONSOLIDADOR_DECEX:  'Enviar à DSG',
+  CONSOLIDADOR:        'Enviar à DSG',
 }
 
 const PERFIL_LABELS: Record<string, string> = {
   SOLICITANTE:         'OMDS',
-  SUPERVISOR:          'C. Mil. A',
-  CONSOLIDADOR:        'COTER',
+  SUPERVISOR_CMP:      'Supervisor CMP',
+  SUPERVISOR_CML:      'Supervisor CML',
+  SUPERVISOR_CMS:      'Supervisor CMS',
+  SUPERVISOR_CMO:      'Supervisor CMO',
+  SUPERVISOR_CMAO:     'Supervisor CMAO',
+  SUPERVISOR_CMA:      'Supervisor CMA',
+  SUPERVISOR_CMNE:     'Supervisor CMNE',
+  SUPERVISOR_CMSE:     'Supervisor CMSE',
+  SUPERVISOR:          'Supervisor',
+  CONSOLIDADOR_COTER:  'Consolidador COTER',
+  CONSOLIDADOR_DSG:    'Consolidador DSG',
+  CONSOLIDADOR_DEC:    'Consolidador DEC',
+  CONSOLIDADOR_COLOG:  'Consolidador COLOG',
+  CONSOLIDADOR_DECEX:  'Consolidador DECEx',
+  CONSOLIDADOR:        'Consolidador',
   GESTOR_CARTOGRAFICO: 'DSG',
   ANALISTA_CGEO:       'CGEO',
 }

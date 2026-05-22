@@ -15,10 +15,10 @@ import { TIPO_PRODUTO_LABELS, STATUS_LABELS } from '../../types/pedido'
 /** Com quem está o pedido (escalão atual) */
 const STATUS_RESPONSAVEL: Record<string, string> = {
   RASCUNHO:                'Solicitante (rascunho)',
-  AGUARDANDO_SUPERVISOR:   'Supervisor C Mil. A',
-  AGUARDANDO_CONSOLIDADOR: 'Consolidador COTER/COLOG',
+  AGUARDANDO_SUPERVISOR:   'Supervisor CMilA (COTER)',
+  AGUARDANDO_CONSOLIDADOR: 'Consolidador do órgão vinculante',
   DEVOLVIDO:               'Solicitante (em revisão)',
-  AGUARDANDO_CARTOGRAFICO: 'DSG (aguardando atribuição)',
+  AGUARDANDO_CARTOGRAFICO: 'Gestor Cartográfico — DSG',
   ATRIBUIDO_CGEO:          'CGEO (em análise)',
   APROVADO:                'CGEO (em atendimento)',
   REPROVADO:               'Encerrado — inviável',

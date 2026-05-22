@@ -45,6 +45,10 @@ class Pedido(Base):
     # Região Militar do solicitante — usada para rotear pedidos ao supervisor (C. Mil. A)
     # vinculado por RM. Consolidador e acima usam o campo orgao_vinculante.
     regiao_militar: Mapped[str | None] = mapped_column(String(20))
+    # Impressão física solicitada junto ao pedido
+    impressao_solicitada: Mapped[bool] = mapped_column(Boolean, default=False)
+    impressao_quantidade: Mapped[int | None] = mapped_column(SmallInteger)
+    impressao_tipo_material: Mapped[str | None] = mapped_column(String(20))
     criado_em: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

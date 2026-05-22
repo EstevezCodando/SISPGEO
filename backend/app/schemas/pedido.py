@@ -38,6 +38,9 @@ class PedidoCreate(BaseModel):
     finalidade: str | None = None
     orgao_vinculante: OrgaoVinculanteEnum | None = None
     itens: list[ItemPedidoCreate]
+    impressao_solicitada: bool = False
+    impressao_quantidade: int | None = None
+    impressao_tipo_material: str | None = None
 
 
 class PedidoUpdate(BaseModel):
@@ -75,6 +78,12 @@ class PedidoOut(BaseModel):
     usuario_telefone_ritex: str | None = None
     usuario_secao_om: str | None = None
     usuario_perfil: str | None = None
+    # Impressão física
+    impressao_solicitada: bool = False
+    impressao_quantidade: int | None = None
+    impressao_tipo_material: str | None = None
+    # Cadeia de aprovação calculada conforme órgão vinculante e região militar
+    cadeia_aprovacao: list[str] = []
 
     model_config = {"from_attributes": True}
 

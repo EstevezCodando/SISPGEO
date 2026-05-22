@@ -64,34 +64,41 @@ class NotificationService:
 
     async def notify_by_perfil(
         self,
-        perfil: PerfilEnum,
+        perfil: PerfilEnum | frozenset[PerfilEnum],
         titulo: str,
         mensagem: str,
         pedido_id: int | None = None,
         orgao_vinculante: OrgaoVinculanteEnum | None = None,
         regiao_militar: str | None = None,
     ) -> int:
-        """Cria notificações para todos os usuários ativos de um perfil.
+        """Cria notificações para todos os usuários ativos de um perfil (ou conjunto).
 
         Args:
-            perfil:            Perfil alvo (ex: ``PerfilEnum.GESTOR_CARTOGRAFICO``).
+            perfil:            Perfil alvo ou frozenset de perfis.
             titulo:            Título da notificação.
             mensagem:          Texto completo.
             pedido_id:         Pedido relacionado, se houver.
             orgao_vinculante:  Filtra por órgão vinculante quando fornecido.
-                               Use ``None`` para notificar todos os perfis globais
-                               (ex: GESTOR_CARTOGRAFICO).
             regiao_militar:    Filtra por Região Militar quando fornecido.
-                               Usado para o Supervisor (C. Mil. A) que não possui
-                               campo orgao_vinculante.
 
         Returns:
             Número de notificações criadas.
         """
-        query = select(Usuario).where(
-            Usuario.perfil == perfil,
-            Usuario.ativo == True,
-        )
+        from sqlalchemy import or_
+
+        if isinstance(perfil, frozenset):
+            query = select(Usuario).where(
+                or_(*[Usuario.perfil == p for p in perfil]),
+                Usuario.ativo == True,
+            )
+            perfil_label = f"{{{','.join(p.value for p in perfil)}}}"
+        else:
+            query = select(Usuario).where(
+                Usuario.perfil == perfil,
+                Usuario.ativo == True,
+            )
+            perfil_label = perfil.value
+
         if orgao_vinculante is not None:
             query = query.where(Usuario.orgao_vinculante == orgao_vinculante)
         if regiao_militar is not None:
@@ -104,6 +111,6 @@ class NotificationService:
 
         logger.debug(
             "notify_by_perfil → perfil=%s  orgao_vinculante=%s  destinatários=%d",
-            perfil.value, orgao_vinculante, len(usuarios),
+            perfil_label, orgao_vinculante, len(usuarios),
         )
         return len(usuarios)

@@ -21,7 +21,7 @@ import { useAuthStore } from '../store/authStore'
 import { InteractiveMap, type Basemap } from '../components/map/InteractiveMap'
 import { PedidosMap } from '../components/map/PedidosMap'
 import type { TipoProduto, Escala } from '../types/pedido'
-import { TIPO_PRODUTO_LABELS } from '../types/pedido'
+import { TIPO_PRODUTO_LABELS, TIPOS_IMPRESSAO, MATERIAIS_IMPRESSAO } from '../types/pedido'
 import type { CartItem } from '../types/pedido'
 
 const ESCALAS: Escala[] = ['1:25.000', '1:50.000', '1:100.000', '1:250.000']
@@ -35,8 +35,16 @@ const PRAZO_FALLBACK: Record<TipoProduto, number> = {
   MDT:                 40,
   MDS:                 40,
   CDGV:               180,
-  IMPRESSAO:           30,
+  IMPRESSAO_CT:        30,
+  IMPRESSAO_COI:       30,
+  IMPRESSAO:           30,  // legado
 }
+
+// Tipos de produto exibidos no dropdown (sem IMPRESSAO legado)
+const TIPOS_PRODUTO_VISIVEIS: TipoProduto[] = [
+  'CARTA_TOPOGRAFICA', 'CARTA_ORTOIMAGEM', 'ORTOIMAGEM',
+  'MDT', 'MDS', 'CDGV', 'IMPRESSAO_CT', 'IMPRESSAO_COI',
+]
 
 const inputCls = 'w-full bg-zinc-800 border border-zinc-700 rounded-lg px-2.5 py-1.5 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed'
 const labelCls = 'block text-xs font-medium text-zinc-400 mb-1'
@@ -94,9 +102,20 @@ interface RevisaoModalProps {
   onClose: () => void
   onConfirm: () => void
   submitting: boolean
+  isImpressao: boolean
+  impressaoSolicitada: boolean
+  impressaoQuantidade: number | null
+  impressaoTipoMaterial: string | null
+  onSetImpressaoSolicitada: (v: boolean) => void
+  onSetImpressaoQuantidade: (v: number | null) => void
+  onSetImpressaoTipoMaterial: (v: string | null) => void
 }
 
-function RevisaoModal({ items, onRemoveItem, onClose, onConfirm, submitting }: RevisaoModalProps) {
+function RevisaoModal({
+  items, onRemoveItem, onClose, onConfirm, submitting,
+  isImpressao, impressaoSolicitada, impressaoQuantidade, impressaoTipoMaterial,
+  onSetImpressaoSolicitada, onSetImpressaoQuantidade, onSetImpressaoTipoMaterial,
+}: RevisaoModalProps) {
   const { user } = useAuthStore()
 
   // Fonte de geometrias: carregada uma única vez ao abrir o modal
@@ -230,6 +249,77 @@ function RevisaoModal({ items, onRemoveItem, onClose, onConfirm, submitting }: R
                 ))}
               </div>
             </div>
+
+            {/* Impressão — quando é tipo impressão, exibe os campos; caso contrário, pergunta se deseja */}
+            <div className="px-4 py-3 border-t border-white/10 bg-zinc-800/20 space-y-2">
+              {isImpressao ? (
+                <>
+                  <p className="text-xs font-semibold text-emerald-400 uppercase tracking-wide">Impressão</p>
+                  <div className="flex gap-2">
+                    <div className="flex-1">
+                      <label className="block text-[10px] text-zinc-500 mb-1">Quantidade</label>
+                      <input
+                        type="number" min={1} max={999}
+                        value={impressaoQuantidade ?? ''}
+                        onChange={(e) => onSetImpressaoQuantidade(e.target.value ? Number(e.target.value) : null)}
+                        className="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-xs text-zinc-100 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <label className="block text-[10px] text-zinc-500 mb-1">Material</label>
+                      <select
+                        value={impressaoTipoMaterial ?? ''}
+                        onChange={(e) => onSetImpressaoTipoMaterial(e.target.value || null)}
+                        className="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-xs text-zinc-100 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                      >
+                        <option value="" className="bg-zinc-800">Material...</option>
+                        {MATERIAIS_IMPRESSAO.map(m => (
+                          <option key={m} value={m} className="bg-zinc-800">{m}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={impressaoSolicitada}
+                      onChange={(e) => onSetImpressaoSolicitada(e.target.checked)}
+                      className="accent-emerald-500"
+                    />
+                    <span className="text-xs font-medium text-zinc-300">Deseja impressão física?</span>
+                  </label>
+                  {impressaoSolicitada && (
+                    <div className="flex gap-2 pt-1">
+                      <div className="flex-1">
+                        <label className="block text-[10px] text-zinc-500 mb-1">Quantidade</label>
+                        <input
+                          type="number" min={1} max={999}
+                          value={impressaoQuantidade ?? ''}
+                          onChange={(e) => onSetImpressaoQuantidade(e.target.value ? Number(e.target.value) : null)}
+                          className="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-xs text-zinc-100 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <label className="block text-[10px] text-zinc-500 mb-1">Material</label>
+                        <select
+                          value={impressaoTipoMaterial ?? ''}
+                          onChange={(e) => onSetImpressaoTipoMaterial(e.target.value || null)}
+                          className="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-xs text-zinc-100 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                        >
+                          <option value="" className="bg-zinc-800">Material...</option>
+                          {MATERIAIS_IMPRESSAO.map(m => (
+                            <option key={m} value={m} className="bg-zinc-800">{m}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
           </div>
         </div>
 
@@ -261,9 +351,13 @@ export function SolicitarProdutos() {
   const { user } = useAuthStore()
   const {
     items, tipoProduto, escala, dataEntrega, operacaoId, finalidade,
+    impressaoSolicitada, impressaoQuantidade, impressaoTipoMaterial,
     setTipoProduto, setEscala, setDataEntrega, setOperacaoId, setFinalidade,
+    setImpressaoSolicitada, setImpressaoQuantidade, setImpressaoTipoMaterial,
     removeItem, clear,
   } = useCartStore()
+
+  const isImpressao = tipoProduto ? TIPOS_IMPRESSAO.has(tipoProduto) : false
 
   const [operacoes, setOperacoes] = useState<Operacao[]>([])
   const [novaOperacao, setNovaOperacao] = useState('')
@@ -389,10 +483,13 @@ export function SolicitarProdutos() {
           mi: i.mi,
           solicitar_mesmo_disponivel: i.solicitar_mesmo_disponivel,
         })),
+        impressao_solicitada: impressaoSolicitada || isImpressao,
+        impressao_quantidade: (impressaoSolicitada || isImpressao) ? impressaoQuantidade : null,
+        impressao_tipo_material: (impressaoSolicitada || isImpressao) ? impressaoTipoMaterial : null,
       })
 
-      const isSupervisorOrConsolidador =
-        user?.perfil === 'SUPERVISOR' || user?.perfil === 'CONSOLIDADOR'
+      const { isGestor } = useAuthStore.getState()
+      const isSupervisorOrConsolidador = isGestor()
 
       if (isSupervisorOrConsolidador) {
         // Supervisor/Consolidador: auto-submete para entrar direto na fila de pendentes
@@ -424,6 +521,14 @@ export function SolicitarProdutos() {
       finalidadeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
       finalidadeRef.current?.focus()
       return
+    }
+    if (isImpressao) {
+      if (!impressaoQuantidade || impressaoQuantidade < 1) {
+        toast.error('Informe a quantidade de cópias para impressão'); return
+      }
+      if (!impressaoTipoMaterial) {
+        toast.error('Selecione o tipo de material para impressão'); return
+      }
     }
     setShowRevisao(true)
   }
@@ -537,21 +642,26 @@ export function SolicitarProdutos() {
             )}
           </div>
 
-          {/* Tipo de Produto */}
+          {/* Tipo de Produto / Serviço */}
           <div>
-            <label className={labelCls}>Tipo de Produto</label>
+            <label className={labelCls}>Tipo de Produto / Serviço</label>
             <select
               value={tipoProduto ?? ''}
               onChange={(e) => {
-                setTipoProduto((e.target.value as TipoProduto) || null)
+                const novo = (e.target.value as TipoProduto) || null
+                setTipoProduto(novo)
                 setEscala(null)
                 setDataEntrega(null)
+                // Reset impressão ao trocar produto
+                setImpressaoSolicitada(false)
+                setImpressaoQuantidade(null)
+                setImpressaoTipoMaterial(null)
               }}
               className={inputCls}
             >
               <option value="" className="bg-zinc-800">Selecione...</option>
-              {Object.entries(TIPO_PRODUTO_LABELS).map(([k, v]) => (
-                <option key={k} value={k} className="bg-zinc-800">{v}</option>
+              {TIPOS_PRODUTO_VISIVEIS.map((k) => (
+                <option key={k} value={k} className="bg-zinc-800">{TIPO_PRODUTO_LABELS[k]}</option>
               ))}
             </select>
           </div>
@@ -672,6 +782,7 @@ export function SolicitarProdutos() {
                   inomGrid={inomGrid}
                   showData={showData}
                   basemap={basemap}
+                  somenteBdgex={isImpressao}
                 />
                 {isLoadingGrid && (
                   <div className="absolute inset-0 z-[1000] flex items-center justify-center bg-zinc-950/60 rounded-b-xl pointer-events-none">
@@ -714,7 +825,8 @@ export function SolicitarProdutos() {
             )}
           </div>
 
-          <div className="p-3 border-t border-white/10 space-y-2">
+          <div className="p-3 border-t border-white/10 space-y-2.5">
+            {/* Finalidade */}
             <div>
               <label className={`${labelCls} ${isOutros ? 'text-amber-400' : ''}`}>
                 Finalidade {isOutros && <span className="text-amber-400">*</span>}
@@ -723,7 +835,7 @@ export function SolicitarProdutos() {
                 ref={finalidadeRef}
                 value={finalidade}
                 onChange={(e) => setFinalidade(e.target.value)}
-                rows={3}
+                rows={isImpressao ? 2 : 3}
                 placeholder={isOutros ? 'Obrigatório: descreva a finalidade (mín. 10 caracteres)...' : 'Descreva a finalidade da solicitação...'}
                 className={`w-full bg-zinc-800 border rounded-lg px-2.5 py-1.5 text-xs text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-1 resize-none transition-colors ${
                   isOutros
@@ -737,6 +849,41 @@ export function SolicitarProdutos() {
                 </p>
               )}
             </div>
+
+            {/* Impressão — exibido apenas quando tipo é IMPRESSAO_CT/COI */}
+            {isImpressao && (
+              <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-2.5 space-y-2">
+                <p className="text-[10px] font-semibold text-emerald-400 uppercase tracking-wider">Configurar impressão</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className={labelCls}>Qtd. cópias <span className="text-red-400">*</span></label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={999}
+                      value={impressaoQuantidade ?? ''}
+                      onChange={(e) => setImpressaoQuantidade(e.target.value ? Number(e.target.value) : null)}
+                      placeholder="Ex: 10"
+                      className={inputCls}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelCls}>Material <span className="text-red-400">*</span></label>
+                    <select
+                      value={impressaoTipoMaterial ?? ''}
+                      onChange={(e) => setImpressaoTipoMaterial(e.target.value || null)}
+                      className={inputCls}
+                    >
+                      <option value="" className="bg-zinc-800">—</option>
+                      {MATERIAIS_IMPRESSAO.map(m => (
+                        <option key={m} value={m} className="bg-zinc-800">{m}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <button
               onClick={handleOpenRevisao}
               disabled={items.length === 0}
@@ -757,6 +904,13 @@ export function SolicitarProdutos() {
           onClose={() => setShowRevisao(false)}
           onConfirm={handleSubmit}
           submitting={submitting}
+          isImpressao={isImpressao}
+          impressaoSolicitada={impressaoSolicitada}
+          impressaoQuantidade={impressaoQuantidade}
+          impressaoTipoMaterial={impressaoTipoMaterial}
+          onSetImpressaoSolicitada={setImpressaoSolicitada}
+          onSetImpressaoQuantidade={setImpressaoQuantidade}
+          onSetImpressaoTipoMaterial={setImpressaoTipoMaterial}
         />
       )}
     </div>

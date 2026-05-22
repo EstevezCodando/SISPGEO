@@ -14,6 +14,8 @@ from app.schemas.user import (
 from app.schemas.pedido import TransferirPedidosRequest
 from app.utils.security import verify_password, get_password_hash
 from app.services import pedido_service
+from app.services.email_service import send_email
+from app.utils.email_templates import conta_ativada as tpl_conta_ativada
 
 router = APIRouter(prefix="/users", tags=["Usuários"])
 
@@ -202,6 +204,16 @@ async def toggle_activate(
     user = await db.get(Usuario, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="Usuário não encontrado")
+
+    foi_inativo = not user.ativo
     user.ativo = not user.ativo
     await db.commit()
+
+    if foi_inativo and user.ativo:
+        try:
+            subject, html = tpl_conta_ativada(user.nome, user.email)
+            await send_email(user.email, subject, html)
+        except Exception:
+            pass  # falha de e-mail não reverte a ativação
+
     return {"message": f"Usuário {'ativado' if user.ativo else 'desativado'}"}

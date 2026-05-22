@@ -13,6 +13,9 @@ interface CartState {
   dataEntrega: string | null
   operacaoId: number | null
   finalidade: string
+  impressaoSolicitada: boolean
+  impressaoQuantidade: number | null
+  impressaoTipoMaterial: string | null
   addItem: (item: CartItem) => void
   removeItem: (inom: string, tipoProduto?: TipoProduto, escala?: Escala) => void
   hasItem: (inom: string, tipoProduto?: TipoProduto, escala?: Escala) => boolean
@@ -21,6 +24,9 @@ interface CartState {
   setDataEntrega: (date: string | null) => void
   setOperacaoId: (id: number | null) => void
   setFinalidade: (f: string) => void
+  setImpressaoSolicitada: (v: boolean) => void
+  setImpressaoQuantidade: (v: number | null) => void
+  setImpressaoTipoMaterial: (v: string | null) => void
   clear: () => void
 }
 
@@ -31,6 +37,9 @@ export const useCartStore = create<CartState>((set, get) => ({
   dataEntrega: null,
   operacaoId: null,
   finalidade: '',
+  impressaoSolicitada: false,
+  impressaoQuantidade: null,
+  impressaoTipoMaterial: null,
 
   addItem: (item) => {
     const key = cartKey(item)
@@ -60,6 +69,9 @@ export const useCartStore = create<CartState>((set, get) => ({
   setDataEntrega: (date) => set({ dataEntrega: date }),
   setOperacaoId: (id) => set({ operacaoId: id }),
   setFinalidade: (f) => set({ finalidade: f }),
+  setImpressaoSolicitada: (v) => set({ impressaoSolicitada: v }),
+  setImpressaoQuantidade: (v) => set({ impressaoQuantidade: v }),
+  setImpressaoTipoMaterial: (v) => set({ impressaoTipoMaterial: v }),
 
   clear: () =>
     set({
@@ -69,5 +81,8 @@ export const useCartStore = create<CartState>((set, get) => ({
       dataEntrega: null,
       operacaoId: null,
       finalidade: '',
+      impressaoSolicitada: false,
+      impressaoQuantidade: null,
+      impressaoTipoMaterial: null,
     }),
 }))

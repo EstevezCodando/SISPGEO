@@ -5,10 +5,10 @@ import {
   Activity, UserCircle,
 } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
+import { SUPERVISOR_PROFILES, CONSOLIDADOR_PROFILES } from '../../types/user'
 
 const SOLICITANTE = ['SOLICITANTE']
-const SUPERVISOR_ONLY = ['SUPERVISOR']
-const GESTORES = ['SUPERVISOR', 'CONSOLIDADOR']
+const GESTORES = [...Array.from(SUPERVISOR_PROFILES), ...Array.from(CONSOLIDADOR_PROFILES)]
 const DSG = ['GESTOR_CARTOGRAFICO']
 const CGEO = ['ANALISTA_CGEO']
 const NAO_SOLICITANTE = [...GESTORES, ...DSG, ...CGEO]

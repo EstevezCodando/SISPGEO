@@ -23,7 +23,7 @@ from app.config import settings
 from app.models.enums import PerfilEnum
 from app.models.user import Usuario, TokenSenha
 from app.services.email_service import send_email
-from app.utils.email_templates import cadastro_recebido, reset_senha as tpl_reset
+from app.utils.email_templates import ativacao_conta, reset_senha as tpl_reset
 from app.utils.security import (
     create_access_token, generate_token, get_password_hash, verify_password,
 )
@@ -112,22 +112,31 @@ async def register_user(
         senha_hash=get_password_hash(senha),
         perfil=PerfilEnum.SOLICITANTE,
         ativo=False,
-        email_confirmado=True,   # Confirmação de e-mail não é exigida — admin ativa o usuário.
+        email_confirmado=False,
         orgao_vinculante=ov,
         posto_graduacao=posto_graduacao,
     )
     db.add(user)
     await db.flush()
+
+    # Gera token de ativação de e-mail (válido por 24 h)
+    now = datetime.now(timezone.utc)
+    token_str = generate_token()
+    db.add(TokenSenha(
+        usuario_id=user.id,
+        token=token_str,
+        expira_em=now + timedelta(hours=EMAIL_CONFIRM_TOKEN_EXPIRY_HOURS),
+    ))
     await db.commit()
     await db.refresh(user)
 
-    # Envia e-mail de boas-vindas informando que o cadastro aguarda ativação pelo admin.
+    # Envia e-mail de ativação com link único.
     # Fire-and-forget: falha silenciosa para não bloquear o cadastro se SMTP não estiver configurado.
     try:
-        subject, html = cadastro_recebido(user.nome, user.email)
+        subject, html = ativacao_conta(user.nome, token_str)
         await send_email(user.email, subject, html)
     except Exception as exc:
-        logger.warning("register_user: falha ao enviar e-mail de boas-vindas → %s", exc)
+        logger.warning("register_user: falha ao enviar e-mail de ativação → %s", exc)
 
     logger.info("register_user OK → user_id=%d  email=%s", user.id, email)
     return user
@@ -221,7 +230,13 @@ async def authenticate_user(db: AsyncSession, email: str, senha: str, ip: str) -
         await db.commit()
         raise HTTPException(status_code=401, detail="Credenciais inválidas")
 
-    # Verificar ativação — confirmação de e-mail não é exigida; basta o admin ativar o usuário.
+    # Verificar confirmação de e-mail
+    if not user.email_confirmado:
+        raise HTTPException(
+            status_code=403,
+            detail="E-mail não confirmado. Verifique sua caixa de entrada e clique no link de ativação.",
+        )
+    # Verificar ativação pelo administrador
     if not user.ativo:
         raise HTTPException(status_code=403, detail="Conta pendente de ativação pelo administrador.")
 
