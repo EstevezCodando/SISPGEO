@@ -1,0 +1,89 @@
+name: CI — Build & Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    name: Testes unitários + integração
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      # ── 1. Código ──────────────────────────────────────────────────────────
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ── 2. Variáveis de ambiente de CI ────────────────────────────────────
+      - name: Criar .env de CI
+        run: |
+          cat > .env << 'ENVEOF'
+          DB_PASSWORD=ci_secret
+          SECRET_KEY=ci_secret_key_minimum_32_chars_for_jwt_signing
+          BDGEX_MOCK=true
+          FRONTEND_URL=http://localhost
+          ENV=development
+          RESEND_API_KEY=
+          ENVEOF
+
+      # ── 3. Subir apenas os serviços necessários (sem frontend/nginx/mail) ──
+      # Mailpit não é necessário: o backend captura falhas de e-mail silenciosamente.
+      - name: Subir db + backend
+        run: docker compose up -d db backend
+
+      # ── 4. Aguardar backend ficar pronto ──────────────────────────────────
+      - name: Aguardar backend
+        run: |
+          echo "Aguardando backend inicializar..."
+          for i in $(seq 1 40); do
+            STATUS=$(docker inspect --format='{{.State.Status}}' coter_backend 2>/dev/null || echo "missing")
+            if [ "$STATUS" != "running" ]; then
+              echo "Container não está running (status=$STATUS), aguardando..."
+              sleep 3
+              continue
+            fi
+            if docker exec coter_backend python -c \
+              "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health')" \
+              > /dev/null 2>&1; then
+              echo "✓ Backend pronto (tentativa $i)"
+              exit 0
+            fi
+            echo "  tentativa $i/40 — aguardando 3s..."
+            sleep 3
+          done
+          echo "✗ Backend não respondeu após 120s"
+          docker compose logs backend
+          exit 1
+
+      # ── 5. Instalar dependências de teste ─────────────────────────────────
+      # Roda como root (-u 0) pois appuser não tem permissão de escrita em site-packages
+      - name: Instalar dependências de teste no container
+        run: |
+          docker exec -u 0 coter_backend pip install \
+            -r /app/requirements-dev.txt \
+            --quiet --no-cache-dir
+
+      # ── 6. Testes unitários (sem banco, tudo mockado) ─────────────────────
+      - name: Testes unitários
+        run: |
+          docker exec coter_backend python -m pytest tests/ \
+            -v --tb=short \
+            --ignore=tests/test_api_integration.py
+
+      # ── 7. Testes de integração (API real rodando no container) ───────────
+      - name: Testes de integração
+        run: |
+          docker exec coter_backend python -m pytest tests/test_api_integration.py \
+            -v --tb=short
+
+      # ── 8. Logs em caso de falha ──────────────────────────────────────────
+      - name: Logs de falha
+        if: failure()
+        run: |
+          echo "=== LOGS BACKEND ==="
+          docker compose logs --tail=100 backend
+          echo "=== LOGS DB ==="
+          docker compose logs --tail=30 db

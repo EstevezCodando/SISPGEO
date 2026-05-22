@@ -1,0 +1,147 @@
+import { useEffect, useRef } from 'react'
+import L from 'leaflet'
+import 'leaflet/dist/leaflet.css'
+import type { FeatureCollection, Feature } from 'geojson'
+import type { CartItem, TipoProduto, Escala } from '../../types/pedido'
+import { useCartStore } from '../../store/cartStore'
+
+/**
+ * Colore cada folha pela idade do produto conforme dados do BDGEx (fonte SOPEGEO).
+ * Paleta idêntica à legenda da página de solicitação.
+ */
+function getAgeColor(idadeAnos: number | null | undefined): string {
+  if (idadeAnos === null || idadeAnos === undefined) return 'transparent'
+  if (idadeAnos < 5)  return '#10b981'
+  if (idadeAnos < 10) return '#84cc16'
+  if (idadeAnos < 20) return '#eab308'
+  if (idadeAnos < 30) return '#f97316'
+  return '#ef4444'
+}
+
+export type Basemap = 'osm' | 'satellite'
+
+const TILE_LAYERS: Record<Basemap, { url: string; attribution: string; maxZoom: number }> = {
+  osm: {
+    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    attribution: '© OpenStreetMap contributors',
+    maxZoom: 18,
+  },
+  satellite: {
+    url: 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
+    attribution: '© Google',
+    maxZoom: 20,
+  },
+}
+
+interface Props {
+  inomGrid: FeatureCollection | null
+  showData?: boolean   // controla visibilidade dos dados do BDGEx (padrão: true)
+  basemap?: Basemap    // camada base (padrão: osm)
+}
+
+export function InteractiveMap({ inomGrid, showData = true, basemap = 'osm' }: Props) {
+  const mapRef = useRef<L.Map | null>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const inomLayerRef = useRef<L.GeoJSON | null>(null)
+  const tileRef = useRef<L.TileLayer | null>(null)
+  const { addItem, removeItem, hasItem, tipoProduto, escala } = useCartStore()
+
+  // ── Inicializa o mapa (sem tileLayer — adicionado separadamente) ──────────
+  useEffect(() => {
+    if (!containerRef.current || mapRef.current) return
+
+    mapRef.current = L.map(containerRef.current, {
+      center: [-15.0, -47.0],
+      zoom: 5,
+    })
+
+    return () => {
+      mapRef.current?.remove()
+      mapRef.current = null
+      tileRef.current = null
+    }
+  }, [])
+
+  // ── Troca de basemap ──────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!mapRef.current) return
+    tileRef.current?.remove()
+    const cfg = TILE_LAYERS[basemap]
+    tileRef.current = L.tileLayer(cfg.url, {
+      attribution: cfg.attribution,
+      maxZoom: cfg.maxZoom,
+    }).addTo(mapRef.current)
+  }, [basemap])
+
+  // ── Camada INOM ───────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!mapRef.current) return
+    inomLayerRef.current?.remove()
+    inomLayerRef.current = null
+    if (!inomGrid) return
+
+    inomLayerRef.current = L.geoJSON(inomGrid, {
+      // @ts-ignore — renderer é opção válida de Path no Leaflet; ausente no GeoJSONOptions do @types/leaflet
+      renderer: L.canvas(),
+      style: (feature) => {
+        const props = (feature as Feature)?.properties ?? {}
+        const { inom, idade_anos } = props as { inom: string; idade_anos?: number | null }
+        const selected = hasItem(inom, tipoProduto as TipoProduto, escala as Escala)
+
+        if (selected) {
+          return { color: '#3b82f6', weight: 2, fillColor: '#3b82f6', fillOpacity: 0.45 }
+        }
+        if (showData) {
+          const fill = getAgeColor(idade_anos)
+          return {
+            color: '#444', weight: 0.5,
+            fillColor: fill,
+            fillOpacity: fill === 'transparent' ? 0 : 0.55,
+          }
+        }
+        return { color: '#555', weight: 0.5, fillColor: 'transparent', fillOpacity: 0 }
+      },
+      onEachFeature: (feature, layer) => {
+        const { inom, mi, data_conclusao, idade_anos } = feature.properties as {
+          inom: string; mi?: string; data_conclusao?: string; idade_anos?: number
+        }
+        let tip = `<b>${inom}</b>${mi ? `<br>MI: ${mi}` : ''}`
+        if (data_conclusao) tip += `<br>Publicação: ${data_conclusao.split('-').reverse().join('/')}`
+        if (idade_anos !== undefined && idade_anos !== null) tip += `<br>Idade: ${idade_anos} ano${idade_anos !== 1 ? 's' : ''}`
+        layer.bindTooltip(tip, { sticky: true })
+
+        layer.on('click', () => {
+          if (!tipoProduto || !escala) return
+          if (hasItem(inom, tipoProduto as TipoProduto, escala as Escala)) {
+            removeItem(inom, tipoProduto as TipoProduto, escala as Escala)
+          } else {
+            const item: CartItem = {
+              inom,
+              mi: mi ?? null,
+              tipo_produto: tipoProduto as TipoProduto,
+              escala: escala as Escala,
+              solicitar_mesmo_disponivel: false,
+              disponivel_bdgex: (feature.properties as Record<string, unknown>)?.disponivel === true,
+            }
+            addItem(item)
+          }
+          const path = layer as L.Path
+          const nowSelected = hasItem(inom, tipoProduto as TipoProduto, escala as Escala)
+          path.setStyle(
+            nowSelected
+              ? { color: '#3b82f6', weight: 2, fillColor: '#3b82f6', fillOpacity: 0.45 }
+              : showData
+                ? {
+                    color: '#444', weight: 0.5,
+                    fillColor: getAgeColor((feature.properties as { idade_anos?: number }).idade_anos),
+                    fillOpacity: 0.55,
+                  }
+                : { color: '#555', weight: 0.5, fillColor: 'transparent', fillOpacity: 0 },
+          )
+        })
+      },
+    }).addTo(mapRef.current)
+  }, [inomGrid, showData])
+
+  return <div ref={containerRef} className="w-full h-full" style={{ minHeight: 400 }} />
+}

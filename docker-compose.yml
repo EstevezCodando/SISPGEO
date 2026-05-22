@@ -1,0 +1,100 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    container_name: coter_db
+    environment:
+      POSTGRES_DB: coter
+      POSTGRES_USER: coter_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-coter_secret}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d
+    networks:
+      - coter_net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U coter_user -d coter"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # Sem porta exposta — acesso apenas via rede interna coter_net
+
+  backend:
+    build: ./backend
+    container_name: coter_backend
+    environment:
+      DATABASE_URL: postgresql+asyncpg://coter_user:${DB_PASSWORD:-coter_secret}@db:5432/coter
+      SECRET_KEY: ${SECRET_KEY:-changeme_super_secret_key_minimum_32_chars}
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 480
+      SMTP_HOST: ${SMTP_HOST:-mailpit}
+      SMTP_PORT: ${SMTP_PORT:-1025}
+      SMTP_FROM: ${SMTP_FROM:-noreply@eb.mil.br}
+      SMTP_TLS: ${SMTP_TLS:-false}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      RESEND_FROM: ${RESEND_FROM:-onboarding@resend.dev}
+      BDGEX_API_URL: ${BDGEX_API_URL:-http://bdgex.eb.mil.br/api}
+      BDGEX_MOCK: ${BDGEX_MOCK:-true}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
+      ENV: ${ENV:-development}
+      DADOS_PATH: /app/dados
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - coter_net
+    restart: unless-stopped
+    volumes:
+      - ./backend/app:/app/app
+      - ./dados:/app/dados
+    # Sem porta exposta — acesso apenas via nginx
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: /api/v1
+    container_name: coter_frontend
+    networks:
+      - coter_net
+    restart: unless-stopped
+
+  # ── Mailpit: substitui MailHog (projeto abandonado com CVEs críticos) ─────────
+  # Mailpit é mantido ativamente, tem TLS, autenticação e interface moderna.
+  # Em PRODUÇÃO: remova este serviço e configure SMTP real no .env (Gmail/relay EB).
+  # Em DEV: acesse http://localhost:8025 — exposto apenas ao localhost.
+  mailpit:
+    image: axllent/mailpit:v1.20
+    container_name: coter_mailpit
+    environment:
+      # Autenticação básica na UI web — troque em produção
+      MP_UI_AUTH: "${MAILPIT_USER:-admin}:${MAILPIT_PASS:-sispgeo_mail_dev}"
+    ports:
+      # Porta web: exposta APENAS no loopback — não acessível da rede externa
+      - "127.0.0.1:8025:8025"
+    networks:
+      - coter_net
+    restart: unless-stopped
+
+  nginx:
+    build: ./nginx
+    container_name: coter_nginx
+    ports:
+      - "80:80"
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - coter_net
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  coter_net:
+    driver: bridge

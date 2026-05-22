@@ -1,0 +1,55 @@
+# ── Variáveis de ambiente (nunca commitar) ────────────────────────────────────
+.env
+*.env.local
+*.env.production
+
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+env/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# ── Node / Frontend ───────────────────────────────────────────────────────────
+node_modules/
+frontend/dist/
+frontend/.vite/
+*.tsbuildinfo
+
+# ── Docker / volumes ──────────────────────────────────────────────────────────
+postgres_data/
+
+# ── Dados geoespaciais brutos (700+ MB) ───────────────────────────────────────
+# O cache pré-construído em dados/cache/*.gz substitui esses arquivos em runtime.
+dados/GEOJSON/
+dados/asc_mi_50k/
+dados/Organograma/
+dados/cache.rar
+# Vídeos tutoriais (cópia canônica em frontend/public/)
+dados/TutorialSolicitarProdutos.mp4
+dados/TutorialMI*.mp4
+dados/*.mp4
+
+# ── IDEs ──────────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ── Logs ──────────────────────────────────────────────────────────────────────
+*.log
+logs/
+
+# ── Arquivos temporários de editores ──────────────────────────────────────────
+.~lock.*
+~$*

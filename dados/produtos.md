@@ -1,0 +1,22 @@
+# 
+
+Tabela 1: Produtos Geoespaciais Básicos ofertados pela DSG.
+
+  ------------------------------- ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  Tipo de produto                 Definição                                                                                                                                                                                                                      Possíveis Aplicações
+
+  Conjunto de Dados\              Representação de feições do terreno (naturais e artificiais) na forma de objetos geométricos do tipo ponto, linha e polígono, possuindo os respectivos atributos textuais associados. Fornecido em meio digital.               Utilização como base de dados para Sistemas de Informação e de Simulação, permitindo a realização de análises espaciais apoiadas na localização e na forma geométrica das feições do terreno, assim como no valor de seus atributos textuais.
+  Geoespaciais Vetoriais (CDGV)                                                                                                                                                                                                                                  
+
+  Carta Topográfica               Representação clássica de informações planialtimétricas do terreno por intermédio de símbolos e convenções cartográficas, favorecendo uma rápida identificação e clara interpretação. Fornecido em meio digital e analógico.   Orientação no terreno, identificação e localização de feições, medição de distâncias, áreas e rumos.
+
+  Ortoimagem                      Representação do terreno por intermédio de uma imagem georreferenciada, não contendo vetores ou informações acerca do terreno. Fornecido em meio digital e analógico.                                                          Identificação e localização de feições do terreno (naturais e artificiais), sujeitas à interpretação do usuário.
+
+  Carta Ortoimagem                Representação de um conjunto reduzido de informações planialtimétricas (p.ex. rios, rodovias e relevo), tendo como pano de fundo uma Ortoimagem. Fornecido em meio digital e analógico.                                        Orientação no terreno, identificação e localização de feições, medição de distâncias, áreas e rumos.
+
+  Modelo Digital de\              Representação contínua da altitude da superfície do terreno, incluindo a presença de obstáculos naturais e artificiais (p.ex. árvores e edificações). Fornecido em meio digital.                                               Determinação de visada sobre tropas, de condições de trafegabilidade, planejamento e implantação da infraestrutura de comunicações.
+  Superfície (MDS)                                                                                                                                                                                                                                               
+
+  Modelo Digital de\              Representação contínua da altitude da superfície do terreno, sem a presença de obstáculos naturais ou artificiais (p.ex. árvores e edificações). Fornecido em meio digital.                                                    Planejamento de obras de engenharia, cálculo da declividade do terreno e determinação de condições de trafegabilidade.
+  Terreno (MDT)                                                                                                                                                                                                                                                  
+  ------------------------------- ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
