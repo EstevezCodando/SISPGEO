@@ -55,55 +55,55 @@ Cada transição de status gera **notificações in-app e por e-mail**. A DSG po
 
 ### Backend
 
-| Biblioteca        | Versão  | Função                                     |
-| ----------------- | ------- | ------------------------------------------ |
-| Python            | 3.12    | Linguagem base                             |
-| FastAPI           | 0.115.0 | Framework web assíncrono (ASGI)            |
-| Uvicorn           | 0.30.6  | Servidor ASGI                              |
-| SQLAlchemy        | 2.0.36  | ORM assíncrono                             |
-| asyncpg           | 0.30.0  | Driver PostgreSQL async                    |
-| Alembic           | 1.14.1  | Migrações de banco de dados                |
-| Pydantic          | 2.9.2   | Validação e serialização de dados          |
-| pydantic-settings | 2.6.1   | Configuração via variáveis de ambiente     |
-| bcrypt            | 4.2.1   | Hash seguro de senhas                      |
-| python-jose       | 3.3.0   | JWT (HS256)                                |
-| Resend            | 2.10.0  | Envio de e-mail transacional (primário)    |
-| aiosmtplib        | —       | Envio via SMTP (fallback — Mailpit em dev) |
-| httpx             | 0.27.2  | Cliente HTTP (mock BDGEx)                  |
-| GeoAlchemy2       | 0.16.0  | Tipos geoespaciais (PostGIS)               |
-| APScheduler       | 3.10.4  | Tarefas agendadas (verificação de janelas) |
-| python-multipart  | 0.0.12  | Upload multipart                           |
-| Jinja2            | 3.1.4   | Templates HTML para e-mails                |
-| psycopg2-binary   | 2.9.10  | Driver síncrono (Alembic)                  |
+| Biblioteca | Versão | Função |
+|---|---|---|
+| Python | 3.12 | Linguagem base |
+| FastAPI | 0.115.0 | Framework web assíncrono (ASGI) |
+| Uvicorn | 0.30.6 | Servidor ASGI |
+| SQLAlchemy | 2.0.36 | ORM assíncrono |
+| asyncpg | 0.30.0 | Driver PostgreSQL async |
+| Alembic | 1.14.1 | Migrações de banco de dados |
+| Pydantic | 2.9.2 | Validação e serialização de dados |
+| pydantic-settings | 2.6.1 | Configuração via variáveis de ambiente |
+| bcrypt | 4.2.1 | Hash seguro de senhas |
+| python-jose | 3.3.0 | JWT (HS256) |
+| Resend | 2.10.0 | Envio de e-mail transacional (primário) |
+| aiosmtplib | — | Envio via SMTP (fallback — Mailpit em dev) |
+| httpx | 0.27.2 | Cliente HTTP (mock BDGEx) |
+| GeoAlchemy2 | 0.16.0 | Tipos geoespaciais (PostGIS) |
+| APScheduler | 3.10.4 | Tarefas agendadas (verificação de janelas) |
+| python-multipart | 0.0.12 | Upload multipart |
+| Jinja2 | 3.1.4 | Templates HTML para e-mails |
+| psycopg2-binary | 2.9.10 | Driver síncrono (Alembic) |
 
 ### Frontend
 
-| Biblioteca        | Versão  | Função                                        |
-| ----------------- | ------- | --------------------------------------------- |
-| React             | 18.3.1  | Framework de UI                               |
-| TypeScript        | 5.5.0   | Tipagem estática                              |
-| Vite              | 5.4.0   | Build tool e dev server                       |
-| Tailwind CSS      | 3.4.14  | Estilização utility-first (tema zinc/emerald) |
-| React Router DOM  | 6.26.0  | Roteamento SPA                                |
-| Zustand           | 5.0.0   | Gerenciamento de estado global                |
-| Axios             | 1.7.7   | Cliente HTTP com interceptors JWT             |
-| Leaflet           | 1.9.4   | Mapas interativos                             |
-| React Leaflet     | 4.2.1   | Componentes React para Leaflet                |
-| @dnd-kit/core     | 6.3.1   | Drag-and-drop (reordenação de prioridades)    |
-| @dnd-kit/sortable | 10.0.0  | Listas sortable com DnD                       |
-| date-fns          | 4.1.0   | Formatação e manipulação de datas             |
-| lucide-react      | 0.454.0 | Biblioteca de ícones                          |
-| react-hot-toast   | 2.4.1   | Notificações toast                            |
+| Biblioteca | Versão | Função |
+|---|---|---|
+| React | 18.3.1 | Framework de UI |
+| TypeScript | 5.5.0 | Tipagem estática |
+| Vite | 5.4.0 | Build tool e dev server |
+| Tailwind CSS | 3.4.14 | Estilização utility-first (tema zinc/emerald) |
+| React Router DOM | 6.26.0 | Roteamento SPA |
+| Zustand | 5.0.0 | Gerenciamento de estado global |
+| Axios | 1.7.7 | Cliente HTTP com interceptors JWT |
+| Leaflet | 1.9.4 | Mapas interativos |
+| React Leaflet | 4.2.1 | Componentes React para Leaflet |
+| @dnd-kit/core | 6.3.1 | Drag-and-drop (reordenação de prioridades) |
+| @dnd-kit/sortable | 10.0.0 | Listas sortable com DnD |
+| date-fns | 4.1.0 | Formatação e manipulação de datas |
+| lucide-react | 0.454.0 | Biblioteca de ícones |
+| react-hot-toast | 2.4.1 | Notificações toast |
 
 ### Infraestrutura
 
-| Serviço              | Imagem                   | Porta    | Função                                |
-| -------------------- | ------------------------ | -------- | ------------------------------------- |
-| PostgreSQL + PostGIS | `postgis/postgis:16-3.4` | interno  | Banco de dados geoespacial            |
-| Backend FastAPI      | build local              | interno  | API REST                              |
-| Frontend React       | build local (Nginx)      | interno  | SPA compilada                         |
-| Nginx                | `nginx:1.25-alpine`      | **80**   | Reverse proxy (API + frontend)        |
-| Mailpit              | `axllent/mailpit:v1.20`  | **8025** | Captura de e-mails em desenvolvimento |
+| Serviço | Imagem | Porta | Função |
+|---|---|---|---|
+| PostgreSQL + PostGIS | `postgis/postgis:16-3.4` | interno | Banco de dados geoespacial |
+| Backend FastAPI | build local | interno | API REST |
+| Frontend React | build local (Nginx) | interno | SPA compilada |
+| Nginx | `nginx:1.25-alpine` | **80** | Reverse proxy (API + frontend) |
+| Mailpit | `axllent/mailpit:v1.20` | **8025** | Captura de e-mails em desenvolvimento |
 
 ---
 
@@ -133,19 +133,19 @@ docker compose up --build -d
 
 A aplicação ficará disponível em:
 
-| Interface         | URL                          |
-| ----------------- | ---------------------------- |
-| Frontend          | http://localhost             |
-| API (Swagger UI)  | http://localhost/api/v1/docs |
-| Mailpit (e-mails) | http://localhost:8025        |
+| Interface | URL |
+|---|---|
+| Frontend | http://localhost |
+| API (Swagger UI) | http://localhost/api/v1/docs |
+| Mailpit (e-mails) | http://localhost:8025 |
 
 ### Usuários padrão (ambientes de desenvolvimento)
 
-| E-mail              | Senha          | Perfil                    |
-| ------------------- | -------------- | ------------------------- |
-| `admin@eb.mil.br`   | `Admin@1234`   | GESTOR_CARTOGRAFICO (DSG) |
-| `gustavo@eb.mil.br` | `Gustavo@1234` | SOLICITANTE               |
-| `joao@eb.mil.br`    | `Joao@1234`    | SOLICITANTE               |
+| E-mail | Senha | Perfil |
+|---|---|---|
+| `admin@eb.mil.br` | `Admin@1234` | GESTOR_CARTOGRAFICO (DSG) |
+| `gustavo@eb.mil.br` | `Gustavo@1234` | SOLICITANTE |
+| `joao@eb.mil.br` | `Joao@1234` | SOLICITANTE |
 
 > Criados automaticamente quando `BDGEX_MOCK=true` (padrão em desenvolvimento).
 
@@ -163,22 +163,19 @@ docker compose down -v && docker compose up --build -d
 
 # Acessar o container do backend
 docker exec -it coter_backend bash
-
-# Dados de teste
-docker exec coter_backend python scripts/create_hierarchy_users.py
 ```
 
 ---
 
 ## 5. Perfis e Hierarquia
 
-| Perfil                | Sigla                       | Responsabilidade                              |
-| --------------------- | --------------------------- | --------------------------------------------- |
-| `SOLICITANTE`         | OMDS                        | Cria, edita e submete pedidos                 |
-| `SUPERVISOR`          | C. Mil. A                   | Revisa e consolida pedidos por região militar |
-| `CONSOLIDADOR`        | COTER / COLOG / DECEx / DEC | Consolida e encaminha à DSG                   |
-| `GESTOR_CARTOGRAFICO` | DSG                         | Visão global, atribuição ao CGEO, exportação  |
-| `ANALISTA_CGEO`       | CGEO                        | Análise de viabilidade e entrega              |
+| Perfil | Sigla | Responsabilidade |
+|---|---|---|
+| `SOLICITANTE` | OMDS | Cria, edita e submete pedidos |
+| `SUPERVISOR` | C. Mil. A | Revisa e consolida pedidos por região militar |
+| `CONSOLIDADOR` | COTER / COLOG / DECEx / DEC | Consolida e encaminha à DSG |
+| `GESTOR_CARTOGRAFICO` | DSG | Visão global, atribuição ao CGEO, exportação |
+| `ANALISTA_CGEO` | CGEO | Análise de viabilidade e entrega |
 
 O acesso a cada tela e ação da API é restrito ao perfil correspondente via middleware `require_profiles`.
 
@@ -202,13 +199,13 @@ RASCUNHO
 
 ### Ações por perfil
 
-| Perfil              | Ações disponíveis                                                 |
-| ------------------- | ----------------------------------------------------------------- |
-| SOLICITANTE         | Criar, editar (RASCUNHO/DEVOLVIDO), submeter, cancelar, reordenar |
-| SUPERVISOR          | Aprovar, devolver, reprovar, consolidar em lote                   |
-| CONSOLIDADOR        | Consolidar em lote para a DSG                                     |
-| GESTOR_CARTOGRAFICO | Atribuir ao CGEO, dar pronto, exportar, administrar               |
-| ANALISTA_CGEO       | Aprovar, reprovar, dar pronto com link BDGEx                      |
+| Perfil | Ações disponíveis |
+|---|---|
+| SOLICITANTE | Criar, editar (RASCUNHO/DEVOLVIDO), submeter, cancelar, reordenar |
+| SUPERVISOR | Aprovar, devolver, reprovar, consolidar em lote |
+| CONSOLIDADOR | Consolidar em lote para a DSG |
+| GESTOR_CARTOGRAFICO | Atribuir ao CGEO, dar pronto, exportar, administrar |
+| ANALISTA_CGEO | Aprovar, reprovar, dar pronto com link BDGEx |
 
 ### Janelas de submissão
 
@@ -223,122 +220,120 @@ Autenticação: `Authorization: Bearer <JWT>` (exceto endpoints públicos de aut
 
 ### 7.1 Autenticação
 
-| Método | Endpoint                      | Acesso  | Descrição                              |
-| ------ | ----------------------------- | ------- | -------------------------------------- |
-| `POST` | `/auth/register`              | Público | Cadastro (aguarda ativação pelo admin) |
-| `POST` | `/auth/login`                 | Público | Login → retorna JWT                    |
-| `GET`  | `/auth/confirm-email/{token}` | Público | Confirmação de e-mail                  |
-| `POST` | `/auth/forgot-password`       | Público | Solicita redefinição de senha          |
-| `POST` | `/auth/reset-password`        | Público | Redefine senha com token               |
+| Método | Endpoint | Acesso | Descrição |
+|---|---|---|---|
+| `POST` | `/auth/register` | Público | Cadastro (aguarda ativação pelo admin) |
+| `POST` | `/auth/login` | Público | Login → retorna JWT |
+| `GET` | `/auth/confirm-email/{token}` | Público | Confirmação de e-mail |
+| `POST` | `/auth/forgot-password` | Público | Solicita redefinição de senha |
+| `POST` | `/auth/reset-password` | Público | Redefine senha com token |
 
 ### 7.2 Usuários
 
-| Método | Endpoint                            | Acesso              | Descrição                         |
-| ------ | ----------------------------------- | ------------------- | --------------------------------- |
-| `GET`  | `/users/me`                         | Autenticado         | Perfil do usuário logado          |
-| `PUT`  | `/users/me`                         | Autenticado         | Atualizar dados cadastrais        |
-| `GET`  | `/users/mesma-om`                   | Autenticado         | Colegas da mesma OM               |
-| `POST` | `/users/{id}/transferir-pedidos`    | SOLICITANTE         | Herança de pedidos ao mudar de OM |
-| `GET`  | `/users/`                           | GESTOR_CARTOGRAFICO | Listar todos os usuários          |
-| `PUT`  | `/users/{id}/ativar`                | GESTOR_CARTOGRAFICO | Ativar ou desativar usuário       |
-| `GET`  | `/users/me/notifications`           | Autenticado         | Últimas 50 notificações           |
-| `PUT`  | `/users/me/notifications/{id}/read` | Autenticado         | Marcar notificação como lida      |
+| Método | Endpoint | Acesso | Descrição |
+|---|---|---|---|
+| `GET` | `/users/me` | Autenticado | Perfil do usuário logado |
+| `PUT` | `/users/me` | Autenticado | Atualizar dados cadastrais |
+| `GET` | `/users/mesma-om` | Autenticado | Colegas da mesma OM |
+| `POST` | `/users/{id}/transferir-pedidos` | SOLICITANTE | Herança de pedidos ao mudar de OM |
+| `GET` | `/users/` | GESTOR_CARTOGRAFICO | Listar todos os usuários |
+| `PUT` | `/users/{id}/ativar` | GESTOR_CARTOGRAFICO | Ativar ou desativar usuário |
+| `GET` | `/users/me/notifications` | Autenticado | Últimas 50 notificações |
+| `PUT` | `/users/me/notifications/{id}/read` | Autenticado | Marcar notificação como lida |
 
 ### 7.3 Pedidos — Fluxo principal
 
-| Método   | Endpoint                      | Acesso                                | Descrição                         |
-| -------- | ----------------------------- | ------------------------------------- | --------------------------------- |
-| `POST`   | `/pedidos/`                   | SOLICITANTE, SUPERVISOR, CONSOLIDADOR | Criar rascunho                    |
-| `GET`    | `/pedidos/`                   | Autenticado                           | Listar pedidos do perfil          |
-| `GET`    | `/pedidos/pending`            | Autenticado                           | Pedidos aguardando ação           |
-| `GET`    | `/pedidos/{id}`               | Dono ou gestor                        | Detalhe de um pedido              |
-| `PUT`    | `/pedidos/{id}`               | Dono (RASCUNHO/DEVOLVIDO)             | Editar pedido                     |
-| `DELETE` | `/pedidos/{id}`               | Dono                                  | Cancelar pedido                   |
-| `POST`   | `/pedidos/{id}/submit`        | Dono                                  | Submeter ao próximo nível         |
-| `PUT`    | `/pedidos/{id}/review`        | SUPERVISOR, CONSOLIDADOR              | Aprovar / devolver / reprovar     |
-| `POST`   | `/pedidos/consolidate`        | SUPERVISOR, CONSOLIDADOR              | Consolidar em lote                |
-| `PUT`    | `/pedidos/reorder`            | SOLICITANTE, SUPERVISOR, CONSOLIDADOR | Reordenar prioridade              |
-| `PUT`    | `/pedidos/{id}/items/reorder` | Autenticado                           | Reordenar itens do pedido         |
-| `GET`    | `/pedidos/{id}/historico`     | Dono ou gestor                        | Auditoria de transições de status |
+| Método | Endpoint | Acesso | Descrição |
+|---|---|---|---|
+| `POST` | `/pedidos/` | SOLICITANTE, SUPERVISOR, CONSOLIDADOR | Criar rascunho |
+| `GET` | `/pedidos/` | Autenticado | Listar pedidos do perfil |
+| `GET` | `/pedidos/pending` | Autenticado | Pedidos aguardando ação |
+| `GET` | `/pedidos/{id}` | Dono ou gestor | Detalhe de um pedido |
+| `PUT` | `/pedidos/{id}` | Dono (RASCUNHO/DEVOLVIDO) | Editar pedido |
+| `DELETE` | `/pedidos/{id}` | Dono | Cancelar pedido |
+| `POST` | `/pedidos/{id}/submit` | Dono | Submeter ao próximo nível |
+| `PUT` | `/pedidos/{id}/review` | SUPERVISOR, CONSOLIDADOR | Aprovar / devolver / reprovar |
+| `POST` | `/pedidos/consolidate` | SUPERVISOR, CONSOLIDADOR | Consolidar em lote |
+| `PUT` | `/pedidos/reorder` | SOLICITANTE, SUPERVISOR, CONSOLIDADOR | Reordenar prioridade |
+| `PUT` | `/pedidos/{id}/items/reorder` | Autenticado | Reordenar itens do pedido |
+| `GET` | `/pedidos/{id}/historico` | Dono ou gestor | Auditoria de transições de status |
 
 **Valores de `acao` no review:**
 
-| Ação                  | Resultado                                     |
-| --------------------- | --------------------------------------------- |
-| `aprovar`             | Avança ao próximo status                      |
-| `editar` / `devolver` | Retorna ao solicitante (`DEVOLVIDO`)          |
-| `reprovar`            | Encerra como `CANCELADO` (motivo obrigatório) |
+| Ação | Resultado |
+|---|---|
+| `aprovar` | Avança ao próximo status |
+| `editar` / `devolver` | Retorna ao solicitante (`DEVOLVIDO`) |
+| `reprovar` | Encerra como `CANCELADO` (motivo obrigatório) |
 
 ### 7.4 Pedidos — Gestão DSG
 
-| Método   | Endpoint                    | Descrição                                                      |
-| -------- | --------------------------- | -------------------------------------------------------------- |
-| `GET`    | `/pedidos/admin/all`        | Todos os pedidos com filtros (`?status=&orgao_vinculante=&q=`) |
-| `PUT`    | `/pedidos/admin/{id}`       | Override de qualquer campo                                     |
-| `DELETE` | `/pedidos/admin/{id}`       | Excluir qualquer pedido                                        |
-| `POST`   | `/pedidos/admin/export`     | Download GeoJSON com atributos completos                       |
-| `GET`    | `/pedidos/export`           | Download ZIP (relatório TXT + GeoJSON)                         |
-| `GET`    | `/pedidos/duplicatas`       | Itens duplicados entre pedidos ativos                          |
-| `PUT`    | `/pedidos/{id}/assign-cgeo` | Atribuir pedido ao CGEO                                        |
-| `POST`   | `/pedidos/{id}/dar-pronto`  | Marcar PRODUZIDO + notificar cadeia                            |
+| Método | Endpoint | Descrição |
+|---|---|---|
+| `GET` | `/pedidos/admin/all` | Todos os pedidos com filtros (`?status=&orgao_vinculante=&q=`) |
+| `PUT` | `/pedidos/admin/{id}` | Override de qualquer campo |
+| `DELETE` | `/pedidos/admin/{id}` | Excluir qualquer pedido |
+| `POST` | `/pedidos/admin/export` | Download GeoJSON com atributos completos |
+| `GET` | `/pedidos/export` | Download ZIP (relatório TXT + GeoJSON) |
+| `GET` | `/pedidos/duplicatas` | Itens duplicados entre pedidos ativos |
+| `PUT` | `/pedidos/{id}/assign-cgeo` | Atribuir pedido ao CGEO |
+| `POST` | `/pedidos/{id}/dar-pronto` | Marcar PRODUZIDO + notificar cadeia |
 
 ### 7.5 Pedidos — CGEO
 
-| Método | Endpoint                    | Descrição                                |
-| ------ | --------------------------- | ---------------------------------------- |
-| `GET`  | `/pedidos/cgeo-atendimento` | Pedidos atribuídos ao analista           |
-| `PUT`  | `/pedidos/{id}/cgeo-review` | Análise: `aprovar`, `reprovar`, `pronto` |
+| Método | Endpoint | Descrição |
+|---|---|---|
+| `GET` | `/pedidos/cgeo-atendimento` | Pedidos atribuídos ao analista |
+| `PUT` | `/pedidos/{id}/cgeo-review` | Análise: `aprovar`, `reprovar`, `pronto` |
 
 ### 7.6 Mapa e Grade INOM
 
-| Método | Endpoint                 | Parâmetros                                       | Descrição                             |
-| ------ | ------------------------ | ------------------------------------------------ | ------------------------------------- |
-| `GET`  | `/map/inom-grid`         | `?scale=1:50.000&tipo_produto=CARTA_TOPOGRAFICA` | Grade INOM (GeoJSON gzip)             |
-| `POST` | `/map/features-preview`  | `[{inom, escala, tipo_produto}]`                 | Geometrias de INOMs específicos       |
-| `GET`  | `/pedidos/map-features`  | —                                                | Todos os itens do usuário no mapa     |
-| `GET`  | `/pedidos/{id}/features` | —                                                | Itens de um pedido específico no mapa |
+| Método | Endpoint | Parâmetros | Descrição |
+|---|---|---|---|
+| `GET` | `/map/inom-grid` | `?scale=1:50.000&tipo_produto=CARTA_TOPOGRAFICA` | Grade INOM (GeoJSON gzip) |
+| `POST` | `/map/features-preview` | `[{inom, escala, tipo_produto}]` | Geometrias de INOMs específicos |
+| `GET` | `/pedidos/map-features` | — | Todos os itens do usuário no mapa |
+| `GET` | `/pedidos/{id}/features` | — | Itens de um pedido específico no mapa |
 
 ### 7.7 Operações, Janelas e Métricas
 
-| Método     | Endpoint                 | Acesso              | Descrição                                 |
-| ---------- | ------------------------ | ------------------- | ----------------------------------------- |
-| `GET/POST` | `/operacoes/`            | Autenticado         | Operações da OM do usuário                |
-| `GET`      | `/janelas/`              | Autenticado         | Todas as janelas de submissão             |
-| `GET`      | `/janelas/active`        | Autenticado         | Janelas abertas no momento                |
-| `POST`     | `/janelas/`              | GESTOR_CARTOGRAFICO | Criar janela                              |
-| `GET`      | `/transferencias/minhas` | Autenticado         | Histórico de herança do usuário           |
-| `GET`      | `/metricas/resumo`       | GESTOR_CARTOGRAFICO | Pedidos por status/órgão (últimos 7 dias) |
-| `GET`      | `/metricas/pedidos`      | GESTOR_CARTOGRAFICO | Distribuição por tipo, escala e órgão     |
+| Método | Endpoint | Acesso | Descrição |
+|---|---|---|---|
+| `GET/POST` | `/operacoes/` | Autenticado | Operações da OM do usuário |
+| `GET` | `/janelas/` | Autenticado | Todas as janelas de submissão |
+| `GET` | `/janelas/active` | Autenticado | Janelas abertas no momento |
+| `POST` | `/janelas/` | GESTOR_CARTOGRAFICO | Criar janela |
+| `GET` | `/transferencias/minhas` | Autenticado | Histórico de herança do usuário |
+| `GET` | `/metricas/resumo` | GESTOR_CARTOGRAFICO | Pedidos por status/órgão (últimos 7 dias) |
+| `GET` | `/metricas/pedidos` | GESTOR_CARTOGRAFICO | Distribuição por tipo, escala e órgão |
 
 ---
 
 ## 8. Notificações
 
 ### In-app
-
 - Contador no ícone 🔔 da navbar, atualizado a cada 30 s
 - Endpoint: `GET /users/me/notifications` → últimas 50 notificações
 - `PUT /users/me/notifications/{id}/read` → marca como lida
 
 ### Por e-mail
-
 - **Primário**: [Resend](https://resend.com) (configurar `RESEND_API_KEY` em produção)
 - **Fallback**: SMTP via `aiosmtplib` (Mailpit em desenvolvimento → `http://localhost:8025`)
 - Templates HTML via Jinja2
 
 ### Eventos que disparam notificações
 
-| Evento                               | In-app | E-mail | Destinatários                           |
-| ------------------------------------ | ------ | ------ | --------------------------------------- |
-| Pedido submetido                     | ✅     | ✅     | SUPERVISOR do CMilA                     |
-| Pedido consolidado pelo Supervisor   | ✅     | ✅     | CONSOLIDADOR do órgão                   |
-| Pedido consolidado pelo Consolidador | ✅     | ✅     | GESTOR_CARTOGRAFICO (global)            |
-| Pedido atribuído ao CGEO             | ✅     | ✅     | ANALISTA_CGEO                           |
-| Pedido devolvido                     | ✅     | ✅     | Solicitante                             |
-| Pedido reprovado / cancelado         | ✅     | ✅     | Solicitante                             |
-| CGEO aprova pedido                   | ✅     | —      | GESTOR_CARTOGRAFICO                     |
-| Dar o Pronto                         | ✅     | ✅     | Solicitante + SUPERVISOR + CONSOLIDADOR |
-| Pedido transferido (herança)         | ✅     | ✅     | Novo responsável                        |
+| Evento | In-app | E-mail | Destinatários |
+|---|---|---|---|
+| Pedido submetido | ✅ | ✅ | SUPERVISOR do CMilA |
+| Pedido consolidado pelo Supervisor | ✅ | ✅ | CONSOLIDADOR do órgão |
+| Pedido consolidado pelo Consolidador | ✅ | ✅ | GESTOR_CARTOGRAFICO (global) |
+| Pedido atribuído ao CGEO | ✅ | ✅ | ANALISTA_CGEO |
+| Pedido devolvido | ✅ | ✅ | Solicitante |
+| Pedido reprovado / cancelado | ✅ | ✅ | Solicitante |
+| CGEO aprova pedido | ✅ | — | GESTOR_CARTOGRAFICO |
+| Dar o Pronto | ✅ | ✅ | Solicitante + SUPERVISOR + CONSOLIDADOR |
+| Pedido transferido (herança) | ✅ | ✅ | Novo responsável |
 
 ---
 
@@ -362,8 +357,6 @@ RESEND_FROM=noreply@seudominio.com.br
 # E-mail — SMTP (fallback / desenvolvimento)
 SMTP_HOST=mailpit
 SMTP_PORT=1025
-MAILPIT_USER=admin
-MAILPIT_PASS=sispgeo_mail_dev
 SMTP_TLS=false
 
 # BDGEx
@@ -503,13 +496,13 @@ O CI executa automaticamente a cada push ou pull request para `main`.
 
 ## 12. Troubleshooting
 
-| Sintoma                              | Causa provável                            | Solução                                                                                      |
-| ------------------------------------ | ----------------------------------------- | -------------------------------------------------------------------------------------------- |
-| `invalid enum value` no banco        | Enum PostgreSQL com valores antigos       | `docker compose down -v && docker compose up --build -d`                                     |
-| Frontend exibe versão anterior       | Container não reconstruído                | `docker compose build --no-cache frontend && docker compose up -d frontend` + `Ctrl+Shift+R` |
-| E-mails não chegam                   | Comportamento esperado em desenvolvimento | Acesse http://localhost:8025 — Mailpit captura todos os envios                               |
-| `502 Bad Gateway` após restart       | Backend ainda inicializando               | Aguardar 5–10 s e tentar novamente                                                           |
-| Pedido não aparece para o Supervisor | CMilA divergente                          | `regiao_militar` do solicitante deve ser igual ao do supervisor (ex.: `CMP`)                 |
-| Notificação não é recebida           | Campo de filtro divergente                | Verificar `regiao_militar` (SUPERVISOR) ou `orgao_vinculante` (CONSOLIDADOR)                 |
-| Analista CGEO não vê o pedido        | `cgeo_id` divergente                      | O `cgeo_id` do pedido (atribuído pela DSG) deve coincidir com o do analista                  |
-| Botão "Dar o Pronto" ausente         | Status inelegível                         | Disponível apenas em: `AGUARDANDO_CARTOGRAFICO`, `ATRIBUIDO_CGEO`, `APROVADO`                |
+| Sintoma | Causa provável | Solução |
+|---|---|---|
+| `invalid enum value` no banco | Enum PostgreSQL com valores antigos | `docker compose down -v && docker compose up --build -d` |
+| Frontend exibe versão anterior | Container não reconstruído | `docker compose build --no-cache frontend && docker compose up -d frontend` + `Ctrl+Shift+R` |
+| E-mails não chegam | Comportamento esperado em desenvolvimento | Acesse http://localhost:8025 — Mailpit captura todos os envios |
+| `502 Bad Gateway` após restart | Backend ainda inicializando | Aguardar 5–10 s e tentar novamente |
+| Pedido não aparece para o Supervisor | CMilA divergente | `regiao_militar` do solicitante deve ser igual ao do supervisor (ex.: `CMP`) |
+| Notificação não é recebida | Campo de filtro divergente | Verificar `regiao_militar` (SUPERVISOR) ou `orgao_vinculante` (CONSOLIDADOR) |
+| Analista CGEO não vê o pedido | `cgeo_id` divergente | O `cgeo_id` do pedido (atribuído pela DSG) deve coincidir com o do analista |
+| Botão "Dar o Pronto" ausente | Status inelegível | Disponível apenas em: `AGUARDANDO_CARTOGRAFICO`, `ATRIBUIDO_CGEO`, `APROVADO` |

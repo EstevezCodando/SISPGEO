@@ -13,6 +13,7 @@ from sqlalchemy import select, text
 from app.config import settings
 from app.database import engine, Base, AsyncSessionLocal
 from app.routers import auth, users, pedidos, operacoes, janelas, map_layers, om_data, historico, metricas, transferencias, oms
+from app.routers import config as config_router
 from app.middleware.metrics import metrics_middleware
 from app.utils.logging_config import setup_logging, get_logger
 
@@ -92,6 +93,15 @@ async def _run_migrations():
         "ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS auto_submitted BOOLEAN DEFAULT FALSE",
         # 2026-05: posto/graduação do militar (Civil, Sd EV, Cb, Cap, TC, Cel...)
         "ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS posto_graduacao VARCHAR(50)",
+        # 2026-05: configuração global de data base de entrega (singleton id=1)
+        """CREATE TABLE IF NOT EXISTS config_entrega (
+            id INTEGER PRIMARY KEY DEFAULT 1,
+            data_base DATE NOT NULL DEFAULT '2026-11-18',
+            atualizado_em TIMESTAMPTZ DEFAULT NOW(),
+            atualizado_por INTEGER REFERENCES usuarios(id)
+        )""",
+        # Seed da configuração inicial (não sobrescreve se já existir)
+        "INSERT INTO config_entrega (id, data_base) VALUES (1, '2026-11-18') ON CONFLICT (id) DO NOTHING",
     ]
     for stmt in migrations:
         try:
@@ -361,6 +371,7 @@ app.include_router(historico.router, prefix="/api/v1")
 app.include_router(metricas.router, prefix="/api/v1")
 app.include_router(transferencias.router, prefix="/api/v1")
 app.include_router(oms.router, prefix="/api/v1")
+app.include_router(config_router.router, prefix="/api/v1")
 
 
 @app.get("/api/v1/health")

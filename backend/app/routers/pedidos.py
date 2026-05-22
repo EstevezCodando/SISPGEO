@@ -8,7 +8,7 @@ import json
 import re
 import unicodedata
 import zipfile
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
@@ -156,9 +156,27 @@ async def create_pedido(
     db: AsyncSession = Depends(get_db),
     current_user: Usuario = Depends(get_current_user),
 ):
+    from app.routers.config import get_or_create_config, PRAZOS_MINIMOS
+
     ov = body.orgao_vinculante if body.orgao_vinculante is not None else current_user.orgao_vinculante
     if ov is None:
         raise HTTPException(status_code=400, detail="Informe o órgão vinculante ou configure-o no seu perfil")
+
+    # Valida data_entrega >= data_base + prazo_minimo do produto mais restritivo
+    if body.itens and body.data_entrega:
+        cfg = await get_or_create_config(db)
+        max_prazo = max(PRAZOS_MINIMOS.get(item.tipo_produto.value, 30) for item in body.itens)
+        data_minima = cfg.data_base + timedelta(days=max_prazo)
+        if body.data_entrega < data_minima:
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    f"Data de entrega mínima para este pedido: "
+                    f"{data_minima.strftime('%d/%m/%Y')} "
+                    f"({max_prazo} dias a partir de {cfg.data_base.strftime('%d/%m/%Y')})."
+                ),
+            )
+
     pedido = Pedido(
         usuario_id=current_user.id,
         criador_id=current_user.id,

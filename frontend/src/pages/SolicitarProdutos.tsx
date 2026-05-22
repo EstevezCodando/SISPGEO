@@ -15,6 +15,7 @@ import { formatNomeComPosto } from '../data/postos'
 import { pedidosApi } from '../api/pedidos'
 import { janelasApi, type MinhaJanela } from '../api/janelas'
 import { operacoesApi, type Operacao } from '../api/operacoes'
+import { configApi, type ConfigEntrega } from '../api/config'
 import { useCartStore } from '../store/cartStore'
 import { useAuthStore } from '../store/authStore'
 import { InteractiveMap, type Basemap } from '../components/map/InteractiveMap'
@@ -25,14 +26,16 @@ import type { CartItem } from '../types/pedido'
 
 const ESCALAS: Escala[] = ['1:25.000', '1:50.000', '1:100.000', '1:250.000']
 
-const FATOR_PRAZO: Record<TipoProduto, number> = {
+// Prazos mínimos locais — usados como fallback se a API ainda não respondeu.
+// Valores autoritativos vêm de GET /config/entrega (PRAZOS_MINIMOS no backend).
+const PRAZO_FALLBACK: Record<TipoProduto, number> = {
   CARTA_TOPOGRAFICA: 180,
-  CARTA_ORTOIMAGEM: 180,
-  ORTOIMAGEM: 120,
-  MDT: 120,
-  MDS: 120,
-  CDGV: 240,
-  IMPRESSAO: 30,
+  CARTA_ORTOIMAGEM:   60,
+  ORTOIMAGEM:          40,
+  MDT:                 40,
+  MDS:                 40,
+  CDGV:               180,
+  IMPRESSAO:           30,
 }
 
 const inputCls = 'w-full bg-zinc-800 border border-zinc-700 rounded-lg px-2.5 py-1.5 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed'
@@ -275,6 +278,7 @@ export function SolicitarProdutos() {
   const [showRevisao, setShowRevisao] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [minhaJanela, setMinhaJanela] = useState<MinhaJanela | null>(null)
+  const [configEntrega, setConfigEntrega] = useState<ConfigEntrega | null>(null)
   const finalidadeRef = useRef<HTMLTextAreaElement>(null)
 
   // "Outros" = operacaoId null
@@ -286,6 +290,8 @@ export function SolicitarProdutos() {
     janelasApi.minhaJanela()
       .then(r => setMinhaJanela(r.data))
       .catch(() => setMinhaJanela({ aberta: true, data_inicio: null, data_fim: null, tipo_janela: null, dias_restantes: null, configurada: false }))
+    // Carrega configuração global de datas mínimas de entrega
+    configApi.getEntrega().then(r => setConfigEntrega(r.data)).catch(() => {})
   }, [])
 
   useEffect(() => {
@@ -319,9 +325,17 @@ export function SolicitarProdutos() {
     return () => controller.abort()
   }, [escala, dataEntrega, tipoProduto])
 
-  const minDate = tipoProduto
-    ? format(addDays(new Date(), 1 + FATOR_PRAZO[tipoProduto]), 'yyyy-MM-dd')
-    : format(addDays(new Date(), 1), 'yyyy-MM-dd')
+  // minDate = data_base (global) + prazo_minimo do produto selecionado.
+  // Se a configuração ainda não carregou, usa fallback local.
+  const minDate = (() => {
+    if (!tipoProduto) return format(addDays(new Date(), 1), 'yyyy-MM-dd')
+    if (configEntrega?.datas_minimas?.[tipoProduto]) {
+      return configEntrega.datas_minimas[tipoProduto]
+    }
+    // fallback enquanto API carrega
+    const prazo = PRAZO_FALLBACK[tipoProduto]
+    return format(addDays(new Date(configEntrega?.data_base + 'T00:00:00' || new Date()), prazo), 'yyyy-MM-dd')
+  })()
 
   const handleCreateOperacao = async () => {
     if (!novaOperacao.trim()) return
@@ -570,6 +584,20 @@ export function SolicitarProdutos() {
               disabled={!escala}
               className={inputCls}
             />
+            {tipoProduto && minDate && (
+              <p className="text-[11px] text-zinc-600 mt-1">
+                Mínimo:{' '}
+                <span className="text-zinc-400">
+                  {new Date(minDate + 'T00:00:00').toLocaleDateString('pt-BR')}
+                </span>
+                {configEntrega && (
+                  <span className="text-zinc-600">
+                    {' '}(+{configEntrega.prazos_minimos[tipoProduto] ?? PRAZO_FALLBACK[tipoProduto]}d a partir de{' '}
+                    {new Date(configEntrega.data_base + 'T00:00:00').toLocaleDateString('pt-BR')})
+                  </span>
+                )}
+              </p>
+            )}
           </div>
         </div>
 

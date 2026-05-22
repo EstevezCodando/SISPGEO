@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { format, isBefore, isAfter } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { Plus, Trash2, CalendarDays, CheckCircle, Clock, XCircle, ChevronDown, ChevronUp, AlertTriangle } from 'lucide-react'
+import { Plus, Trash2, CalendarDays, CheckCircle, Clock, XCircle, ChevronDown, ChevronUp, AlertTriangle, Settings, Save } from 'lucide-react'
 import api from '../../api/client'
+import { configApi, type ConfigEntrega } from '../../api/config'
 
 interface Janela {
   id: number
@@ -137,6 +138,136 @@ interface FormState {
   data_inicio: string
   data_fim: string
   ano_referencia: number
+}
+
+// Labels e cores dos prazos mínimos por produto
+const PRODUTO_LABELS: Record<string, string> = {
+  CARTA_TOPOGRAFICA: 'Carta Topográfica',
+  CDGV:             'CDGV (Vetores)',
+  CARTA_ORTOIMAGEM: 'Carta Ortoimagem',
+  ORTOIMAGEM:       'Ortoimagem',
+  MDT:              'MDT',
+  MDS:              'MDS',
+  IMPRESSAO:        'Impressão',
+}
+const PRODUTO_ORDEM = ['CARTA_TOPOGRAFICA', 'CDGV', 'CARTA_ORTOIMAGEM', 'ORTOIMAGEM', 'MDT', 'MDS', 'IMPRESSAO']
+
+// ── Card de configuração de data sugerida de entrega ─────────────────────────
+function ConfigDataEntrega() {
+  const [cfg, setCfg] = useState<ConfigEntrega | null>(null)
+  const [novaData, setNovaData] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    configApi.getEntrega()
+      .then(r => {
+        setCfg(r.data)
+        setNovaData(r.data.data_base)
+      })
+      .catch(() => {})
+  }, [])
+
+  const handleSave = async () => {
+    if (!novaData) return
+    setSaving(true)
+    try {
+      const r = await configApi.updateEntrega(novaData)
+      setCfg(r.data)
+      setNovaData(r.data.data_base)
+      toast.success('Data base de entrega atualizada')
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { detail?: string } } }
+      toast.error(e.response?.data?.detail ?? 'Erro ao atualizar configuração')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const fmtDate = (iso: string) =>
+    new Date(iso + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
+
+  return (
+    <div className="bg-zinc-900 border border-white/10 rounded-2xl overflow-hidden">
+      {/* Header */}
+      <div className="px-5 py-4 border-b border-white/5 flex items-center gap-3">
+        <Settings className="h-4 w-4 text-emerald-400 shrink-0" />
+        <div>
+          <h2 className="text-sm font-semibold text-zinc-100">Configurar Data Sugerida de Entrega</h2>
+          <p className="text-xs text-zinc-500 mt-0.5">
+            As datas sugeridas de entrega iniciam em{' '}
+            <span className="text-emerald-400 font-medium">
+              {cfg ? fmtDate(cfg.data_base) : '—'}
+            </span>
+            . Nenhum pedido pode ser feito com data anterior aos mínimos abaixo.
+          </p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-0 divide-y md:divide-y-0 md:divide-x divide-white/5">
+        {/* Formulário de alteração */}
+        <div className="p-5">
+          <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-4">Alterar data base</h3>
+          <div className="space-y-3">
+            <div>
+              <label className="block text-xs font-medium text-zinc-400 mb-1">Nova data base de entrega</label>
+              <input
+                type="date"
+                value={novaData}
+                onChange={e => setNovaData(e.target.value)}
+                min={new Date().toISOString().split('T')[0]}
+                className={inputCls}
+              />
+              <p className="text-[11px] text-zinc-600 mt-1.5">
+                Os prazos mínimos de cada produto serão calculados a partir desta data.
+              </p>
+            </div>
+            <button
+              onClick={handleSave}
+              disabled={saving || !novaData || novaData === cfg?.data_base}
+              className="w-full flex items-center justify-center gap-1.5 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed text-white py-2 rounded-lg text-sm font-medium transition-colors"
+            >
+              <Save className="h-3.5 w-3.5" />
+              {saving ? 'Salvando…' : 'Salvar data base'}
+            </button>
+            {cfg?.atualizado_em && (
+              <p className="text-[11px] text-zinc-600 text-center">
+                Última atualização:{' '}
+                {new Date(cfg.atualizado_em).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Tabela de datas mínimas por produto */}
+        <div className="p-5">
+          <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-4">
+            Datas mínimas por produto
+          </h3>
+          {cfg ? (
+            <div className="space-y-1.5">
+              {PRODUTO_ORDEM.map(produto => {
+                const dataMin = cfg.datas_minimas[produto]
+                const prazo = cfg.prazos_minimos[produto]
+                return (
+                  <div key={produto} className="flex items-center justify-between text-xs py-1.5 border-b border-white/5 last:border-0">
+                    <span className="text-zinc-400">{PRODUTO_LABELS[produto]}</span>
+                    <div className="text-right">
+                      <span className="text-emerald-400 font-medium font-mono">
+                        {dataMin ? fmtDate(dataMin).replace(' de ', '/').replace(' de ', '/') : '—'}
+                      </span>
+                      <span className="text-zinc-600 ml-2">(+{prazo}d)</span>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+            <p className="text-xs text-zinc-600 italic">Carregando configuração…</p>
+          )}
+        </div>
+      </div>
+    </div>
+  )
 }
 
 export function JanelasPedidos() {
@@ -405,6 +536,9 @@ export function JanelasPedidos() {
           )
         })}
       </div>
+
+      {/* Configuração de data sugerida de entrega */}
+      <ConfigDataEntrega />
 
       {/* Nota sobre o ciclo */}
       <div className="bg-zinc-900/50 border border-white/5 rounded-xl p-4 text-xs text-zinc-500 leading-relaxed space-y-1">

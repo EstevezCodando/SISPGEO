@@ -53,7 +53,7 @@ const PRODUTOS: Produto[] = [
       'Atualização de banco de dados cartográficos',
       'Monitoramento de áreas de interesse',
     ],
-    prazo: '120 dias',
+    prazo: '40 dias',
   },
   {
     sigla: 'MDT',
@@ -66,7 +66,7 @@ const PRODUTOS: Produto[] = [
       'Planejamento de obras de engenharia',
       'Modelagem hidrológica e de bacias',
     ],
-    prazo: '120 dias',
+    prazo: '40 dias',
   },
   {
     sigla: 'MDS',
@@ -79,7 +79,7 @@ const PRODUTOS: Produto[] = [
       'Planejamento de telecomunicações e comunicações táticas',
       'Determinação de cobertura vegetal e edificada',
     ],
-    prazo: '120 dias',
+    prazo: '40 dias',
   },
   {
     sigla: 'CDGV',
@@ -92,7 +92,7 @@ const PRODUTOS: Produto[] = [
       'Simulação tática e análise de terreno automatizada',
       'Produção derivada de outros produtos cartográficos',
     ],
-    prazo: '240 dias',
+    prazo: '180 dias',
   },
   {
     sigla: 'IMP',
@@ -285,11 +285,11 @@ interface ProdutoComplexidade {
 }
 
 const COMPLEXIDADE_DATA: ProdutoComplexidade[] = [
-  { nome: 'Ortoimagem',        prazo: '3 a 5 dias',    complexidade: 1, x: 5,  y: 12, hex: '#10b981' },
-  { nome: 'MDT/MDS',           prazo: '~1 mês',        complexidade: 2, x: 28, y: 28, hex: '#38bdf8' },
-  { nome: 'Carta Ortoimagem',  prazo: '60 dias',        complexidade: 3, x: 18, y: 52, hex: '#a78bfa' },
-  { nome: 'CDGV (Vetores)',    prazo: '2 a 3 meses',   complexidade: 4, x: 72, y: 72, hex: '#fbbf24' },
-  { nome: 'Carta Topográfica', prazo: '3 a 4 meses',   complexidade: 5, x: 92, y: 90, hex: '#fb7185' },
+  { nome: 'Impressão',         prazo: '30 dias',        complexidade: 1, x: 4,  y: 8,  hex: '#10b981' },
+  { nome: 'Ortoimagem/MDT/MDS', prazo: '40 dias',       complexidade: 2, x: 18, y: 25, hex: '#38bdf8' },
+  { nome: 'Carta Ortoimagem',  prazo: '60 dias',        complexidade: 3, x: 32, y: 50, hex: '#a78bfa' },
+  { nome: 'CDGV (Vetores)',    prazo: '180 dias',       complexidade: 4, x: 72, y: 72, hex: '#fbbf24' },
+  { nome: 'Carta Topográfica', prazo: '180 dias',       complexidade: 5, x: 85, y: 90, hex: '#fb7185' },
 ]
 
 function ComplexidadeChart() {
@@ -463,7 +463,7 @@ const FAQS: FAQ[] = [
   },
   {
     q: 'Por que a data mínima de entrega está tão no futuro?',
-    a: 'Cada produto tem um prazo mínimo de produção técnica: Carta Topográfica = 180 dias; Carta Ortoimagem = 60 dias; Ortoimagem / MDT / MDS = 120 dias; CDGV = 240 dias; Impressão = 30 dias. O sistema calcula automaticamente a partir de hoje.',
+    a: 'Cada produto tem um prazo mínimo de produção técnica a partir de uma data base global configurada pela DSG: Carta Topográfica e CDGV = 180 dias; Carta Ortoimagem = 60 dias; Ortoimagem / MDT / MDS = 40 dias; Impressão = 30 dias. O sistema bloqueia automaticamente datas anteriores ao mínimo calculado.',
   },
   {
     q: 'O que é INOM e MI?',
