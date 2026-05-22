@@ -362,6 +362,8 @@ RESEND_FROM=noreply@seudominio.com.br
 # E-mail — SMTP (fallback / desenvolvimento)
 SMTP_HOST=mailpit
 SMTP_PORT=1025
+MAILPIT_USER=admin
+MAILPIT_PASS=sispgeo_mail_dev
 SMTP_TLS=false
 
 # BDGEx
