@@ -4,6 +4,15 @@ __pycache__/
 *.pyd
 .env
 .env.*
+*.key
+*.pem
+*.p12
+*.pfx
 *.md
 .git/
 .gitignore
+tests/
+.pytest_cache/
+.mypy_cache/
+htmlcov/
+.coverage

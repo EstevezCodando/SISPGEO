@@ -39,14 +39,14 @@ async def _create_admin():
             om="DSG",
             perfil=PerfilEnum.GESTOR_CARTOGRAFICO,
             posto_graduacao=PostoGraduacaoEnum.CORONEL,
-            senha_hash=get_password_hash("Admin@1234"),
+            senha_hash=get_password_hash(settings.ADMIN_PASSWORD),
             ativo=True,
             email_confirmado=True,
             ultima_senha_alterada=datetime.now(timezone.utc),
         )
         db.add(user)
         await db.commit()
-        logger.info("✓ Usuário admin criado: admin@eb.mil.br / Admin@1234")
+        logger.info("✓ Usuário admin criado: admin@eb.mil.br")
 
 
 async def _run_migrations():
@@ -164,7 +164,8 @@ async def _create_test_users():
         - consolidador.coter@eb.mil.br / Consolidador@1234 — CONSOLIDADOR, OM=COTER
         - analista.cgeo@eb.mil.br / AnalistaCGEO@1234 — ANALISTA_CGEO, OM=DSG
     """
-    if not getattr(settings, "BDGEX_MOCK", False):
+    # Dupla guarda: BDGEX_MOCK E não-produção — nunca criar usuários de teste em prod
+    if not settings.BDGEX_MOCK or settings.ENV == "production":
         return
 
     from app.models.user import Usuario
@@ -277,7 +278,7 @@ async def _create_test_janelas():
         CONSOLIDADOR : 02/08/2026 – 31/08/2026
         GESTOR_CARTOGRAFICO (DSG): 01/09/2026 – 30/09/2026
     """
-    if not getattr(settings, "BDGEX_MOCK", False):
+    if not settings.BDGEX_MOCK or settings.ENV == "production":
         return
 
     from app.models.janela import JanelaPedidos
@@ -402,4 +403,4 @@ app.include_router(config_router.router, prefix="/api/v1")
 
 @app.get("/api/v1/health")
 async def health():
-    return {"status": "ok", "version": "0.1.0"}
+    return {"status": "ok"}

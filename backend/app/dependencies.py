@@ -84,10 +84,14 @@ def require_profiles(*profiles: PerfilEnum):
 
 
 def get_client_ip(request: Request) -> str:
-    """Extrai o endereço IP real do cliente, respeitando proxies reversos.
+    """Extrai o endereço IP real do cliente, respeitando o proxy reverso nginx.
 
-    Lê o cabeçalho ``X-Forwarded-For`` quando presente (ex: Nginx).
-    Fallback para ``request.client.host``.
+    Usa ``X-Real-IP`` (definido pelo nginx com ``$remote_addr``) como fonte
+    primária — este header é definido pelo próprio nginx e não pode ser
+    forjado pelo cliente externo.
+
+    ``X-Forwarded-For`` não é usado diretamente pois pode ser injetado pelo
+    cliente para mascarar seu IP real ou contornar rate-limiting baseado em IP.
 
     Args:
         request: Objeto de requisição do FastAPI/Starlette.
@@ -95,7 +99,9 @@ def get_client_ip(request: Request) -> str:
     Returns:
         Endereço IP como string (ex: ``"192.168.1.100"``).
     """
-    forwarded_for = request.headers.get("X-Forwarded-For")
-    if forwarded_for:
-        return forwarded_for.split(",")[0].strip()
+    # X-Real-IP é definido pelo nginx como $remote_addr — confiável
+    real_ip = request.headers.get("X-Real-IP")
+    if real_ip:
+        return real_ip.strip()
+    # Fallback direto da conexão TCP (sem proxy)
     return request.client.host if request.client else "unknown"
