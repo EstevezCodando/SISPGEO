@@ -16,6 +16,8 @@ class ItemPedidoCreate(BaseModel):
     inom: str
     mi: str | None = None
     solicitar_mesmo_disponivel: bool = False
+    impressao_quantidade: int | None = None
+    impressao_tipo_material: str | None = None
 
 
 class ItemPedidoOut(BaseModel):
@@ -28,6 +30,8 @@ class ItemPedidoOut(BaseModel):
     data_producao_bdgex: date | None
     solicitar_mesmo_disponivel: bool
     prioridade: int = 0
+    impressao_quantidade: int | None = None
+    impressao_tipo_material: str | None = None
 
     model_config = {"from_attributes": True}
 

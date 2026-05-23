@@ -143,6 +143,8 @@ async def _check_janela_open(db: AsyncSession, user: Usuario) -> None:
 router = APIRouter(prefix="/pedidos", tags=["Pedidos"])
 
 GESTOR_PROFILES = tuple(SUPERVISOR_PROFILES | CONSOLIDADOR_PROFILES)
+# Alias — supervisores regionais roteiam pedidos por regiao_militar
+_GESTORES_POR_RM = SUPERVISOR_PROFILES
 
 
 
@@ -173,6 +175,8 @@ async def create_pedido(
                 ),
             )
 
+    # impressao_solicitada derivado: verdadeiro se qualquer item tiver qty de impressão
+    any_impressao = any(i.impressao_quantidade for i in body.itens if i.impressao_quantidade)
     pedido = Pedido(
         usuario_id=current_user.id,
         criador_id=current_user.id,
@@ -181,9 +185,7 @@ async def create_pedido(
         finalidade=body.finalidade,
         orgao_vinculante=ov,
         regiao_militar=current_user.regiao_militar,
-        impressao_solicitada=body.impressao_solicitada,
-        impressao_quantidade=body.impressao_quantidade if body.impressao_solicitada else None,
-        impressao_tipo_material=body.impressao_tipo_material if body.impressao_solicitada else None,
+        impressao_solicitada=any_impressao,
     )
     db.add(pedido)
     await db.flush()
@@ -196,6 +198,8 @@ async def create_pedido(
             inom=item_data.inom,
             mi=item_data.mi,
             solicitar_mesmo_disponivel=item_data.solicitar_mesmo_disponivel,
+            impressao_quantidade=item_data.impressao_quantidade,
+            impressao_tipo_material=item_data.impressao_tipo_material,
         )
         db.add(item)
 
@@ -228,8 +232,8 @@ async def list_pedidos(
             .where(Pedido.regiao_militar == current_user.regiao_militar)
             .order_by(Pedido.criado_em.desc())
         )
-    elif current_user.perfil == PerfilEnum.CONSOLIDADOR:
-        # Consolidador (COTER/DECEx/etc.) — roteado por orgao_vinculante
+    elif current_user.perfil in CONSOLIDADOR_PROFILES or current_user.perfil == PerfilEnum.CONSOLIDADOR:
+        # Consolidador — roteado por orgao_vinculante
         result = await db.scalars(
             select(Pedido)
             .where(Pedido.orgao_vinculante == current_user.orgao_vinculante)
@@ -256,17 +260,16 @@ async def list_pending(
     current_user: Usuario = Depends(get_current_user),
 ):
     if current_user.perfil in _GESTORES_POR_RM:
-        # Supervisor (C. Mil. A) — filtro por Região Militar
-        pending_status = _PENDING_STATUS.get(current_user.perfil, StatusPedidoEnum.AGUARDANDO_SUPERVISOR)
+        # Supervisor regional — filtro por Região Militar
         result = await db.scalars(
             select(Pedido)
             .where(
-                Pedido.status == pending_status,
+                Pedido.status == StatusPedidoEnum.AGUARDANDO_SUPERVISOR,
                 Pedido.regiao_militar == current_user.regiao_militar,
             )
             .order_by(Pedido.submetido_gestor_em.asc())
         )
-    elif current_user.perfil == PerfilEnum.CONSOLIDADOR:
+    elif current_user.perfil in CONSOLIDADOR_PROFILES or current_user.perfil == PerfilEnum.CONSOLIDADOR:
         # Consolidador — filtro por orgao_vinculante
         result = await db.scalars(
             select(Pedido)
@@ -309,7 +312,7 @@ async def get_map_features(
         q = select(Pedido).where(Pedido.cgeo_id == current_user.cgeo_id)
     elif current_user.perfil in _GESTORES_POR_RM:
         q = select(Pedido).where(Pedido.regiao_militar == current_user.regiao_militar)
-    elif current_user.perfil == PerfilEnum.CONSOLIDADOR:
+    elif current_user.perfil in CONSOLIDADOR_PROFILES or current_user.perfil == PerfilEnum.CONSOLIDADOR:
         q = select(Pedido).where(Pedido.orgao_vinculante == current_user.orgao_vinculante)
     else:
         q = select(Pedido).where(Pedido.usuario_id == current_user.id)

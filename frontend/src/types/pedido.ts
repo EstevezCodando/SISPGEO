@@ -108,6 +108,8 @@ export interface ItemPedido {
   data_producao_bdgex: string | null
   solicitar_mesmo_disponivel: boolean
   prioridade: number
+  impressao_quantidade: number | null
+  impressao_tipo_material: string | null
 }
 
 export interface Pedido {
@@ -145,6 +147,14 @@ export interface Pedido {
   impressao_tipo_material?: string | null
 }
 
+/** Configuração de impressão física associada a um item do carrinho (1:1). */
+export interface ItemImpressao {
+  id: string              // == cartKey(item) — chave idêntica ao produtoId
+  produtoId: string       // FK → CartItem via cartKey()
+  quantidade: number
+  tipo: MaterialImpressao
+}
+
 export interface CartItem {
   inom: string
   mi: string | null
@@ -153,4 +163,8 @@ export interface CartItem {
   solicitar_mesmo_disponivel: boolean
   disponivel_bdgex: boolean
   geom?: object
+  /** true quando o usuário solicitou impressão física para este item */
+  impressao: boolean
+  /** FK → ItemImpressao.id; null enquanto !impressao */
+  impressaoId: string | null
 }

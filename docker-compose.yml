@@ -95,6 +95,10 @@ services:
     container_name: coter_nginx
     ports:
       - "80:80"
+      # - "443:443"   # ← descomente ao ativar HTTPS (ver DEPLOY.md)
+    volumes:
+      # - ./nginx/certs:/etc/nginx/certs:ro   # ← descomente ao ativar HTTPS
+      []
     depends_on:
       - frontend
       - backend

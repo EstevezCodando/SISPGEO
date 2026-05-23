@@ -126,15 +126,14 @@ export function InteractiveMap({ inomGrid, showData = true, basemap = 'osm', som
           if (hasItem(inom, tipoProduto as TipoProduto, escala as Escala)) {
             removeItem(inom, tipoProduto as TipoProduto, escala as Escala)
           } else {
-            const item: CartItem = {
+            addItem({
               inom,
               mi: mi ?? null,
               tipo_produto: tipoProduto as TipoProduto,
               escala: escala as Escala,
               solicitar_mesmo_disponivel: false,
               disponivel_bdgex: disponivel === true,
-            }
-            addItem(item)
+            })
           }
           const path = layer as L.Path
           const nowSelected = hasItem(inom, tipoProduto as TipoProduto, escala as Escala)

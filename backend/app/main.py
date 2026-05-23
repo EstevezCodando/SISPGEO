@@ -102,10 +102,13 @@ async def _run_migrations():
         )""",
         # Seed da configuração inicial (não sobrescreve se já existir)
         "INSERT INTO config_entrega (id, data_base) VALUES (1, '2026-11-18') ON CONFLICT (id) DO NOTHING",
-        # 2026-05: impressão física do pedido — quantidade de cópias e tipo de material
+        # 2026-05: impressão física do pedido — quantidade de cópias e tipo de material (nível pedido — legado)
         "ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS impressao_solicitada BOOLEAN DEFAULT FALSE",
         "ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS impressao_quantidade SMALLINT",
         "ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS impressao_tipo_material VARCHAR(20)",
+        # 2026-05: impressão per-item — quantidade e material por célula selecionada
+        "ALTER TABLE itens_pedido ADD COLUMN IF NOT EXISTS impressao_quantidade SMALLINT",
+        "ALTER TABLE itens_pedido ADD COLUMN IF NOT EXISTS impressao_tipo_material VARCHAR(20)",
     ]
     for stmt in migrations:
         try:

@@ -16,7 +16,7 @@ import { pedidosApi } from '../api/pedidos'
 import { janelasApi, type MinhaJanela } from '../api/janelas'
 import { operacoesApi, type Operacao } from '../api/operacoes'
 import { configApi, type ConfigEntrega } from '../api/config'
-import { useCartStore } from '../store/cartStore'
+import { useCartStore, cartKey } from '../store/cartStore'
 import { useAuthStore } from '../store/authStore'
 import { InteractiveMap, type Basemap } from '../components/map/InteractiveMap'
 import { PedidosMap } from '../components/map/PedidosMap'
@@ -98,23 +98,23 @@ function RevisaoGeoJSONLayer({
 // ── Modal de Revisão ──────────────────────────────────────────────────────────
 interface RevisaoModalProps {
   items: CartItem[]
+  impressoes: Record<string, import('../types/pedido').ItemImpressao>
   onRemoveItem: (item: CartItem) => void
+  onSetItemImpressao: (key: string, qty: number, tipo: import('../types/pedido').MaterialImpressao) => void
+  onRemoveItemImpressao: (key: string) => void
   onClose: () => void
   onConfirm: () => void
   submitting: boolean
   isImpressao: boolean
-  impressaoSolicitada: boolean
-  impressaoQuantidade: number | null
-  impressaoTipoMaterial: string | null
-  onSetImpressaoSolicitada: (v: boolean) => void
-  onSetImpressaoQuantidade: (v: number | null) => void
-  onSetImpressaoTipoMaterial: (v: string | null) => void
+  isOutros: boolean
+  finalidade: string
+  onSetFinalidade: (v: string) => void
 }
 
 function RevisaoModal({
-  items, onRemoveItem, onClose, onConfirm, submitting,
-  isImpressao, impressaoSolicitada, impressaoQuantidade, impressaoTipoMaterial,
-  onSetImpressaoSolicitada, onSetImpressaoQuantidade, onSetImpressaoTipoMaterial,
+  items, impressoes, onRemoveItem, onSetItemImpressao, onRemoveItemImpressao,
+  onClose, onConfirm, submitting,
+  isImpressao, isOutros, finalidade, onSetFinalidade,
 }: RevisaoModalProps) {
   const { user } = useAuthStore()
 
@@ -221,104 +221,159 @@ function RevisaoModal({
               </div>
             </div>
 
-            {/* Lista de itens */}
-            <div className="flex-1 overflow-auto p-4">
-              <p className="text-xs font-semibold text-zinc-400 mb-2 uppercase tracking-wide">
-                Produtos ({items.length})
-              </p>
-              <div className="space-y-1.5">
-                {items.map((item) => (
-                  <div
-                    key={item.inom}
-                    className="flex items-start justify-between gap-2 bg-zinc-800/60 border border-zinc-700/40 rounded-lg px-3 py-2 text-xs"
-                  >
-                    <div className="min-w-0">
-                      <p className="font-mono font-medium text-emerald-400 truncate">{item.inom}</p>
-                      <p className="text-zinc-400">{TIPO_PRODUTO_LABELS[item.tipo_produto]}</p>
-                      <p className="text-zinc-500">{item.escala}</p>
-                    </div>
-                    <button
-                      onClick={() => onRemoveItem(item)}
-                      disabled={items.length <= 1}
-                      className="text-zinc-600 hover:text-red-400 disabled:opacity-30 disabled:cursor-not-allowed transition-colors mt-0.5 shrink-0"
-                      title="Remover item"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Impressão — quando é tipo impressão, exibe os campos; caso contrário, pergunta se deseja */}
-            <div className="px-4 py-3 border-t border-white/10 bg-zinc-800/20 space-y-2">
-              {isImpressao ? (
-                <>
-                  <p className="text-xs font-semibold text-emerald-400 uppercase tracking-wide">Impressão</p>
-                  <div className="flex gap-2">
-                    <div className="flex-1">
-                      <label className="block text-[10px] text-zinc-500 mb-1">Quantidade</label>
-                      <input
-                        type="number" min={1} max={999}
-                        value={impressaoQuantidade ?? ''}
-                        onChange={(e) => onSetImpressaoQuantidade(e.target.value ? Number(e.target.value) : null)}
-                        className="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-xs text-zinc-100 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                      />
-                    </div>
-                    <div className="flex-1">
-                      <label className="block text-[10px] text-zinc-500 mb-1">Material</label>
-                      <select
-                        value={impressaoTipoMaterial ?? ''}
-                        onChange={(e) => onSetImpressaoTipoMaterial(e.target.value || null)}
-                        className="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-xs text-zinc-100 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+            {/* Lista de itens + Finalidade + Impressão (área rolável) */}
+            <div className="flex-1 overflow-auto p-4 space-y-4">
+              {/* Produtos */}
+              <div>
+                <p className="text-xs font-semibold text-zinc-400 mb-2 uppercase tracking-wide">
+                  Produtos ({items.length})
+                </p>
+                <div className="space-y-2">
+                  {items.map((item) => {
+                    const key = cartKey(item)
+                    const imp = impressoes[key]
+                    return (
+                      <div
+                        key={key}
+                        className="bg-zinc-800/60 border border-zinc-700/40 rounded-lg px-3 py-2 text-xs space-y-2"
                       >
-                        <option value="" className="bg-zinc-800">Material...</option>
-                        {MATERIAIS_IMPRESSAO.map(m => (
-                          <option key={m} value={m} className="bg-zinc-800">{m}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={impressaoSolicitada}
-                      onChange={(e) => onSetImpressaoSolicitada(e.target.checked)}
-                      className="accent-emerald-500"
-                    />
-                    <span className="text-xs font-medium text-zinc-300">Deseja impressão física?</span>
-                  </label>
-                  {impressaoSolicitada && (
-                    <div className="flex gap-2 pt-1">
-                      <div className="flex-1">
-                        <label className="block text-[10px] text-zinc-500 mb-1">Quantidade</label>
-                        <input
-                          type="number" min={1} max={999}
-                          value={impressaoQuantidade ?? ''}
-                          onChange={(e) => onSetImpressaoQuantidade(e.target.value ? Number(e.target.value) : null)}
-                          className="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-xs text-zinc-100 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                        />
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="font-mono font-medium text-emerald-400 truncate">{item.inom}</p>
+                            <p className="text-zinc-400">{TIPO_PRODUTO_LABELS[item.tipo_produto]}</p>
+                            <p className="text-zinc-500">{item.escala}</p>
+                          </div>
+                          <button
+                            onClick={() => onRemoveItem(item)}
+                            disabled={items.length <= 1}
+                            className="text-zinc-600 hover:text-red-400 disabled:opacity-30 disabled:cursor-not-allowed transition-colors mt-0.5 shrink-0"
+                            title="Remover item"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+
+                        {/* Impressão por item */}
+                        {isImpressao ? (
+                          // Produto de impressão: campos obrigatórios
+                          <div className="grid grid-cols-2 gap-1.5 pt-1 border-t border-white/5">
+                            <div>
+                              <label className="block text-[10px] text-zinc-500 mb-1">
+                                Qtd. <span className="text-red-400">*</span>
+                              </label>
+                              <input
+                                type="number" min={1} max={999}
+                                value={imp?.quantidade ?? ''}
+                                onChange={(e) => {
+                                  const qty = e.target.value ? Number(e.target.value) : 0
+                                  if (qty > 0) onSetItemImpressao(key, qty, imp?.tipo ?? 'Sulfite')
+                                  else onRemoveItemImpressao(key)
+                                }}
+                                placeholder="Qtd."
+                                className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs text-zinc-100 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] text-zinc-500 mb-1">
+                                Material <span className="text-red-400">*</span>
+                              </label>
+                              <select
+                                value={imp?.tipo ?? ''}
+                                onChange={(e) => {
+                                  const tipo = e.target.value as import('../types/pedido').MaterialImpressao
+                                  if (tipo) onSetItemImpressao(key, imp?.quantidade ?? 1, tipo)
+                                }}
+                                className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs text-zinc-100 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                              >
+                                <option value="" className="bg-zinc-800">—</option>
+                                {MATERIAIS_IMPRESSAO.map(m => (
+                                  <option key={m} value={m} className="bg-zinc-800">{m}</option>
+                                ))}
+                              </select>
+                            </div>
+                          </div>
+                        ) : (
+                          // Produto digital: impressão opcional por item
+                          <div className="pt-1 border-t border-white/5">
+                            <label className="flex items-center gap-2 cursor-pointer select-none">
+                              <input
+                                type="checkbox"
+                                checked={item.impressao}
+                                onChange={(e) => {
+                                  if (e.target.checked) onSetItemImpressao(key, 1, 'Sulfite')
+                                  else onRemoveItemImpressao(key)
+                                }}
+                                className="accent-emerald-500"
+                              />
+                              <span className="text-[10px] text-zinc-400">Impressão física?</span>
+                            </label>
+                            {item.impressao && (
+                              <div className="grid grid-cols-2 gap-1.5 mt-1.5 pl-4">
+                                <div>
+                                  <label className="block text-[10px] text-zinc-500 mb-1">
+                                    Qtd. <span className="text-red-400">*</span>
+                                  </label>
+                                  <input
+                                    type="number" min={1} max={999}
+                                    value={imp?.quantidade ?? ''}
+                                    onChange={(e) => {
+                                      const qty = e.target.value ? Number(e.target.value) : 1
+                                      onSetItemImpressao(key, qty, imp?.tipo ?? 'Sulfite')
+                                    }}
+                                    placeholder="Qtd."
+                                    className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs text-zinc-100 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-[10px] text-zinc-500 mb-1">
+                                    Material <span className="text-red-400">*</span>
+                                  </label>
+                                  <select
+                                    value={imp?.tipo ?? ''}
+                                    onChange={(e) => {
+                                      const tipo = e.target.value as import('../types/pedido').MaterialImpressao
+                                      if (tipo) onSetItemImpressao(key, imp?.quantidade ?? 1, tipo)
+                                    }}
+                                    className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs text-zinc-100 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                                  >
+                                    <option value="" className="bg-zinc-800">—</option>
+                                    {MATERIAIS_IMPRESSAO.map(m => (
+                                      <option key={m} value={m} className="bg-zinc-800">{m}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
-                      <div className="flex-1">
-                        <label className="block text-[10px] text-zinc-500 mb-1">Material</label>
-                        <select
-                          value={impressaoTipoMaterial ?? ''}
-                          onChange={(e) => onSetImpressaoTipoMaterial(e.target.value || null)}
-                          className="w-full bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-xs text-zinc-100 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                        >
-                          <option value="" className="bg-zinc-800">Material...</option>
-                          {MATERIAIS_IMPRESSAO.map(m => (
-                            <option key={m} value={m} className="bg-zinc-800">{m}</option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-                  )}
-                </>
-              )}
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Finalidade */}
+              <div>
+                <label className={`block text-xs font-semibold mb-1.5 uppercase tracking-wide ${isOutros ? 'text-amber-400' : 'text-zinc-400'}`}>
+                  Finalidade {isOutros && <span className="text-amber-400 normal-case font-normal tracking-normal">(obrigatório)</span>}
+                </label>
+                <textarea
+                  value={finalidade}
+                  onChange={(e) => onSetFinalidade(e.target.value)}
+                  rows={3}
+                  placeholder={isOutros ? 'Descreva o objetivo do pedido (mín. 10 caracteres)...' : 'Descreva a finalidade da solicitação...'}
+                  className={`w-full bg-zinc-800 border rounded-lg px-2.5 py-2 text-xs text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-1 resize-none transition-colors ${
+                    isOutros
+                      ? 'border-amber-500/50 focus:ring-amber-500 focus:border-amber-500'
+                      : 'border-zinc-700 focus:ring-emerald-500 focus:border-emerald-500'
+                  }`}
+                />
+                {isOutros && finalidade.trim().length > 0 && finalidade.trim().length < 10 && (
+                  <p className="text-[11px] text-amber-400 mt-1">
+                    {10 - finalidade.trim().length} caractere(s) restante(s)
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -350,10 +405,9 @@ export function SolicitarProdutos() {
   const navigate = useNavigate()
   const { user } = useAuthStore()
   const {
-    items, tipoProduto, escala, dataEntrega, operacaoId, finalidade,
-    impressaoSolicitada, impressaoQuantidade, impressaoTipoMaterial,
+    items, tipoProduto, escala, dataEntrega, operacaoId, finalidade, impressoes,
     setTipoProduto, setEscala, setDataEntrega, setOperacaoId, setFinalidade,
-    setImpressaoSolicitada, setImpressaoQuantidade, setImpressaoTipoMaterial,
+    setItemImpressao, removeItemImpressao,
     removeItem, clear,
   } = useCartStore()
 
@@ -373,8 +427,6 @@ export function SolicitarProdutos() {
   const [submitting, setSubmitting] = useState(false)
   const [minhaJanela, setMinhaJanela] = useState<MinhaJanela | null>(null)
   const [configEntrega, setConfigEntrega] = useState<ConfigEntrega | null>(null)
-  const finalidadeRef = useRef<HTMLTextAreaElement>(null)
-
   // "Outros" = operacaoId null
   const isOutros = operacaoId === null
 
@@ -448,22 +500,21 @@ export function SolicitarProdutos() {
   const handleOperacaoChange = (v: string) => {
     if (v === '__new__') { setShowNewOp(true); return }
     setOperacaoId(v ? Number(v) : null)
-    // Se "Outros" selecionado, foca na finalidade
-    if (!v) {
-      setTimeout(() => {
-        finalidadeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-        finalidadeRef.current?.focus()
-      }, 100)
-    }
   }
 
   const handleSubmit = async () => {
     if (items.length === 0) { toast.error('Adicione ao menos um produto'); return }
     if (!dataEntrega) { toast.error('Informe a data de entrega'); return }
     if (isOutros && finalidade.trim().length < 10) {
-      toast.error('Preencha a finalidade com ao menos 10 caracteres ao selecionar "Outros"')
-      finalidadeRef.current?.focus()
+      toast.error('Preencha a finalidade com ao menos 10 caracteres')
       return
+    }
+    if (isImpressao) {
+      const semImpressao = items.filter(i => !impressoes[cartKey(i)])
+      if (semImpressao.length > 0) {
+        toast.error(`Configure quantidade e material para ${semImpressao.length} item(ns) de impressão`)
+        return
+      }
     }
     if (!user?.orgao_vinculante) {
       toast.error('Seu perfil não tem órgão vinculante configurado. Contate o Gestor Cartográfico (DSG).')
@@ -476,16 +527,19 @@ export function SolicitarProdutos() {
         operacao_id: operacaoId,
         data_entrega: dataEntrega,
         finalidade: finalidade || null,
-        itens: items.map((i) => ({
-          tipo_produto: i.tipo_produto,
-          escala: i.escala,
-          inom: i.inom,
-          mi: i.mi,
-          solicitar_mesmo_disponivel: i.solicitar_mesmo_disponivel,
-        })),
-        impressao_solicitada: impressaoSolicitada || isImpressao,
-        impressao_quantidade: (impressaoSolicitada || isImpressao) ? impressaoQuantidade : null,
-        impressao_tipo_material: (impressaoSolicitada || isImpressao) ? impressaoTipoMaterial : null,
+        itens: items.map((i) => {
+          const imp = impressoes[cartKey(i)]
+          return {
+            tipo_produto: i.tipo_produto,
+            escala: i.escala,
+            inom: i.inom,
+            mi: i.mi,
+            solicitar_mesmo_disponivel: i.solicitar_mesmo_disponivel,
+            impressao_quantidade: imp?.quantidade ?? null,
+            impressao_tipo_material: imp?.tipo ?? null,
+          }
+        }),
+        impressao_solicitada: items.some(i => i.impressao),
       })
 
       const { isGestor } = useAuthStore.getState()
@@ -516,20 +570,6 @@ export function SolicitarProdutos() {
   const handleOpenRevisao = () => {
     if (items.length === 0) { toast.error('Adicione ao menos um produto ao carrinho'); return }
     if (!dataEntrega) { toast.error('Informe a data sugerida de entrega'); return }
-    if (isOutros && finalidade.trim().length < 10) {
-      toast.error('Preencha a finalidade com ao menos 10 caracteres ao selecionar "Outros"')
-      finalidadeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      finalidadeRef.current?.focus()
-      return
-    }
-    if (isImpressao) {
-      if (!impressaoQuantidade || impressaoQuantidade < 1) {
-        toast.error('Informe a quantidade de cópias para impressão'); return
-      }
-      if (!impressaoTipoMaterial) {
-        toast.error('Selecione o tipo de material para impressão'); return
-      }
-    }
     setShowRevisao(true)
   }
 
@@ -623,23 +663,6 @@ export function SolicitarProdutos() {
                 <option value="__new__" className="bg-zinc-800">+ Nova Operação</option>
               </select>
             )}
-            {/* Alerta "Outros" */}
-            {isOutros && (
-              <div className="flex items-start gap-1.5 mt-1.5 p-2 bg-amber-500/10 border border-amber-500/20 rounded-lg">
-                <AlertTriangle className="h-3.5 w-3.5 text-amber-400 shrink-0 mt-0.5" />
-                <p className="text-[11px] text-amber-300/90 leading-snug">
-                  Preencha a <strong>finalidade</strong> abaixo descrevendo o objetivo do pedido, ou selecione{' '}
-                  <button
-                    type="button"
-                    onClick={() => setShowNewOp(true)}
-                    className="underline text-amber-300 hover:text-amber-200 font-semibold transition-colors"
-                  >
-                    + Nova Operação
-                  </button>{' '}
-                  para cadastrar uma operação específica.
-                </p>
-              </div>
-            )}
           </div>
 
           {/* Tipo de Produto / Serviço */}
@@ -652,10 +675,6 @@ export function SolicitarProdutos() {
                 setTipoProduto(novo)
                 setEscala(null)
                 setDataEntrega(null)
-                // Reset impressão ao trocar produto
-                setImpressaoSolicitada(false)
-                setImpressaoQuantidade(null)
-                setImpressaoTipoMaterial(null)
               }}
               className={inputCls}
             >
@@ -810,84 +829,60 @@ export function SolicitarProdutos() {
                 Clique nas células do mapa para adicionar produtos ao carrinho
               </p>
             ) : (
-              items.map((item) => (
-                <div key={item.inom} className="bg-zinc-800 border border-white/5 rounded-lg p-2 text-xs flex items-start justify-between gap-1">
-                  <div className="min-w-0">
-                    <p className="font-medium text-zinc-200 truncate">{item.inom}</p>
-                    <p className="text-zinc-400">{TIPO_PRODUTO_LABELS[item.tipo_produto]}</p>
-                    <p className="text-zinc-500">{item.escala}</p>
+              items.map((item) => {
+                const key = cartKey(item)
+                const imp = impressoes[key]
+                return (
+                  <div key={key} className="bg-zinc-800 border border-white/5 rounded-lg p-2 text-xs">
+                    <div className="flex items-start justify-between gap-1">
+                      <div className="min-w-0">
+                        <p className="font-medium text-zinc-200 truncate">{item.inom}</p>
+                        <p className="text-zinc-400">{TIPO_PRODUTO_LABELS[item.tipo_produto]}</p>
+                        <p className="text-zinc-500">{item.escala}</p>
+                      </div>
+                      <button onClick={() => removeItem(item.inom, item.tipo_produto, item.escala)} className="text-zinc-500 hover:text-red-400 transition-colors shrink-0 mt-0.5">
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                    {/* Indicador de impressão por item no carrinho */}
+                    {isImpressao && (
+                      <div className={`mt-1.5 pt-1.5 border-t border-white/5 text-[10px] ${imp ? 'text-emerald-400' : 'text-amber-400'}`}>
+                        {imp
+                          ? `${imp.quantidade}x ${imp.tipo}`
+                          : '⚠ Configure na revisão'}
+                      </div>
+                    )}
+                    {!isImpressao && item.impressao && imp && (
+                      <div className="mt-1.5 pt-1.5 border-t border-white/5 text-[10px] text-emerald-400">
+                        Impressão: {imp.quantidade}x {imp.tipo}
+                      </div>
+                    )}
                   </div>
-                  <button onClick={() => removeItem(item.inom, item.tipo_produto, item.escala)} className="text-zinc-500 hover:text-red-400 transition-colors shrink-0 mt-0.5">
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              ))
+                )
+              })
             )}
           </div>
 
-          <div className="p-3 border-t border-white/10 space-y-2.5">
-            {/* Finalidade */}
-            <div>
-              <label className={`${labelCls} ${isOutros ? 'text-amber-400' : ''}`}>
-                Finalidade {isOutros && <span className="text-amber-400">*</span>}
-              </label>
-              <textarea
-                ref={finalidadeRef}
-                value={finalidade}
-                onChange={(e) => setFinalidade(e.target.value)}
-                rows={isImpressao ? 2 : 3}
-                placeholder={isOutros ? 'Obrigatório: descreva a finalidade (mín. 10 caracteres)...' : 'Descreva a finalidade da solicitação...'}
-                className={`w-full bg-zinc-800 border rounded-lg px-2.5 py-1.5 text-xs text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-1 resize-none transition-colors ${
-                  isOutros
-                    ? 'border-amber-500/50 focus:ring-amber-500 focus:border-amber-500'
-                    : 'border-zinc-700 focus:ring-emerald-500 focus:border-emerald-500'
-                }`}
-              />
-              {isOutros && finalidade.trim().length > 0 && finalidade.trim().length < 10 && (
-                <p className="text-[11px] text-amber-400 mt-1">
-                  {10 - finalidade.trim().length} caractere(s) restante(s)
-                </p>
-              )}
-            </div>
-
-            {/* Impressão — exibido apenas quando tipo é IMPRESSAO_CT/COI */}
-            {isImpressao && (
-              <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-2.5 space-y-2">
-                <p className="text-[10px] font-semibold text-emerald-400 uppercase tracking-wider">Configurar impressão</p>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className={labelCls}>Qtd. cópias <span className="text-red-400">*</span></label>
-                    <input
-                      type="number"
-                      min={1}
-                      max={999}
-                      value={impressaoQuantidade ?? ''}
-                      onChange={(e) => setImpressaoQuantidade(e.target.value ? Number(e.target.value) : null)}
-                      placeholder="Ex: 10"
-                      className={inputCls}
-                    />
-                  </div>
-                  <div>
-                    <label className={labelCls}>Material <span className="text-red-400">*</span></label>
-                    <select
-                      value={impressaoTipoMaterial ?? ''}
-                      onChange={(e) => setImpressaoTipoMaterial(e.target.value || null)}
-                      className={inputCls}
-                    >
-                      <option value="" className="bg-zinc-800">—</option>
-                      {MATERIAIS_IMPRESSAO.map(m => (
-                        <option key={m} value={m} className="bg-zinc-800">{m}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
+          <div className="p-3 border-t border-white/10">
+            {items.length > 0 && (isImpressao || isOutros) && (
+              <div className="flex flex-wrap gap-1.5 mb-2.5">
+                {isImpressao && (
+                  <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[11px] text-emerald-400">
+                    <ClipboardCheck className="h-3 w-3" />
+                    Impressão: configure na revisão
+                  </span>
+                )}
+                {isOutros && (
+                  <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-400">
+                    Finalidade: preencha na revisão
+                  </span>
+                )}
               </div>
             )}
-
             <button
               onClick={handleOpenRevisao}
               disabled={items.length === 0}
-              className="w-full bg-emerald-500 text-white py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-1.5 hover:bg-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="w-full bg-emerald-500 text-white py-2.5 rounded-lg text-sm font-medium flex items-center justify-center gap-1.5 hover:bg-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-[0_2px_12px_-2px_rgba(16,185,129,0.4)]"
             >
               <ClipboardCheck className="h-4 w-4" />
               Revisar Pedido
@@ -900,17 +895,17 @@ export function SolicitarProdutos() {
       {showRevisao && (
         <RevisaoModal
           items={items}
+          impressoes={impressoes}
           onRemoveItem={(item) => removeItem(item.inom, item.tipo_produto, item.escala)}
+          onSetItemImpressao={setItemImpressao}
+          onRemoveItemImpressao={removeItemImpressao}
           onClose={() => setShowRevisao(false)}
           onConfirm={handleSubmit}
           submitting={submitting}
           isImpressao={isImpressao}
-          impressaoSolicitada={impressaoSolicitada}
-          impressaoQuantidade={impressaoQuantidade}
-          impressaoTipoMaterial={impressaoTipoMaterial}
-          onSetImpressaoSolicitada={setImpressaoSolicitada}
-          onSetImpressaoQuantidade={setImpressaoQuantidade}
-          onSetImpressaoTipoMaterial={setImpressaoTipoMaterial}
+          isOutros={isOutros}
+          finalidade={finalidade}
+          onSetFinalidade={setFinalidade}
         />
       )}
     </div>
