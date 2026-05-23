@@ -8,7 +8,7 @@ _INSECURE_KEY = "changeme_super_secret_key_minimum_32_chars"
 
 
 class Settings(BaseSettings):
-    DATABASE_URL: str = "postgresql+asyncpg://coter_user:coter_secret@db:5432/coter"
+    DATABASE_URL: str = "postgresql+asyncpg://sispgeo_user:sispgeo_secret@db:5432/sispgeo"
     SECRET_KEY: str = _INSECURE_KEY
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 480

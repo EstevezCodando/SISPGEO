@@ -1,7 +1,7 @@
 """
 Script para criar o usuário admin DSG inicial.
 Execute DENTRO do container backend após o sistema subir:
-  docker exec coter_backend python create_admin.py
+  docker exec sispgeo_backend python create_admin.py
 """
 import asyncio
 from app.database import AsyncSessionLocal, engine, Base

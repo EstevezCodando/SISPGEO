@@ -183,12 +183,12 @@ O ciclo de solicitações segue janelas temporais configuradas pelo Gestor DSG:
 Usuário (navegador)
         │ porta 80
         ▼
-   [coter_nginx]  ← proxy reverso
-    /api/v1/* → [coter_backend] → [coter_db]
-    /*         → [coter_frontend]
+   [sispgeo_nginx]  ← proxy reverso
+    /api/v1/* → [sispgeo_backend] → [sispgeo_db]
+    /*         → [sispgeo_frontend]
         │ porta 8025
         ▼
-  [coter_mailhog] ← e-mails de desenvolvimento
+  [sispgeo_mailpit] ← e-mails de desenvolvimento
 ```
 
 ---

@@ -188,7 +188,7 @@ docker compose build --no-cache frontend && docker compose up -d frontend
 docker compose down -v && docker compose up --build -d
 
 # Acessar o container do backend
-docker exec -it coter_backend bash
+docker exec -it sispgeo_backend bash
 ```
 
 ---
@@ -521,14 +521,14 @@ SisPGeo/
 
 ```bash
 # Rodar todos os testes dentro do container
-docker exec coter_backend python -m pytest tests/ -v
+docker exec sispgeo_backend python -m pytest tests/ -v
 
 # Apenas testes unitários (sem banco)
-docker exec coter_backend python -m pytest tests/ -v \
+docker exec sispgeo_backend python -m pytest tests/ -v \
   --ignore=tests/test_api_integration.py
 
 # Apenas testes de integração (requer backend em execução)
-docker exec coter_backend python -m pytest tests/test_api_integration.py -v
+docker exec sispgeo_backend python -m pytest tests/test_api_integration.py -v
 ```
 
 Os testes unitários usam `MagicMock` / `AsyncMock` — sem dependência de banco de dados. Os testes de integração chamam a API real rodando no container e requerem `BDGEX_MOCK=true`.

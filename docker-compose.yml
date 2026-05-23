@@ -3,31 +3,31 @@ version: "3.9"
 services:
   db:
     image: postgis/postgis:16-3.4
-    container_name: coter_db
+    container_name: sispgeo_db
     environment:
-      POSTGRES_DB: coter
-      POSTGRES_USER: coter_user
+      POSTGRES_DB: sispgeo
+      POSTGRES_USER: sispgeo_user
       POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD obrigatório — defina no .env}
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./db/init:/docker-entrypoint-initdb.d
     networks:
-      - coter_net
+      - sispgeo_net
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U coter_user -d coter"]
+      test: ["CMD-SHELL", "pg_isready -U sispgeo_user -d sispgeo"]
       interval: 10s
       timeout: 5s
       retries: 5
-    # Sem porta exposta — acesso apenas via rede interna coter_net
+    # Sem porta exposta — acesso apenas via rede interna sispgeo_net
 
   backend:
     build: ./backend
-    container_name: coter_backend
+    container_name: sispgeo_backend
     environment:
-      DATABASE_URL: postgresql+asyncpg://coter_user:${DB_PASSWORD:?DB_PASSWORD obrigatório}@db:5432/coter
+      DATABASE_URL: postgresql+asyncpg://sispgeo_user:${DB_PASSWORD:?DB_PASSWORD obrigatório}@db:5432/sispgeo
       SECRET_KEY: ${SECRET_KEY:?SECRET_KEY obrigatório — gere com: openssl rand -hex 32}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:?ADMIN_PASSWORD obrigatório}
       ALGORITHM: HS256
@@ -51,7 +51,7 @@ services:
       db:
         condition: service_healthy
     networks:
-      - coter_net
+      - sispgeo_net
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
@@ -65,9 +65,9 @@ services:
       context: ./frontend
       args:
         VITE_API_BASE_URL: /api/v1
-    container_name: coter_frontend
+    container_name: sispgeo_frontend
     networks:
-      - coter_net
+      - sispgeo_net
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
@@ -76,7 +76,7 @@ services:
   # Em PRODUÇÃO: remova este serviço — os e-mails são enviados pelo Zimbra/SMTP.
   mailpit:
     image: axllent/mailpit:v1.20
-    container_name: coter_mailpit
+    container_name: sispgeo_mailpit
     environment:
       MP_UI_AUTH: "${MAILPIT_USER:-admin}:${MAILPIT_PASS:-sispgeo_mail_dev}"
       MP_DATABASE: /data/mailpit.db
@@ -87,14 +87,14 @@ services:
     volumes:
       - mailpit_data:/data
     networks:
-      - coter_net
+      - sispgeo_net
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
 
   nginx:
     build: ./nginx
-    container_name: coter_nginx
+    container_name: sispgeo_nginx
     ports:
       - "80:80"
       # - "443:443"   # ← descomente ao ativar HTTPS (ver DEPLOY.md)
@@ -104,7 +104,7 @@ services:
       - frontend
       - backend
     networks:
-      - coter_net
+      - sispgeo_net
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
@@ -114,7 +114,7 @@ volumes:
   mailpit_data:
 
 networks:
-  coter_net:
+  sispgeo_net:
     driver: bridge
     # Rede interna isolada — apenas os containers declarados têm acesso
-    internal: false   # false = nginx pode receber conexões externas
+    internal: false # false = nginx pode receber conexões externas

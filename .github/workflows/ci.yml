@@ -39,13 +39,13 @@ jobs:
         run: |
           echo "Aguardando backend inicializar..."
           for i in $(seq 1 40); do
-            STATUS=$(docker inspect --format='{{.State.Status}}' coter_backend 2>/dev/null || echo "missing")
+            STATUS=$(docker inspect --format='{{.State.Status}}' sispgeo_backend 2>/dev/null || echo "missing")
             if [ "$STATUS" != "running" ]; then
               echo "Container não está running (status=$STATUS), aguardando..."
               sleep 3
               continue
             fi
-            if docker exec coter_backend python -c \
+            if docker exec sispgeo_backend python -c \
               "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health')" \
               > /dev/null 2>&1; then
               echo "✓ Backend pronto (tentativa $i)"
@@ -62,21 +62,21 @@ jobs:
       # Roda como root (-u 0) pois appuser não tem permissão de escrita em site-packages
       - name: Instalar dependências de teste no container
         run: |
-          docker exec -u 0 coter_backend pip install \
+          docker exec -u 0 sispgeo_backend pip install \
             -r /app/requirements-dev.txt \
             --quiet --no-cache-dir
 
       # ── 6. Testes unitários (sem banco, tudo mockado) ─────────────────────
       - name: Testes unitários
         run: |
-          docker exec coter_backend python -m pytest tests/ \
+          docker exec sispgeo_backend python -m pytest tests/ \
             -v --tb=short \
             --ignore=tests/test_api_integration.py
 
       # ── 7. Testes de integração (API real rodando no container) ───────────
       - name: Testes de integração
         run: |
-          docker exec coter_backend python -m pytest tests/test_api_integration.py \
+          docker exec sispgeo_backend python -m pytest tests/test_api_integration.py \
             -v --tb=short
 
       # ── 8. Logs em caso de falha ──────────────────────────────────────────

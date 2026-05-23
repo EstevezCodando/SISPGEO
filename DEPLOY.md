@@ -361,8 +361,8 @@ docker compose up -d --build
 docker stats
 
 # Backup do banco de dados
-docker compose exec db pg_dump -U coter_user coter > backup_$(date +%Y%m%d).sql
+docker compose exec db pg_dump -U sispgeo_user sispgeo > backup_$(date +%Y%m%d).sql
 
 # Restaurar backup
-docker compose exec -T db psql -U coter_user coter < backup_20260101.sql
+docker compose exec -T db psql -U sispgeo_user sispgeo < backup_20260101.sql
 ```
