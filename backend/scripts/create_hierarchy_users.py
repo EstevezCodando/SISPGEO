@@ -24,8 +24,10 @@ Uso:
 """
 
 import argparse
+import getpass
 import sys
 import time
+from pathlib import Path
 from typing import Any
 
 try:
@@ -40,14 +42,27 @@ except ImportError:
 
 BASE_URL_DEFAULT = "http://localhost:8000/api/v1"
 ADMIN_EMAIL      = "admin@eb.mil.br"
-ADMIN_SENHA      = "Admin@1234"
+
+
+def _read_admin_senha_from_env() -> str | None:
+    """Tenta ler ADMIN_PASSWORD do .env na raiz do projeto (2 níveis acima)."""
+    env_path = Path(__file__).resolve().parent.parent.parent / ".env"
+    if not env_path.exists():
+        return None
+    for line in env_path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if line.startswith("ADMIN_PASSWORD="):
+            val = line.split("=", 1)[1].strip()
+            if val:
+                return val
+    return None
 
 # Hierarquia completa — Planalto (CMP) / COTER
 HIERARQUIA = [
     # ── 1. Solicitante OMDS ──────────────────────────────────────────────────
     # Praça/oficial de uma OM que cria os pedidos de produtos geoespaciais.
     {
-        "nome":              "Sgt Gustavo Silva",
+        "nome":              "Gustavo Silva",
         "email":             "gustavo@eb.mil.br",
         "senha":             "Gustavo@1234",
         "telefone":          "(61) 99900-0001",
@@ -61,7 +76,7 @@ HIERARQUIA = [
     },
     # ── 2. Solicitante auxiliar (mesma OM) ───────────────────────────────────
     {
-        "nome":              "Cb João Ferreira",
+        "nome":              "João Ferreira",
         "email":             "joao@eb.mil.br",
         "senha":             "Joao@1234",
         "telefone":          "(61) 99900-0002",
@@ -76,7 +91,7 @@ HIERARQUIA = [
     # ── 3. Supervisor C. Mil. A (CMP) ────────────────────────────────────────
     # Revisa e consolida pedidos de todas as OMs do CMP.
     {
-        "nome":              "Maj Paulo Supervisor",
+        "nome":              "Paulo Supervisor",
         "email":             "supervisor.cmilA@eb.mil.br",
         "senha":             "Supervisor@1234",
         "telefone":          "(61) 99900-0010",
@@ -91,7 +106,7 @@ HIERARQUIA = [
     # ── 4. Consolidador COTER ────────────────────────────────────────────────
     # Agrupa pedidos de todos os CMilA vinculados ao COTER e envia à DSG.
     {
-        "nome":              "TC Carlos Consolidador",
+        "nome":              "Carlos Consolidador",
         "email":             "consolidador.coter@eb.mil.br",
         "senha":             "Consolidador@1234",
         "telefone":          "(61) 99900-0020",
@@ -106,7 +121,7 @@ HIERARQUIA = [
     # ── 5. Analista CGEO ─────────────────────────────────────────────────────
     # Analisa viabilidade e entrega produtos no BDGEx.
     {
-        "nome":              "Cap Ricardo Analista CGEO",
+        "nome":              "Ricardo Analista CGEO",
         "email":             "analista.cgeo@eb.mil.br",
         "senha":             "AnalistaCGEO@1234",
         "telefone":          "(61) 99900-0030",
@@ -162,11 +177,11 @@ def print_card(u: dict, idx: int) -> None:
 # Helpers de API
 # ---------------------------------------------------------------------------
 
-def admin_login(client: httpx.Client) -> str:
-    r = client.post("/auth/login", json={"email": ADMIN_EMAIL, "senha": ADMIN_SENHA})
+def admin_login(client: httpx.Client, senha: str) -> str:
+    r = client.post("/auth/login", json={"email": ADMIN_EMAIL, "senha": senha})
     if r.status_code != 200:
         print(f"\n\033[31mFalha no login do admin: {r.status_code} — {r.text}\033[0m")
-        print("Verifique se o backend está rodando e o admin foi criado.")
+        print("Verifique a senha do admin no .env (ADMIN_PASSWORD) ou use --admin-senha.")
         sys.exit(1)
     token = r.json()["access_token"]
     ok(f"Admin autenticado ({ADMIN_EMAIL})")
@@ -243,12 +258,27 @@ def activate_and_set_profile(
 # Fluxo principal
 # ---------------------------------------------------------------------------
 
-def run(base_url: str, dry_run: bool, skip_existing: bool) -> None:
+def run(base_url: str, dry_run: bool, skip_existing: bool, admin_senha: str | None) -> None:
     print(f"\n\033[1mSISGEO — Criação da Hierarquia CMP / COTER\033[0m")
     print(f"Backend: {base_url}")
     print(f"Fluxo: SOLICITANTE → SUPERVISOR (CMP) → CONSOLIDADOR (COTER) → DSG")
     if dry_run:
         print("\033[33m[DRY-RUN] Nenhuma alteração será realizada.\033[0m")
+
+    # Resolver senha do admin: argumento > .env > prompt interativo
+    if not admin_senha:
+        admin_senha = _read_admin_senha_from_env()
+        if admin_senha:
+            ok("ADMIN_PASSWORD lida do .env")
+        else:
+            print(f"\n  Senha do admin ({ADMIN_EMAIL}) não encontrada no .env.")
+            try:
+                admin_senha = getpass.getpass("  ADMIN_PASSWORD: ")
+            except Exception:
+                admin_senha = input("  ADMIN_PASSWORD (visível): ").strip()
+            if not admin_senha:
+                print("\033[31mSenha não pode ser vazia.\033[0m")
+                sys.exit(1)
 
     with httpx.Client(base_url=base_url, timeout=15) as client:
         # Verifica saúde do backend — retry por até 60 s (startup demora mais
@@ -275,7 +305,7 @@ def run(base_url: str, dry_run: bool, skip_existing: bool) -> None:
                 info(f"Senha: {u['senha']}")
             return
 
-        token = admin_login(client)
+        token = admin_login(client, admin_senha)
         existing_users = get_all_users(client, token)
 
         results: list[dict] = []
@@ -326,7 +356,7 @@ def run(base_url: str, dry_run: bool, skip_existing: bool) -> None:
             print(f"  {label:<28} {r['email']:<36} {r['senha']}")
 
         # Lembrar do admin
-        print(f"  {'Gestor Cartográfico (DSG)':<28} {'admin@eb.mil.br':<36} Admin@1234  ← admin")
+        print(f"  {'Gestor Cartográfico (DSG)':<28} {'admin@eb.mil.br':<36} (senha definida no .env)")
         print(SEP)
         print(f"\n  \033[32m✓ {len(results)} usuários processados.\033[0m")
         print(f"  Acesse: {base_url.replace('/api/v1', '')}/\n")
@@ -355,5 +385,10 @@ if __name__ == "__main__":
         action="store_true",
         help="Pula usuários já cadastrados em vez de atualizar.",
     )
+    parser.add_argument(
+        "--admin-senha",
+        default=None,
+        help="Senha do admin (padrão: lida do .env ou solicitada interativamente).",
+    )
     args = parser.parse_args()
-    run(args.base_url, args.dry_run, args.skip_existing)
+    run(args.base_url, args.dry_run, args.skip_existing, args.admin_senha)
