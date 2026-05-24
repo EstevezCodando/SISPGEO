@@ -51,6 +51,28 @@ cd /opt/sispgeo
 
 # Criar o arquivo de variáveis de ambiente
 cp .env.example .env
+```
+
+#### Gerar a SECRET_KEY (Linux — servidor de produção)
+
+```bash
+# Gera 32 bytes aleatórios em hexadecimal e adiciona ao .env
+echo "SECRET_KEY=$(openssl rand -hex 32)" >> .env
+
+# Confirma que foi gravado corretamente
+grep SECRET_KEY .env
+# Saída esperada: SECRET_KEY=a3f8b2e1c4d7f09a2b5e8c1d4a7f0e3b6c9d2e5f8a1b4c7d0e3f6a9b2c5d8e1
+```
+
+> Se o servidor **não tiver o OpenSSL instalado**:
+> ```bash
+> # Alternativa com /dev/urandom (disponível em qualquer Linux)
+> echo "SECRET_KEY=$(cat /dev/urandom | tr -dc 'a-f0-9' | head -c 64)" >> .env
+> ```
+
+Abra o `.env` e preencha as demais variáveis obrigatórias:
+
+```bash
 nano .env
 ```
 
@@ -60,8 +82,8 @@ Variáveis obrigatórias no `.env`:
 # Banco de dados
 DB_PASSWORD=senha_forte_aqui
 
-# JWT — gere com: openssl rand -hex 32
-SECRET_KEY=cole_aqui_a_chave_gerada
+# JWT — gerada pelo comando acima; não altere depois de subir o sistema
+SECRET_KEY=cole_aqui_se_nao_usou_o_comando_acima
 
 # URL pública do frontend (sem barra no final)
 FRONTEND_URL=https://meudominio.lala.lala

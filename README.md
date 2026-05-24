@@ -131,24 +131,42 @@ cp .env.example .env
 #### Gerar as credenciais obrigatórias
 
 O sistema **não sobe** em produção se `SECRET_KEY`, `DB_PASSWORD` ou
-`ADMIN_PASSWORD` não estiverem definidas. Execute os comandos abaixo e
-cole os valores gerados no arquivo `.env`:
+`ADMIN_PASSWORD` não estiverem definidas.
+
+**🐧 Linux / macOS — terminal:**
 
 ```bash
-# SECRET_KEY — chave de assinatura JWT (obrigatória)
+# Gera a SECRET_KEY e já adiciona ao .env
 echo "SECRET_KEY=$(openssl rand -hex 32)" >> .env
-
-# DB_PASSWORD — senha do PostgreSQL (altere pelo valor desejado)
-# echo "DB_PASSWORD=minha_senha_forte" >> .env
-
-# ADMIN_PASSWORD — senha do usuário admin@eb.mil.br
-# Requisitos: maiúscula, minúscula, número e caractere especial (mín. 8 chars)
-# echo "ADMIN_PASSWORD=MinhaSenh@1" >> .env
 ```
 
-> **Atenção:** os comandos com `>>` acrescentam as variáveis ao `.env` sem
-> sobrescrever os valores já existentes. Se preferir, edite o arquivo
-> manualmente com `nano .env` e preencha cada variável.
+**🪟 Windows — PowerShell** (não precisa de nenhuma ferramenta extra):
+
+```powershell
+# Gera a SECRET_KEY com .NET nativo e adiciona ao .env
+$key = [System.Convert]::ToHexString(
+    [System.Security.Cryptography.RandomNumberGenerator]::GetBytes(32)
+).ToLower()
+Add-Content .env "SECRET_KEY=$key"
+Write-Host "SECRET_KEY gerada: $key"
+```
+
+**🪟 Windows — Git Bash / WSL** (se tiver instalado):
+
+```bash
+# Mesmo comando do Linux funciona no Git Bash e no WSL
+echo "SECRET_KEY=$(openssl rand -hex 32)" >> .env
+```
+
+**Qualquer sistema — via Docker** (se o Docker já estiver instalado):
+
+```bash
+echo "SECRET_KEY=$(docker run --rm alpine sh -c 'openssl rand -hex 32')" >> .env
+```
+
+> Após gerar a `SECRET_KEY`, abra o `.env` e preencha também:
+> - `DB_PASSWORD` — senha do PostgreSQL (qualquer valor forte)
+> - `ADMIN_PASSWORD` — senha do admin (maiúscula + minúscula + número + símbolo, mín. 8 chars)
 
 ```bash
 # Suba todos os serviços
@@ -401,12 +419,26 @@ FRONTEND_URL=http://localhost
 
 #### Como gerar `SECRET_KEY`
 
+**🐧 Linux / macOS:**
 ```bash
 openssl rand -hex 32
-# Exemplo de saída: a3f8b2e1c4d7f09a2b5e8c1d4a7f0e3b6c9d2e5f8a1b4c7d0e3f6a9b2c5d8e1
+# Saída: a3f8b2e1c4d7f09a2b5e8c1d4a7f0e3b6c9d2e5f8a1b4c7d0e3f6a9b2c5d8e1
 ```
 
-Cole o valor gerado diretamente na variável `SECRET_KEY` no arquivo `.env`.
+**🪟 Windows — PowerShell:**
+```powershell
+[System.Convert]::ToHexString(
+    [System.Security.Cryptography.RandomNumberGenerator]::GetBytes(32)
+).ToLower()
+# Saída: a3f8b2e1c4d7f09a2b5e8c1d4a7f0e3b6c9d2e5f8a1b4c7d0e3f6a9b2c5d8e1
+```
+
+**🪟 Windows — Git Bash ou WSL:**
+```bash
+openssl rand -hex 32
+```
+
+Cole o valor gerado na variável `SECRET_KEY` no arquivo `.env`.
 
 > **Produção:** `BDGEX_MOCK=false`, `ENV=production`, `SECRET_KEY` gerada com
 > `openssl rand -hex 32`, `ADMIN_PASSWORD` com requisitos de complexidade e
