@@ -4,7 +4,6 @@ import toast from 'react-hot-toast'
 import { authApi } from '../api/auth'
 import { usersApi } from '../api/users'
 import { useAuthStore } from '../store/authStore'
-import { trackEvent } from '../firebase'
 
 export function Login() {
   const [email, setEmail] = useState('')
@@ -21,8 +20,7 @@ export function Login() {
       setToken(res.data.access_token)
       const me = await usersApi.getMe()
       setUser(me.data)
-      trackEvent('login', { method: 'email', perfil: me.data.perfil })
-      toast.success('Login realizado com sucesso!')
+toast.success('Login realizado com sucesso!')
       navigate('/')
     } catch (err: unknown) {
       const e = err as { response?: { data?: { detail?: string } } }

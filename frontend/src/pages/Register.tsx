@@ -5,7 +5,6 @@ import { authApi } from "../api/auth";
 import { omsApi } from "../api/oms";
 import { OMS_DATA } from "../data/omsData";
 import { POSTOS } from "../data/postos";
-import { trackEvent } from "../firebase";
 
 const CMILITAR = Object.entries(OMS_DATA).map(([code, { label }]) => ({
   code,
@@ -140,8 +139,7 @@ export function Register() {
         posto_graduacao: form.posto_graduacao || undefined,
         senha: form.senha,
       });
-      trackEvent("sign_up", { method: "email", om: form.om });
-      setRegistered(form.email);
+setRegistered(form.email);
     } catch (err: any) {
       const msg = err.response?.data?.detail ?? "Erro no cadastro";
       toast.error(

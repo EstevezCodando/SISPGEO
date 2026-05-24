@@ -32,7 +32,7 @@ async def _create_admin():
         if existing:
             return
         user = Usuario(
-            nome="Cel Administrador DSG",
+            nome="Administrador DSG",
             email="admin@eb.mil.br",
             telefone="(61) 3415-0000",
             secao_om="Seção de TI",
@@ -175,7 +175,7 @@ async def _create_test_users():
     test_users = [
         # Solicitante OMDS — 22º B I (CMP - Comando Militar do Planalto)
         dict(
-            nome="2º Sgt Gustavo Silva",
+            nome="Gustavo Silva",
             email="gustavo@eb.mil.br",
             telefone="(61) 99900-0001",
             secao_om="S3",
@@ -188,7 +188,7 @@ async def _create_test_users():
         ),
         # Solicitante auxiliar (mesmo batalhão)
         dict(
-            nome="Cb João Ferreira",
+            nome="João Ferreira",
             email="joao@eb.mil.br",
             telefone="(61) 99900-0002",
             secao_om="S3",
@@ -201,7 +201,7 @@ async def _create_test_users():
         ),
         # Supervisor do C. Mil. A Planalto
         dict(
-            nome="Maj Paulo Supervisor",
+            nome="Paulo Supervisor",
             email="supervisor.cmilA@eb.mil.br",
             telefone="(61) 99900-0010",
             secao_om="Seção de Geoinformação",
@@ -214,7 +214,7 @@ async def _create_test_users():
         ),
         # Consolidador COTER
         dict(
-            nome="TC Carlos Consolidador",
+            nome="Carlos Consolidador",
             email="consolidador.coter@eb.mil.br",
             telefone="(61) 99900-0020",
             secao_om="Seção de Geoinformação e Cartografia",
@@ -227,7 +227,7 @@ async def _create_test_users():
         ),
         # Analista CGEO
         dict(
-            nome="Cap Ricardo CGEO",
+            nome="Ricardo CGEO",
             email="analista.cgeo@eb.mil.br",
             telefone="(61) 99900-0030",
             secao_om="Seção de Análise",
