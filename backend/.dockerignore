@@ -4,6 +4,7 @@ __pycache__/
 *.pyd
 .env
 .env.*
+senhas_fortes.txt
 *.key
 *.pem
 *.p12

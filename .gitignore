@@ -1,7 +1,8 @@
-# ── Variáveis de ambiente (nunca commitar) ────────────────────────────────────
+# ── Variáveis de ambiente e credenciais (nunca commitar) ─────────────────────
 .env
 *.env.local
 *.env.production
+senhas_fortes.txt
 
 # ── Python ────────────────────────────────────────────────────────────────────
 __pycache__/
