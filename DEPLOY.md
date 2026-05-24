@@ -48,31 +48,29 @@ sudo ufw status
 # Clonar o repositório
 git clone <URL_DO_REPO> /opt/sispgeo
 cd /opt/sispgeo
-
-# Criar o arquivo de variáveis de ambiente
-cp .env.example .env
 ```
 
-#### Gerar a SECRET_KEY (Linux — servidor de produção)
+#### Gerar credenciais com `step0.py`
+
+O script de configuração inicial cria o `.env`, gera a `SECRET_KEY`
+automaticamente e solicita `DB_PASSWORD` e `ADMIN_PASSWORD` de forma
+interativa. Requer apenas Python 3 (já presente em qualquer servidor Linux):
 
 ```bash
-# Gera 32 bytes aleatórios em hexadecimal e adiciona ao .env
+python3 step0.py
+```
+
+O script cria e preenche o `.env` automaticamente. Se preferir configurar
+manualmente, use:
+
+```bash
+# Alternativa manual — gerar SECRET_KEY pela linha de comando
 echo "SECRET_KEY=$(openssl rand -hex 32)" >> .env
 
-# Confirma que foi gravado corretamente
-grep SECRET_KEY .env
-# Saída esperada: SECRET_KEY=a3f8b2e1c4d7f09a2b5e8c1d4a7f0e3b6c9d2e5f8a1b4c7d0e3f6a9b2c5d8e1
-```
+# Sem OpenSSL instalado:
+echo "SECRET_KEY=$(python3 -c 'import secrets; print(secrets.token_hex(32))')" >> .env
 
-> Se o servidor **não tiver o OpenSSL instalado**:
-> ```bash
-> # Alternativa com /dev/urandom (disponível em qualquer Linux)
-> echo "SECRET_KEY=$(cat /dev/urandom | tr -dc 'a-f0-9' | head -c 64)" >> .env
-> ```
-
-Abra o `.env` e preencha as demais variáveis obrigatórias:
-
-```bash
+# Abrir o .env para preencher as demais variáveis
 nano .env
 ```
 

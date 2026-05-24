@@ -123,50 +123,52 @@ Cada transição de status gera **notificações in-app e por e-mail**. A DSG po
 # Clone o repositório
 git clone https://github.com/EstevezCodando/SISGEO.git
 cd SISGEO
-
-# Copie o template de variáveis de ambiente
-cp .env.example .env
 ```
 
-#### Gerar as credenciais obrigatórias
+#### Gerar as credenciais obrigatórias — `step0.py`
 
-O sistema **não sobe** em produção se `SECRET_KEY`, `DB_PASSWORD` ou
-`ADMIN_PASSWORD` não estiverem definidas.
-
-**🐧 Linux / macOS — terminal:**
+Execute o script de configuração inicial antes de subir o sistema.
+Ele funciona em **Windows, Linux e macOS** — usa apenas a biblioteca padrão do Python (sem instalar nada):
 
 ```bash
-# Gera a SECRET_KEY e já adiciona ao .env
-echo "SECRET_KEY=$(openssl rand -hex 32)" >> .env
+python step0.py        # Windows (Prompt / PowerShell) ou Linux/macOS
+python3 step0.py       # Linux/macOS (alternativa)
 ```
 
-**🪟 Windows — PowerShell** (não precisa de nenhuma ferramenta extra):
+O script irá:
+1. Criar o `.env` a partir do `.env.example` (se ainda não existir)
+2. Gerar a `SECRET_KEY` automaticamente com `secrets.token_hex(32)` — equivalente criptográfico de `openssl rand -hex 32`
+3. Solicitar `DB_PASSWORD` e `ADMIN_PASSWORD` interativamente com confirmação
+4. Gravar tudo no `.env` sem sobrescrever valores já definidos
 
-```powershell
-# Gera a SECRET_KEY com .NET nativo e adiciona ao .env
-$key = [System.Convert]::ToHexString(
-    [System.Security.Cryptography.RandomNumberGenerator]::GetBytes(32)
-).ToLower()
-Add-Content .env "SECRET_KEY=$key"
-Write-Host "SECRET_KEY gerada: $key"
+Exemplo de execução:
+
 ```
+──────────────────────────────────────────────────────
+  SisPGeo — Configuração inicial  (step0.py)
+──────────────────────────────────────────────────────
+  ✓ .env criado a partir de .env.example
 
-**🪟 Windows — Git Bash / WSL** (se tiver instalado):
+  1/3 · SECRET_KEY
+  ✓ SECRET_KEY gerada: a3f8b2e1c4d7f0··· (64 chars)
 
-```bash
-# Mesmo comando do Linux funciona no Git Bash e no WSL
-echo "SECRET_KEY=$(openssl rand -hex 32)" >> .env
+  2/3 · DB_PASSWORD
+  DB_PASSWORD: ****
+  Confirme a senha: ****
+  ✓ DB_PASSWORD definida.
+
+  3/3 · ADMIN_PASSWORD
+  ADMIN_PASSWORD: ****
+  Confirme a senha: ****
+  ✓ ADMIN_PASSWORD definida.
+
+  ✓ .env atualizado — variáveis gravadas: SECRET_KEY, DB_PASSWORD, ADMIN_PASSWORD
+
+  Próximo passo:
+  ┌─────────────────────────────────────────────┐
+  │  docker compose up --build -d               │
+  └─────────────────────────────────────────────┘
 ```
-
-**Qualquer sistema — via Docker** (se o Docker já estiver instalado):
-
-```bash
-echo "SECRET_KEY=$(docker run --rm alpine sh -c 'openssl rand -hex 32')" >> .env
-```
-
-> Após gerar a `SECRET_KEY`, abra o `.env` e preencha também:
-> - `DB_PASSWORD` — senha do PostgreSQL (qualquer valor forte)
-> - `ADMIN_PASSWORD` — senha do admin (maiúscula + minúscula + número + símbolo, mín. 8 chars)
 
 ```bash
 # Suba todos os serviços
