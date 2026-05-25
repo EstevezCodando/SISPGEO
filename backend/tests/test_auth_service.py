@@ -39,15 +39,15 @@ class TestRegisterUser:
             patch("app.services.auth_service.get_password_hash", return_value="hash"),
             patch("app.services.auth_service.generate_token", return_value="tok123"),
             patch("app.services.auth_service.send_email", new_callable=AsyncMock) as mock_email,
-            patch("app.services.auth_service.cadastro_recebido", return_value=("Assunto", "<html/>")),
+            patch("app.services.auth_service.ativacao_conta", return_value=("Assunto", "<html/>")),
         ):
             await auth_service.register_user(
                 mock_db, "João", "joao@eb.mil.br", "(61)99999-0000",
                 "1ª Brigada", "S3", "Senha@123",
             )
 
-        # db.add chamado ao menos uma vez: usuário (ativação por admin, sem token de e-mail)
-        assert mock_db.add.call_count >= 1
+        # db.add chamado ao menos duas vezes: usuário + token de ativação
+        assert mock_db.add.call_count >= 2
         mock_db.commit.assert_called()
         mock_email.assert_called_once()
 
