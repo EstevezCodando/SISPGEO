@@ -59,7 +59,16 @@ jobs:
           docker compose logs backend
           exit 1
 
-      # ── 5. Instalar dependências de teste ─────────────────────────────────
+      # ── 5. Copiar testes para o container ────────────────────────────────
+      # tests/ está no .dockerignore para manter a imagem de produção limpa.
+      # No CI copiamos os arquivos diretamente para o container em execução.
+      - name: Copiar testes para o container
+        run: |
+          docker exec -u 0 sispgeo_backend mkdir -p /app/tests
+          docker cp backend/tests/. sispgeo_backend:/app/tests/
+          docker exec -u 0 sispgeo_backend chown -R appuser:appuser /app/tests
+
+      # ── 6. Instalar dependências de teste ─────────────────────────────────
       # Roda como root (-u 0) pois appuser não tem permissão de escrita em site-packages
       - name: Instalar dependências de teste no container
         run: |
@@ -67,20 +76,20 @@ jobs:
             -r /app/requirements-dev.txt \
             --quiet --no-cache-dir
 
-      # ── 6. Testes unitários (sem banco, tudo mockado) ─────────────────────
+      # ── 7. Testes unitários (sem banco, tudo mockado) ─────────────────────
       - name: Testes unitários
         run: |
           docker exec sispgeo_backend python -m pytest tests/ \
             -v --tb=short \
             --ignore=tests/test_api_integration.py
 
-      # ── 7. Testes de integração (API real rodando no container) ───────────
+      # ── 8. Testes de integração (API real rodando no container) ───────────
       - name: Testes de integração
         run: |
           docker exec sispgeo_backend python -m pytest tests/test_api_integration.py \
             -v --tb=short
 
-      # ── 8. Logs em caso de falha ──────────────────────────────────────────
+      # ── 9. Logs em caso de falha ──────────────────────────────────────────
       - name: Logs de falha
         if: failure()
         run: |
