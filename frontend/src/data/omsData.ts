@@ -72,7 +72,7 @@ export const OMS_DATA: Record<string, { label: string; oms: string[] }> = {
     ]
   },
   "CMAO": {
-    "label": "Comando Militar da Amazônia Ocidental",
+    "label": "Comando Militar da Amazônia Oriental",
     "oms": [
       "1º GAC/SL",
       "2º B Com GE Sl",

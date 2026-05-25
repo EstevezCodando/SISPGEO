@@ -20,14 +20,14 @@ import { POSTOS, formatNomeComPosto } from '../data/postos'
 
 // Códigos dos Comandos Militares de Área (CMilA)
 const CMILA_CODES = [
-  { code: 'CMP',  label: 'CMP — Comando Militar do Planalto' },
-  { code: 'CML',  label: 'CML — Comando Militar do Leste' },
-  { code: 'CMS',  label: 'CMS — Comando Militar do Sul' },
-  { code: 'CMO',  label: 'CMO — Comando Militar do Oeste' },
-  { code: 'CMAO', label: 'CMAO — Comando Militar da Amazônia Ocidental' },
-  { code: 'CMA',  label: 'CMA — Comando Militar da Amazônia' },
-  { code: 'CMNOR', label: 'CMNOR — Comando Militar do Nordeste' },
-  { code: 'CMSE', label: 'CMSE — Comando Militar do Sudeste' },
+  { code: 'CMP',  label: 'CMP - Comando Militar do Planalto' },
+  { code: 'CML',  label: 'CML - Comando Militar do Leste' },
+  { code: 'CMS',  label: 'CMS - Comando Militar do Sul' },
+  { code: 'CMO',  label: 'CMO - Comando Militar do Oeste' },
+  { code: 'CMAO', label: 'CMAO - Comando Militar da Amazônia Oriental' },
+  { code: 'CMA',  label: 'CMA - Comando Militar da Amazônia' },
+  { code: 'CMNOR', label: 'CMNOR - Comando Militar do Nordeste' },
+  { code: 'CMSE', label: 'CMSE - Comando Militar do Sudeste' },
 ]
 
 const inputCls = 'w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 transition-colors'
@@ -141,7 +141,7 @@ function SecaoHeranca({
               <option value="">Selecione um colega da OM…</option>
               {candidates.map((u) => (
                 <option key={u.id} value={u.id.toString()}>
-                  {u.nome} — {u.perfil.replace('_', ' ')}
+                  {u.nome} - {u.perfil.replace('_', ' ')}
                 </option>
               ))}
             </select>
@@ -261,7 +261,7 @@ function SecaoOM({
               ))}
             </select>
           ) : (
-            <div className={inputDisabledCls}>{user.regiao_militar || '—'}</div>
+            <div className={inputDisabledCls}>{user.regiao_militar || '-'}</div>
           )}
         </div>
         {desbloqueado && (
@@ -281,6 +281,7 @@ function SecaoOM({
 // ─── Componente principal ─────────────────────────────────────────────────────
 export function MeusDados() {
   const { user, setUser } = useAuthStore()
+  const [nomeDeGuerra, setNomeDeGuerra] = useState(user?.nome_de_guerra ?? '')
   const [telefone, setTelefone] = useState(user?.telefone ?? '')
   const [secao, setSecao] = useState(user?.secao_om ?? '')
   const [posto, setPosto] = useState(user?.posto_graduacao ?? '')
@@ -293,7 +294,12 @@ export function MeusDados() {
     e.preventDefault()
     setSaving(true)
     try {
-      const res = await usersApi.updateMe({ telefone, secao_om: secao, posto_graduacao: posto || undefined })
+      const res = await usersApi.updateMe({
+        nome_de_guerra: nomeDeGuerra || undefined,
+        telefone,
+        secao_om: secao,
+        posto_graduacao: posto || undefined,
+      })
       setUser(res.data)
       toast.success('Dados atualizados com sucesso')
     } catch {
@@ -332,7 +338,7 @@ export function MeusDados() {
           <div className="col-span-2">
             <span className="text-zinc-500 text-xs">Nome completo</span>
             <p className="font-semibold text-zinc-100 mt-0.5 text-base">
-              {formatNomeComPosto(user.nome, user.posto_graduacao)}
+              {formatNomeComPosto(user.nome, user.posto_graduacao, user.nome_de_guerra)}
             </p>
             {user.posto_graduacao && (
               <p className="text-xs text-zinc-500 mt-0.5">{user.posto_graduacao}</p>
@@ -352,7 +358,7 @@ export function MeusDados() {
           </div>
           <div>
             <span className="text-zinc-500 text-xs">Região Militar</span>
-            <p className="font-medium text-zinc-200 mt-0.5">{user.regiao_militar || '—'}</p>
+            <p className="font-medium text-zinc-200 mt-0.5">{user.regiao_militar || '-'}</p>
           </div>
         </div>
 
@@ -367,10 +373,20 @@ export function MeusDados() {
               <option value="">Não informado</option>
               {POSTOS.map((p) => (
                 <option key={p.id} value={p.nome}>
-                  {p.abrev} — {p.nome}
+                  {p.abrev} - {p.nome}
                 </option>
               ))}
             </select>
+          </div>
+          <div>
+            <label className={labelCls}>Nome de Guerra</label>
+            <input
+              type="text"
+              value={nomeDeGuerra}
+              onChange={(e) => setNomeDeGuerra(e.target.value)}
+              placeholder="Como é chamado(a) militarmente"
+              className={inputCls}
+            />
           </div>
           <div>
             <label className={labelCls}>Telefone</label>
@@ -382,7 +398,7 @@ export function MeusDados() {
             />
           </div>
           <div>
-            <label className={labelCls}>Seção / Função</label>
+            <label className={labelCls}>Função / Seção</label>
             <input
               type="text"
               value={secao}

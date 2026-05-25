@@ -34,20 +34,20 @@ export const CONSOLIDADOR_PROFILES = new Set<Perfil>([
 ])
 
 export const PERFIL_LABELS: Record<Perfil, string> = {
-  SOLICITANTE:         'OMDS — Solicitante',
-  SUPERVISOR_CMP:      'Supervisor — C Mil Planalto',
-  SUPERVISOR_CML:      'Supervisor — C Mil Leste',
-  SUPERVISOR_CMS:      'Supervisor — C Mil Sul',
-  SUPERVISOR_CMO:      'Supervisor — C Mil Oeste',
-  SUPERVISOR_CMAO:     'Supervisor — C Mil Amazônia Ocidental',
-  SUPERVISOR_CMA:      'Supervisor — C Mil Amazônia',
-  SUPERVISOR_CMNE:    'Supervisor — C Mil Nordeste',
-  SUPERVISOR_CMSE:     'Supervisor — C Mil Sudeste',
-  CONSOLIDADOR_COTER:  'Consolidador — COTER',
-  CONSOLIDADOR_DSG:    'Consolidador — DSG',
-  CONSOLIDADOR_DEC:    'Consolidador — DEC',
-  CONSOLIDADOR_COLOG:  'Consolidador — COLOG',
-  CONSOLIDADOR_DECEX:  'Consolidador — DECEx',
+  SOLICITANTE:         'OMDS - Solicitante',
+  SUPERVISOR_CMP:      'Supervisor - C Mil Planalto',
+  SUPERVISOR_CML:      'Supervisor - C Mil Leste',
+  SUPERVISOR_CMS:      'Supervisor - C Mil Sul',
+  SUPERVISOR_CMO:      'Supervisor - C Mil Oeste',
+  SUPERVISOR_CMAO:     'Supervisor - C Mil Amazônia Oriental',
+  SUPERVISOR_CMA:      'Supervisor - C Mil Amazônia',
+  SUPERVISOR_CMNE:    'Supervisor - C Mil Nordeste',
+  SUPERVISOR_CMSE:     'Supervisor - C Mil Sudeste',
+  CONSOLIDADOR_COTER:  'Consolidador - COTER',
+  CONSOLIDADOR_DSG:    'Consolidador - DSG',
+  CONSOLIDADOR_DEC:    'Consolidador - DEC',
+  CONSOLIDADOR_COLOG:  'Consolidador - COLOG',
+  CONSOLIDADOR_DECEX:  'Consolidador - DECEx',
   GESTOR_CARTOGRAFICO: 'Gestor Cartográfico (DSG)',
   ANALISTA_CGEO:       'Analista CGEO',
   SUPERVISOR:          'Supervisor (legado)',
@@ -60,6 +60,7 @@ export type OrgaoVinculante = 'COTER' | 'DSG' | 'DECEx' | 'COLOG' | 'DEC'
 export interface Usuario {
   id: number
   nome: string
+  nome_de_guerra: string | null
   email: string
   telefone: string | null
   telefone_ritex: string | null

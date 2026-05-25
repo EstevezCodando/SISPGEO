@@ -61,7 +61,7 @@ export function Dashboard() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold text-zinc-100 tracking-tight">
-          {formatNomeComPosto(user?.nome ?? '', user?.posto_graduacao)}
+          {formatNomeComPosto(user?.nome ?? '', user?.posto_graduacao, user?.nome_de_guerra)}
         </h1>
         <p className="text-zinc-400 text-sm mt-1">
           {user?.om}

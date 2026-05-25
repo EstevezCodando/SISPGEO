@@ -69,6 +69,7 @@ async def register_user(
     orgao_vinculante: str | None = None,
     telefone_ritex: str | None = None,
     posto_graduacao: str | None = None,
+    nome_de_guerra: str | None = None,
 ) -> Usuario:
     """Cadastra um novo usuário e envia e-mail de confirmação.
 
@@ -103,6 +104,7 @@ async def register_user(
 
     user = Usuario(
         nome=nome,
+        nome_de_guerra=nome_de_guerra,
         email=email,
         telefone=telefone,
         telefone_ritex=telefone_ritex,

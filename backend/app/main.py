@@ -93,6 +93,8 @@ async def _run_migrations():
         "ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS auto_submitted BOOLEAN DEFAULT FALSE",
         # 2026-05: posto/graduação do militar (Civil, Sd EV, Cb, Cap, TC, Cel...)
         "ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS posto_graduacao VARCHAR(50)",
+        # 2026-05: nome de guerra — exibido no lugar do nome completo nas referências do sistema
+        "ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS nome_de_guerra VARCHAR(100)",
         # 2026-05: configuração global de data base de entrega (singleton id=1)
         """CREATE TABLE IF NOT EXISTS config_entrega (
             id INTEGER PRIMARY KEY DEFAULT 1,

@@ -204,7 +204,7 @@ function RevisaoModal({
                 <div className="flex items-center gap-2 text-zinc-300">
                   <User className="h-3.5 w-3.5 text-zinc-500 shrink-0" />
                   <span className="font-medium">
-                    {user ? formatNomeComPosto(user.nome, user.posto_graduacao) : '—'}
+                    {user ? formatNomeComPosto(user.nome, user.posto_graduacao, user.nome_de_guerra) : '-'}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 text-zinc-400">

@@ -6,6 +6,7 @@ from app.models.enums import PerfilEnum, OrgaoVinculanteEnum, PostoGraduacaoEnum
 class UsuarioOut(BaseModel):
     id: int
     nome: str
+    nome_de_guerra: str | None
     email: str
     telefone: str | None
     telefone_ritex: str | None
@@ -30,6 +31,7 @@ class UsuarioOut(BaseModel):
 
 
 class UsuarioUpdateRequest(BaseModel):
+    nome_de_guerra: str | None = None
     telefone: str | None = None
     telefone_ritex: str | None = None
     secao_om: str | None = None

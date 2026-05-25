@@ -25,7 +25,11 @@ services:
     build: ./backend
     container_name: sispgeo_backend
     environment:
-      DATABASE_URL: "postgresql+asyncpg://sispgeo_user:${DB_PASSWORD:?DB_PASSWORD obrigatorio - execute: python step0.py}@db:5432/sispgeo"
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: sispgeo_user
+      DB_PASSWORD: "${DB_PASSWORD:?DB_PASSWORD obrigatorio - execute: python step0.py}"
+      DB_NAME: sispgeo
       SECRET_KEY: "${SECRET_KEY:?SECRET_KEY obrigatorio - execute: python step0.py}"
       ADMIN_PASSWORD: "${ADMIN_PASSWORD:?ADMIN_PASSWORD obrigatorio - execute: python step0.py}"
       ALGORITHM: HS256
