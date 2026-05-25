@@ -84,6 +84,8 @@ def _make_pedido(
     p.gestor_demandante_id = None
     p.gestor_dsg_id = None
     p.cgeo_id = None
+    # regiao_militar necessário para roteamento COTER → SUPERVISOR_CMP em submit_pedido
+    p.regiao_militar = "CMP"
     p.itens = [_make_item()] if with_items else []
     return p
 

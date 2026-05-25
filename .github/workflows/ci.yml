@@ -23,6 +23,7 @@ jobs:
           cat > .env << 'ENVEOF'
           DB_PASSWORD=ci_secret
           SECRET_KEY=ci_secret_key_minimum_32_chars_for_jwt_signing
+          ADMIN_PASSWORD=Admin@1234
           BDGEX_MOCK=true
           FRONTEND_URL=http://localhost
           ENV=development
