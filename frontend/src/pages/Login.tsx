@@ -43,7 +43,7 @@ toast.success('Login realizado com sucesso!')
               <img src="/dsg.png" alt="DSG" className="h-14 w-auto" />
             </div>
             <h1 className="text-2xl font-semibold text-zinc-100 tracking-tight">SisPGeo</h1>
-            <p className="text-zinc-500 text-sm mt-1">Sistema de Pedidos de Geoinformação — DSG/EB</p>
+            <p className="text-zinc-500 text-sm mt-1">Sistema de Pedidos de Geoinformação – DSG/EB</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
