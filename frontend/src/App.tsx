@@ -65,7 +65,7 @@ function RequireProfile({ profiles, children }: { profiles: Set<string>; childre
 export default function App() {
   return (
     <BrowserRouter>
-      <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
+      <Toaster position="top-right" toastOptions={{ duration: 4000 }} containerStyle={{ zIndex: 99999 }} />
       <Routes>
         {/* Public */}
         <Route path="/login" element={<Login />} />
