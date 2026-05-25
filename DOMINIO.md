@@ -1,79 +1,18 @@
 # SisPGeo — Configurar Domínio Próprio
 
-> Você comprou um domínio (ex.: `meusite.eb.mil.br`) em um registrador como
-> **Registro.br**, **GoDaddy**, **Hostinger** ou similar.
-> Este guia mostra exatamente o que fazer para apontar esse domínio para o
-> seu servidor e deixar o SisPGeo acessível por ele.
-
 ---
 
 ## Sumário
 
-1. [Descobrir o IP do seu servidor](#1-descobrir-o-ip-do-seu-servidor)
-2. [Criar o registro DNS no painel do registrador](#2-criar-o-registro-dns-no-painel-do-registrador)
-3. [Atualizar o nginx](#3-atualizar-o-nginx)
-4. [Atualizar o `.env`](#4-atualizar-o-env)
-5. [Reiniciar o sistema](#5-reiniciar-o-sistema)
-6. [Ativar HTTPS gratuito com Let's Encrypt](#6-ativar-https-gratuito-com-lets-encrypt)
-7. [Verificar se tudo funciona](#7-verificar-se-tudo-funciona)
+1. [Atualizar o nginx](#1-atualizar-o-nginx)
+2. [Atualizar o `.env`](#2-atualizar-o-env)
+3. [Reiniciar o sistema](#3-reiniciar-o-sistema)
+4. [Ativar HTTPS gratuito com Let's Encrypt](#4-ativar-https-gratuito-com-lets-encrypt)
+5. [Verificar se tudo funciona](#5-verificar-se-tudo-funciona)
 
 ---
 
-## 1. Descobrir o IP do seu servidor
-
-No terminal do servidor, execute:
-
-```bash
-curl -s ifconfig.me
-# ou
-hostname -I | awk '{print $1}'
-```
-
-Anote o IP — você vai precisar dele no próximo passo.
-
----
-
-## 2. Criar o registro DNS no painel do registrador
-
-Acesse o painel do registrador onde comprou o domínio e crie um **registro do tipo A**:
-
-| Campo        | Valor                          |
-|--------------|--------------------------------|
-| **Tipo**     | `A`                            |
-| **Nome/Host**| `@` (representa o domínio raiz)|
-| **Valor/IP** | IP do seu servidor             |
-| **TTL**      | `3600` (ou "Automático")       |
-
-> Se quiser que `www.meusite.eb.mil.br` também funcione, crie um segundo
-> registro A com **Nome/Host** = `www` apontando para o mesmo IP.
-> Ou crie um registro **CNAME** `www` → `meusite.eb.mil.br`.
-
-### Como chegar lá nos registradores mais comuns
-
-**Registro.br**
-1. Acesse [registro.br](https://registro.br) → Entre com sua conta
-2. Clique no domínio → **DNS** → **Editar zona**
-3. Adicione o registro A conforme a tabela acima
-
-**GoDaddy**
-1. [godaddy.com](https://godaddy.com) → Meus Produtos → DNS
-2. Seção **Registros** → Adicionar → Tipo A
-
-**Hostinger**
-1. Painel → Domínios → Gerenciar → **DNS / Nameservers**
-2. Registros DNS → Adicionar registro → Tipo A
-
-**Cloudflare** (se usar como DNS, mesmo que o domínio seja de outro registrador)
-1. Painel → seu domínio → **DNS** → Adicionar registro
-2. Tipo A, nome `@`, IPv4 do servidor
-3. Mantenha o **proxy desativado (nuvem cinza)** durante o primeiro teste
-
-> **A propagação do DNS pode levar até 24h**, mas costuma ser rápida (5–30 min).
-> Você pode acompanhar em: [dnschecker.org](https://dnschecker.org)
-
----
-
-## 3. Atualizar o nginx
+## 1. Atualizar o nginx
 
 Edite `nginx/nginx.conf` no servidor e substitua o `server_name`:
 
@@ -97,7 +36,7 @@ server_name meusite.eb.mil.br www.meusite.eb.mil.br;
 
 ---
 
-## 4. Atualizar o `.env`
+## 2. Atualizar o `.env`
 
 ```bash
 nano /opt/sispgeo/.env
@@ -109,7 +48,7 @@ Localize a linha `FRONTEND_URL` e atualize:
 # Antes de ativar HTTPS:
 FRONTEND_URL=http://meusite.eb.mil.br
 
-# Após ativar HTTPS (seção 6):
+# Após ativar HTTPS (seção 4):
 # FRONTEND_URL=https://meusite.eb.mil.br
 ```
 
@@ -119,7 +58,8 @@ FRONTEND_URL=http://meusite.eb.mil.br
 
 ---
 
-## 5. Reiniciar o sistema
+## 3. Reiniciar o sistema
+
 
 ```bash
 cd /opt/sispgeo
@@ -135,19 +75,21 @@ Neste momento o sistema já deve estar acessível em `http://meusite.eb.mil.br`.
 
 ---
 
-## 6. Ativar HTTPS gratuito com Let's Encrypt
+---
+
+## 4. Ativar HTTPS gratuito com Let's Encrypt
 
 Com um domínio público e registrado, você pode obter um certificado SSL
 **gratuito e automático** pelo Let's Encrypt.
 
-### 6.1 — Instalar o Certbot
+### 4.1 — Instalar o Certbot
 
 ```bash
 sudo apt update
 sudo apt install -y certbot
 ```
 
-### 6.2 — Parar o nginx momentaneamente
+### 4.2 — Parar o nginx momentaneamente
 
 O Certbot precisa da porta 80 livre por alguns segundos para validar o domínio:
 
@@ -155,7 +97,7 @@ O Certbot precisa da porta 80 livre por alguns segundos para validar o domínio:
 docker compose stop nginx
 ```
 
-### 6.3 — Emitir o certificado
+### 4.3 — Emitir o certificado
 
 ```bash
 sudo certbot certonly --standalone \
@@ -177,19 +119,20 @@ sudo certbot certonly --standalone \
 ```
 
 Os certificados são salvos em:
+
 ```
 /etc/letsencrypt/live/meusite.eb.mil.br/fullchain.pem
 /etc/letsencrypt/live/meusite.eb.mil.br/privkey.pem
 ```
 
-### 6.4 — Criar link simbólico para os certificados
+### 4.4 — Criar link simbólico para os certificados
 
 ```bash
 mkdir -p /opt/sispgeo/nginx/certs
 sudo ln -s /etc/letsencrypt /opt/sispgeo/nginx/certs/letsencrypt
 ```
 
-### 6.5 — Ativar HTTPS no `docker-compose.yml`
+### 4.5 — Ativar HTTPS no `docker-compose.yml`
 
 ```bash
 nano /opt/sispgeo/docker-compose.yml
@@ -213,7 +156,7 @@ volumes:
   - ./nginx/certs:/etc/nginx/certs:ro
 ```
 
-### 6.6 — Ativar HTTPS no `nginx/nginx.conf`
+### 4.6 — Ativar HTTPS no `nginx/nginx.conf`
 
 Abra o arquivo e faça as duas alterações indicadas:
 
@@ -245,7 +188,7 @@ server {
 }
 ```
 
-### 6.7 — Atualizar `.env` e subir
+### 4.7 — Atualizar `.env` e subir
 
 ```bash
 # Atualizar FRONTEND_URL para https://
@@ -257,7 +200,7 @@ cd /opt/sispgeo
 docker compose up -d --build nginx
 ```
 
-### 6.8 — Renovação automática
+### 4.8 — Renovação automática
 
 O Certbot renova o certificado automaticamente (o timer systemd já vem ativo).
 Configure o hook para recarregar o nginx após a renovação:
@@ -279,7 +222,7 @@ sudo certbot renew --dry-run
 
 ---
 
-## 7. Verificar se tudo funciona
+## 5. Verificar se tudo funciona
 
 ```bash
 # DNS propagado?
