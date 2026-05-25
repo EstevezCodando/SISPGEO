@@ -14,7 +14,6 @@ import api from '../api/client'
 import { formatNomeComPosto } from '../data/postos'
 import { pedidosApi } from '../api/pedidos'
 import { janelasApi, type MinhaJanela } from '../api/janelas'
-import { operacoesApi, type Operacao } from '../api/operacoes'
 import { configApi, type ConfigEntrega } from '../api/config'
 import { useCartStore, cartKey } from '../store/cartStore'
 import { useAuthStore } from '../store/authStore'
@@ -46,6 +45,16 @@ const TIPOS_PRODUTO_VISIVEIS: TipoProduto[] = [
   'MDT', 'MDS', 'CDGV', 'IMPRESSAO_CT', 'IMPRESSAO_COI',
 ]
 
+const FINALIDADES_GEO = [
+  'Operação Militar',
+  'Exercício Combinado',
+  'Exercício Integrador',
+  'Manobra Escolar',
+  'Instrução Militar',
+  'Atualização de Campo de Instrução',
+  'Atualização',
+] as const
+
 const inputCls = 'w-full bg-zinc-800 border border-zinc-700 rounded-lg px-2.5 py-1.5 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed'
 const labelCls = 'block text-xs font-medium text-zinc-400 mb-1'
 
@@ -76,9 +85,11 @@ function RevisaoGeoJSONLayer({
         const cartItem = itemMap.get(inom)
         // Prioridade: feature.properties.mi → CartItem.mi → ausente
         const mi = props.mi ?? cartItem?.mi ?? null
-        let tip = `<b>${inom}</b>`
-        if (mi) tip += `<br><span style="color:#a1a1aa">MI:</span> <span style="color:#34d399;font-weight:600">${mi}</span>`
-        if (cartItem) tip += `<br><span style="color:#71717a">${TIPO_PRODUTO_LABELS[cartItem.tipo_produto]} · ${cartItem.escala}</span>`
+        const tip = mi
+          ? `<b style="color:#34d399">${mi}</b><br><span style="color:#a1a1aa;font-size:11px">${inom}</span>`
+          + (cartItem ? `<br><span style="color:#71717a">${TIPO_PRODUTO_LABELS[cartItem.tipo_produto]} · ${cartItem.escala}</span>` : '')
+          : `<b>${inom}</b>`
+          + (cartItem ? `<br><span style="color:#71717a">${TIPO_PRODUTO_LABELS[cartItem.tipo_produto]} · ${cartItem.escala}</span>` : '')
         lyr.bindTooltip(tip, { sticky: true, className: 'leaflet-dark-tooltip' })
       },
     }).addTo(map)
@@ -106,7 +117,7 @@ interface RevisaoModalProps {
   onConfirm: () => void
   submitting: boolean
   isImpressao: boolean
-  isOutros: boolean
+  finalidadeGeo: string
   finalidade: string
   onSetFinalidade: (v: string) => void
 }
@@ -114,7 +125,7 @@ interface RevisaoModalProps {
 function RevisaoModal({
   items, impressoes, onRemoveItem, onSetItemImpressao, onRemoveItemImpressao,
   onClose, onConfirm, submitting,
-  isImpressao, isOutros, finalidade, onSetFinalidade,
+  isImpressao, finalidadeGeo, finalidade, onSetFinalidade,
 }: RevisaoModalProps) {
   const { user } = useAuthStore()
 
@@ -239,7 +250,13 @@ function RevisaoModal({
                       >
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
-                            <p className="font-mono font-medium text-emerald-400 truncate">{item.inom}</p>
+                            {item.mi
+                              ? <>
+                                  <p className="font-medium text-emerald-400 truncate">{item.mi}</p>
+                                  <p className="font-mono text-zinc-500 text-[10px] truncate">{item.inom}</p>
+                                </>
+                              : <p className="font-mono font-medium text-emerald-400 truncate">{item.inom}</p>
+                            }
                             <p className="text-zinc-400">{TIPO_PRODUTO_LABELS[item.tipo_produto]}</p>
                             <p className="text-zinc-500">{item.escala}</p>
                           </div>
@@ -352,23 +369,24 @@ function RevisaoModal({
                 </div>
               </div>
 
-              {/* Finalidade */}
+              {/* Informação Complementar */}
               <div>
-                <label className={`block text-xs font-semibold mb-1.5 uppercase tracking-wide ${isOutros ? 'text-amber-400' : 'text-zinc-400'}`}>
-                  Finalidade {isOutros && <span className="text-amber-400 normal-case font-normal tracking-normal">(obrigatório)</span>}
+                <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide text-amber-400">
+                  Informação Complementar <span className="normal-case font-normal tracking-normal">(obrigatório)</span>
                 </label>
+                {finalidadeGeo && (
+                  <span className="inline-block mb-1.5 px-2 py-0.5 rounded-full bg-zinc-700/60 border border-zinc-600/40 text-[10px] text-zinc-400">
+                    {finalidadeGeo}
+                  </span>
+                )}
                 <textarea
                   value={finalidade}
                   onChange={(e) => onSetFinalidade(e.target.value)}
                   rows={3}
-                  placeholder={isOutros ? 'Descreva o objetivo do pedido (mín. 10 caracteres)...' : 'Descreva a finalidade da solicitação...'}
-                  className={`w-full bg-zinc-800 border rounded-lg px-2.5 py-2 text-xs text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-1 resize-none transition-colors ${
-                    isOutros
-                      ? 'border-amber-500/50 focus:ring-amber-500 focus:border-amber-500'
-                      : 'border-zinc-700 focus:ring-emerald-500 focus:border-emerald-500'
-                  }`}
+                  placeholder="Descreva o objetivo do pedido (mín. 10 caracteres)..."
+                  className="w-full bg-zinc-800 border border-amber-500/50 rounded-lg px-2.5 py-2 text-xs text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 resize-none transition-colors"
                 />
-                {isOutros && finalidade.trim().length > 0 && finalidade.trim().length < 10 && (
+                {finalidade.trim().length > 0 && finalidade.trim().length < 10 && (
                   <p className="text-[11px] text-amber-400 mt-1">
                     {10 - finalidade.trim().length} caractere(s) restante(s)
                   </p>
@@ -384,7 +402,7 @@ function RevisaoModal({
             onClick={onClose}
             className="flex-1 py-2.5 rounded-lg border border-white/10 text-zinc-400 text-sm hover:bg-white/5 transition-colors"
           >
-            Voltar e editar
+            Voltar
           </button>
           <button
             onClick={onConfirm}
@@ -392,7 +410,7 @@ function RevisaoModal({
             className="flex-1 py-2.5 rounded-lg bg-emerald-500 text-white text-sm font-semibold hover:bg-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
           >
             <Check className="h-4 w-4" />
-            {submitting ? 'Enviando...' : 'Revisado'}
+            {submitting ? 'Enviando...' : 'Confirmar'}
           </button>
         </div>
       </div>
@@ -405,17 +423,14 @@ export function SolicitarProdutos() {
   const navigate = useNavigate()
   const { user } = useAuthStore()
   const {
-    items, tipoProduto, escala, dataEntrega, operacaoId, finalidade, impressoes,
-    setTipoProduto, setEscala, setDataEntrega, setOperacaoId, setFinalidade,
+    items, tipoProduto, escala, dataEntrega, finalidadeGeo, finalidade, impressoes,
+    setTipoProduto, setEscala, setDataEntrega, setFinalidadeGeo, setFinalidade,
     setItemImpressao, removeItemImpressao,
     removeItem, clear,
   } = useCartStore()
 
   const isImpressao = tipoProduto ? TIPOS_IMPRESSAO.has(tipoProduto) : false
 
-  const [operacoes, setOperacoes] = useState<Operacao[]>([])
-  const [novaOperacao, setNovaOperacao] = useState('')
-  const [showNewOp, setShowNewOp] = useState(false)
   const [inomGrid, setInomGrid] = useState<FeatureCollection | null>(null)
   const [isLoadingGrid, setIsLoadingGrid] = useState(false)
   // Cache de grades por (tipoProduto|||escala) — evita re-fetch e re-parse ao alternar produtos
@@ -427,11 +442,7 @@ export function SolicitarProdutos() {
   const [submitting, setSubmitting] = useState(false)
   const [minhaJanela, setMinhaJanela] = useState<MinhaJanela | null>(null)
   const [configEntrega, setConfigEntrega] = useState<ConfigEntrega | null>(null)
-  // "Outros" = operacaoId null
-  const isOutros = operacaoId === null
-
   useEffect(() => {
-    operacoesApi.list().then((r) => setOperacoes(r.data)).catch(() => {})
     // Verifica janela ativa para este perfil
     janelasApi.minhaJanela()
       .then(r => setMinhaJanela(r.data))
@@ -483,30 +494,11 @@ export function SolicitarProdutos() {
     return format(addDays(new Date(configEntrega?.data_base + 'T00:00:00' || new Date()), prazo), 'yyyy-MM-dd')
   })()
 
-  const handleCreateOperacao = async () => {
-    if (!novaOperacao.trim()) return
-    try {
-      const r = await operacoesApi.create(novaOperacao.trim())
-      setOperacoes((prev) => [...prev, r.data])
-      setOperacaoId(r.data.id)
-      setNovaOperacao('')
-      setShowNewOp(false)
-      toast.success('Operação criada')
-    } catch {
-      toast.error('Erro ao criar operação')
-    }
-  }
-
-  const handleOperacaoChange = (v: string) => {
-    if (v === '__new__') { setShowNewOp(true); return }
-    setOperacaoId(v ? Number(v) : null)
-  }
-
   const handleSubmit = async () => {
     if (items.length === 0) { toast.error('Adicione ao menos um produto'); return }
     if (!dataEntrega) { toast.error('Informe a data de entrega'); return }
-    if (isOutros && finalidade.trim().length < 10) {
-      toast.error('Preencha a finalidade com ao menos 10 caracteres')
+    if (finalidade.trim().length < 10) {
+      toast.error('Preencha a informação complementar com ao menos 10 caracteres')
       return
     }
     if (isImpressao) {
@@ -524,7 +516,7 @@ export function SolicitarProdutos() {
     setSubmitting(true)
     try {
       const pedido = await pedidosApi.create({
-        operacao_id: operacaoId,
+        operacao_id: null,
         data_entrega: dataEntrega,
         finalidade: finalidade || null,
         itens: items.map((i) => {
@@ -570,6 +562,7 @@ export function SolicitarProdutos() {
   const handleOpenRevisao = () => {
     if (items.length === 0) { toast.error('Adicione ao menos um produto ao carrinho'); return }
     if (!dataEntrega) { toast.error('Informe a data sugerida de entrega'); return }
+    if (!finalidadeGeo) { toast.error('Selecione a finalidade da geoinformação'); return }
     setShowRevisao(true)
   }
 
@@ -637,32 +630,19 @@ export function SolicitarProdutos() {
       {/* Seletores */}
       <div className="bg-zinc-900 border border-white/10 rounded-xl p-4 shrink-0">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          {/* Operação */}
+          {/* Finalidade da Geoinformação */}
           <div>
-            <label className={labelCls}>Operação</label>
-            {showNewOp ? (
-              <div className="flex gap-1">
-                <input
-                  value={novaOperacao}
-                  onChange={(e) => setNovaOperacao(e.target.value)}
-                  maxLength={100}
-                  className={inputCls}
-                  placeholder="Nome da operação"
-                />
-                <button onClick={handleCreateOperacao} className="bg-emerald-500 text-white px-2 rounded-lg text-xs hover:bg-emerald-400 transition-colors">OK</button>
-                <button onClick={() => setShowNewOp(false)} className="text-zinc-400 px-1 text-xs hover:text-zinc-200">✕</button>
-              </div>
-            ) : (
-              <select
-                value={operacaoId ?? ''}
-                onChange={(e) => handleOperacaoChange(e.target.value)}
-                className={inputCls}
-              >
-                <option value="" className="bg-zinc-800">Outros</option>
-                {operacoes.map((op) => <option key={op.id} value={op.id} className="bg-zinc-800">{op.nome}</option>)}
-                <option value="__new__" className="bg-zinc-800">+ Nova Operação</option>
-              </select>
-            )}
+            <label className={labelCls}>Finalidade da Geoinformação</label>
+            <select
+              value={finalidadeGeo}
+              onChange={(e) => setFinalidadeGeo(e.target.value)}
+              className={inputCls}
+            >
+              <option value="" className="bg-zinc-800">Selecione...</option>
+              {FINALIDADES_GEO.map((fg) => (
+                <option key={fg} value={fg} className="bg-zinc-800">{fg}</option>
+              ))}
+            </select>
           </div>
 
           {/* Tipo de Produto / Serviço */}
@@ -836,7 +816,13 @@ export function SolicitarProdutos() {
                   <div key={key} className="bg-zinc-800 border border-white/5 rounded-lg p-2 text-xs">
                     <div className="flex items-start justify-between gap-1">
                       <div className="min-w-0">
-                        <p className="font-medium text-zinc-200 truncate">{item.inom}</p>
+                        {item.mi
+                          ? <>
+                              <p className="font-medium text-emerald-400 truncate">{item.mi}</p>
+                              <p className="font-mono text-zinc-500 text-[10px] truncate">{item.inom}</p>
+                            </>
+                          : <p className="font-mono font-medium text-zinc-200 truncate">{item.inom}</p>
+                        }
                         <p className="text-zinc-400">{TIPO_PRODUTO_LABELS[item.tipo_produto]}</p>
                         <p className="text-zinc-500">{item.escala}</p>
                       </div>
@@ -864,19 +850,12 @@ export function SolicitarProdutos() {
           </div>
 
           <div className="p-3 border-t border-white/10">
-            {items.length > 0 && (isImpressao || isOutros) && (
+            {items.length > 0 && isImpressao && (
               <div className="flex flex-wrap gap-1.5 mb-2.5">
-                {isImpressao && (
-                  <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[11px] text-emerald-400">
-                    <ClipboardCheck className="h-3 w-3" />
-                    Impressão: configure na revisão
-                  </span>
-                )}
-                {isOutros && (
-                  <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-400">
-                    Finalidade: preencha na revisão
-                  </span>
-                )}
+                <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[11px] text-emerald-400">
+                  <ClipboardCheck className="h-3 w-3" />
+                  Impressão: configure na revisão
+                </span>
               </div>
             )}
             <button
@@ -903,7 +882,7 @@ export function SolicitarProdutos() {
           onConfirm={handleSubmit}
           submitting={submitting}
           isImpressao={isImpressao}
-          isOutros={isOutros}
+          finalidadeGeo={finalidadeGeo}
           finalidade={finalidade}
           onSetFinalidade={setFinalidade}
         />

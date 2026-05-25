@@ -11,7 +11,7 @@ interface CartState {
   tipoProduto: TipoProduto | null
   escala: Escala | null
   dataEntrega: string | null
-  operacaoId: number | null
+  finalidadeGeo: string
   finalidade: string
   /** Entidades de impressão indexadas por ItemImpressao.id (== cartKey do item) */
   impressoes: Record<string, ItemImpressao>
@@ -25,7 +25,7 @@ interface CartState {
   setTipoProduto: (tipo: TipoProduto | null) => void
   setEscala: (escala: Escala | null) => void
   setDataEntrega: (date: string | null) => void
-  setOperacaoId: (id: number | null) => void
+  setFinalidadeGeo: (v: string) => void
   setFinalidade: (f: string) => void
   clear: () => void
 }
@@ -35,7 +35,7 @@ export const useCartStore = create<CartState>((set, get) => ({
   tipoProduto: null,
   escala: null,
   dataEntrega: null,
-  operacaoId: null,
+  finalidadeGeo: '',
   finalidade: '',
   impressoes: {},
 
@@ -96,7 +96,7 @@ export const useCartStore = create<CartState>((set, get) => ({
   setTipoProduto: (tipo) => set({ tipoProduto: tipo }),
   setEscala: (escala) => set({ escala }),
   setDataEntrega: (date) => set({ dataEntrega: date }),
-  setOperacaoId: (id) => set({ operacaoId: id }),
+  setFinalidadeGeo: (v) => set({ finalidadeGeo: v }),
   setFinalidade: (f) => set({ finalidade: f }),
 
   clear: () =>
@@ -105,7 +105,7 @@ export const useCartStore = create<CartState>((set, get) => ({
       tipoProduto: null,
       escala: null,
       dataEntrega: null,
-      operacaoId: null,
+      finalidadeGeo: '',
       finalidade: '',
       impressoes: {},
     }),

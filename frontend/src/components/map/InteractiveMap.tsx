@@ -45,7 +45,7 @@ export function InteractiveMap({ inomGrid, showData = true, basemap = 'osm', som
   const containerRef = useRef<HTMLDivElement>(null)
   const inomLayerRef = useRef<L.GeoJSON | null>(null)
   const tileRef = useRef<L.TileLayer | null>(null)
-  const { addItem, removeItem, hasItem, tipoProduto, escala } = useCartStore()
+  const { addItem, removeItem, hasItem, items, tipoProduto, escala } = useCartStore()
 
   // ── Inicializa o mapa (sem tileLayer — adicionado separadamente) ──────────
   useEffect(() => {
@@ -111,7 +111,9 @@ export function InteractiveMap({ inomGrid, showData = true, basemap = 'osm', som
           inom: string; mi?: string; data_conclusao?: string; idade_anos?: number; disponivel?: boolean
         }
         const bloqueada = somenteBdgex && !disponivel
-        let tip = `<b>${inom}</b>${mi ? `<br>MI: ${mi}` : ''}`
+        const tip = mi
+          ? `<b style="color:#34d399">${mi}</b><br><span style="color:#a1a1aa;font-size:11px">${inom}</span>`
+          : `<b>${inom}</b>`
         if (bloqueada) {
           tip += '<br><span style="color:#71717a">Não disponível no BDGEx</span>'
         } else {
@@ -152,6 +154,30 @@ export function InteractiveMap({ inomGrid, showData = true, basemap = 'osm', som
       },
     }).addTo(mapRef.current)
   }, [inomGrid, showData, somenteBdgex])
+
+  // Sincroniza estilos do mapa quando itens são removidos externamente (sidebar ou modal)
+  useEffect(() => {
+    const layer = inomLayerRef.current
+    if (!layer) return
+    layer.eachLayer((sublayer) => {
+      const path = sublayer as L.Path & { feature?: Feature }
+      const props = path.feature?.properties as { inom?: string; idade_anos?: number | null; disponivel?: boolean } | undefined
+      if (!props?.inom) return
+      const { inom, idade_anos, disponivel } = props
+      const selected = hasItem(inom, tipoProduto as TipoProduto, escala as Escala)
+      const bloqueada = somenteBdgex && !disponivel
+      const fill = getAgeColor(idade_anos)
+      path.setStyle(
+        selected
+          ? { color: '#3b82f6', weight: 2, fillColor: '#3b82f6', fillOpacity: 0.45 }
+          : bloqueada
+            ? { color: '#3f3f46', weight: 0.5, fillColor: '#3f3f46', fillOpacity: 0.25, dashArray: '3,3' }
+            : showData
+              ? { color: '#444', weight: 0.5, fillColor: fill, fillOpacity: fill === 'transparent' ? 0 : 0.55 }
+              : { color: '#555', weight: 0.5, fillColor: 'transparent', fillOpacity: 0 },
+      )
+    })
+  }, [items]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return <div ref={containerRef} className="w-full h-full" style={{ minHeight: 400 }} />
 }
