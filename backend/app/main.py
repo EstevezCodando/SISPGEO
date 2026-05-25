@@ -403,4 +403,4 @@ app.include_router(config_router.router, prefix="/api/v1")
 
 @app.get("/api/v1/health")
 async def health():
-    return {"status": "ok"}
+    return {"status": "ok", "version": app.version}
