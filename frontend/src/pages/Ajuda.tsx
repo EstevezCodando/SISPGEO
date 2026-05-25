@@ -57,7 +57,7 @@ const PRODUTOS: Produto[] = [
   },
   {
     sigla: 'MDT',
-    nome: 'Modelo Digital de Terreno',
+    nome: 'Modelo Digital do Terreno',
     imagem: '/mdt.png',
     definicao:
       'Representação numérica contínua da altitude do terreno sem obstáculos artificiais ou vegetação (somente o chão). Formato de grade matricial.',
@@ -482,7 +482,7 @@ const FAQS: FAQ[] = [
   },
   {
     q: 'Qual a diferença entre MDT e MDS?',
-    a: 'O MDT (Modelo Digital de Terreno) representa somente o chão — sem vegetação nem edificações. O MDS (Modelo Digital de Superfície) inclui tudo o que está sobre o terreno, como árvores e prédios. Para cálculo de trafegabilidade use o MDT; para análise de visada e comunicações use o MDS.',
+    a: 'O MDT (Modelo Digital do Terreno) representa somente o chão — sem vegetação nem edificações. O MDS (Modelo Digital de Superfície) inclui tudo o que está sobre o terreno, como árvores e prédios. Para cálculo de trafegabilidade use o MDT; para análise de visada e comunicações use o MDS.',
   },
 ]
 

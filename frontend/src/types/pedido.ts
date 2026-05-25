@@ -27,7 +27,7 @@ export const TIPO_PRODUTO_LABELS: Record<TipoProduto, string> = {
   CARTA_TOPOGRAFICA: 'Carta Topográfica',
   CARTA_ORTOIMAGEM:  'Carta Ortoimagem',
   ORTOIMAGEM:        'Ortoimagem',
-  MDT:               'Modelo Digital de Terreno (MDT)',
+  MDT:               'Modelo Digital do Terreno (MDT)',
   MDS:               'Modelo Digital de Superfície (MDS)',
   CDGV:              'CDGV',
   IMPRESSAO_CT:      'Impressão de Carta Topográfica',

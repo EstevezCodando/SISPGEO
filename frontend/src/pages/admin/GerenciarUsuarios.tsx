@@ -8,6 +8,7 @@ import type { Transferencia } from '../../api/users'
 import { LoadingSpinner } from '../../components/shared/LoadingSpinner'
 import type { Usuario, Perfil } from '../../types/user'
 import { PERFIL_LABELS } from '../../types/user'
+import { formatNomeComPosto } from '../../data/postos'
 
 // Perfis agrupados para o dropdown de atribuição
 const PERFIL_GROUPS: { label: string; perfis: Perfil[] }[] = [
@@ -264,7 +265,7 @@ export function GerenciarUsuarios() {
           <tbody className="divide-y divide-white/5">
             {users.map((u) => (
               <tr key={u.id} className="hover:bg-white/5 transition-colors">
-                <td className="px-4 py-3 font-medium text-zinc-200">{u.nome}</td>
+                <td className="px-4 py-3 font-medium text-zinc-200">{formatNomeComPosto(u.nome, u.posto_graduacao, u.nome_de_guerra)}</td>
                 <td className="px-4 py-3 text-zinc-400">{u.email}</td>
                 <td className="px-4 py-3 text-zinc-400">{u.om}</td>
                 <td className="px-4 py-3">
