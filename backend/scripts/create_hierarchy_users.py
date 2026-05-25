@@ -63,6 +63,7 @@ HIERARQUIA = [
     # Praça/oficial de uma OM que cria os pedidos de produtos geoespaciais.
     {
         "nome":              "Gustavo Silva",
+        "nome_de_guerra":    "Silva",
         "email":             "gustavo@eb.mil.br",
         "senha":             "Gustavo@1234",
         "telefone":          "(61) 99900-0001",
@@ -77,6 +78,7 @@ HIERARQUIA = [
     # ── 2. Solicitante auxiliar (mesma OM) ───────────────────────────────────
     {
         "nome":              "João Ferreira",
+        "nome_de_guerra":    "Ferreira",
         "email":             "joao@eb.mil.br",
         "senha":             "Joao@1234",
         "telefone":          "(61) 99900-0002",
@@ -92,6 +94,7 @@ HIERARQUIA = [
     # Revisa e consolida pedidos de todas as OMs do CMP.
     {
         "nome":              "Paulo Supervisor",
+        "nome_de_guerra":    "Paulo",
         "email":             "supervisor.cmilA@eb.mil.br",
         "senha":             "Supervisor@1234",
         "telefone":          "(61) 99900-0010",
@@ -107,6 +110,7 @@ HIERARQUIA = [
     # Agrupa pedidos de todos os CMilA vinculados ao COTER e envia à DSG.
     {
         "nome":              "Carlos Consolidador",
+        "nome_de_guerra":    "Carlos",
         "email":             "consolidador.coter@eb.mil.br",
         "senha":             "Consolidador@1234",
         "telefone":          "(61) 99900-0020",
@@ -122,6 +126,7 @@ HIERARQUIA = [
     # Analisa viabilidade e entrega produtos no BDGEx.
     {
         "nome":              "Ricardo Analista CGEO",
+        "nome_de_guerra":    "Ricardo",
         "email":             "analista.cgeo@eb.mil.br",
         "senha":             "AnalistaCGEO@1234",
         "telefone":          "(61) 99900-0030",
@@ -209,6 +214,8 @@ def register_user(client: httpx.Client, u: dict) -> tuple[bool, str]:
         "regiao_militar":   u["regiao_militar"],
         "orgao_vinculante": u["orgao_vinculante"],
     }
+    if u.get("nome_de_guerra"):
+        payload["nome_de_guerra"] = u["nome_de_guerra"]
     r = client.post("/auth/register", json=payload)
     if r.status_code == 201:
         return True, "Cadastro realizado"

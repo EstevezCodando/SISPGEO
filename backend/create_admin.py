@@ -24,6 +24,7 @@ async def main():
 
         user = Usuario(
             nome="Administrador DSG",
+            nome_de_guerra="Admin",
             email="admin@eb.mil.br",
             telefone="(61) 3415-0000",
             secao_om="Seção de TI",

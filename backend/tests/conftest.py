@@ -28,11 +28,13 @@ def _make_user(
     perfil: PerfilEnum = PerfilEnum.SOLICITANTE,
     orgao_vinculante: OrgaoVinculanteEnum = OrgaoVinculanteEnum.COTER,
     ativo: bool = True,
+    nome_de_guerra: str | None = "Teste",
 ) -> MagicMock:
     """Cria um mock de :class:`Usuario` sem persistência no banco."""
     u = MagicMock(spec=Usuario)
     u.id = user_id
     u.nome = "Usuário Teste"
+    u.nome_de_guerra = nome_de_guerra
     u.email = email
     u.perfil = perfil
     u.orgao_vinculante = orgao_vinculante
