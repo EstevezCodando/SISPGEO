@@ -111,7 +111,7 @@ export function InteractiveMap({ inomGrid, showData = true, basemap = 'osm', som
           inom: string; mi?: string; data_conclusao?: string; idade_anos?: number; disponivel?: boolean
         }
         const bloqueada = somenteBdgex && !disponivel
-        const tip = mi
+        let tip = mi
           ? `<b style="color:#34d399">${mi}</b><br><span style="color:#a1a1aa;font-size:11px">${inom}</span>`
           : `<b>${inom}</b>`
         if (bloqueada) {
