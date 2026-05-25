@@ -141,12 +141,14 @@ function SortablePedidoRow_Base({
   const tipos = [...new Set(p.itens.map(i => TIPO_PRODUTO_LABELS[i.tipo_produto]))].join(' · ') || '—'
   const escalas = [...new Set(p.itens.map(i => i.escala))].join(', ')
 
-  // Descrição: operação nomeada OU "Outros: [início da justificativa]"
-  const descricao = p.operacao_nome
-    ? p.operacao_nome
-    : p.finalidade
-      ? `Outros: ${p.finalidade.length > 50 ? p.finalidade.substring(0, 50) + '…' : p.finalidade}`
-      : null
+  // Descrição: finalidade_geo OU operação nomeada OU início da informação complementar
+  const descricao = p.finalidade_geo
+    ? p.finalidade_geo
+    : p.operacao_nome
+      ? p.operacao_nome
+      : p.finalidade
+        ? (p.finalidade.length > 50 ? p.finalidade.substring(0, 50) + '…' : p.finalidade)
+        : null
 
   const statusSimpl = getStatusSolicitante(p.status)
 
@@ -284,9 +286,15 @@ function SortablePedidoRow_Base({
                 {format(new Date(p.data_entrega + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR })}
               </p>
             </div>
+            {p.finalidade_geo && (
+              <div className="col-span-2 sm:col-span-3">
+                <p className="text-zinc-500 mb-0.5">Finalidade da Geoinformação</p>
+                <p className="text-zinc-300">{p.finalidade_geo}</p>
+              </div>
+            )}
             {p.finalidade && (
               <div className="col-span-2 sm:col-span-3">
-                <p className="text-zinc-500 mb-0.5">Finalidade</p>
+                <p className="text-zinc-500 mb-0.5">Informação Complementar</p>
                 <p className="text-zinc-300">{p.finalidade}</p>
               </div>
             )}

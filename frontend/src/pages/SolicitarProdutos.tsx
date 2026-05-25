@@ -518,6 +518,7 @@ export function SolicitarProdutos() {
       const pedido = await pedidosApi.create({
         operacao_id: null,
         data_entrega: dataEntrega,
+        finalidade_geo: finalidadeGeo || null,
         finalidade: finalidade || null,
         itens: items.map((i) => {
           const imp = impressoes[cartKey(i)]

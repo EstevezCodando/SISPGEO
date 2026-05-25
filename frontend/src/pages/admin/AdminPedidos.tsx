@@ -425,7 +425,8 @@ export function AdminPedidos() {
                             <p className="font-semibold text-zinc-400 mb-2">Detalhes</p>
                             <div className="space-y-1 text-zinc-500">
                               {p.operacao_nome && <p><span className="text-zinc-400">Operação:</span> {p.operacao_nome}</p>}
-                              {p.finalidade && <p><span className="text-zinc-400">Finalidade:</span> {p.finalidade}</p>}
+                              {p.finalidade_geo && <p><span className="text-zinc-400">Finalidade Geo:</span> {p.finalidade_geo}</p>}
+                              {p.finalidade && <p><span className="text-zinc-400">Inf. Complementar:</span> {p.finalidade}</p>}
                               {p.observacoes && <p><span className="text-zinc-400">Observações:</span> {p.observacoes}</p>}
                               {p.link_bdgex && (
                                 <p>

@@ -24,6 +24,7 @@ class Pedido(Base):
     )
     prioridade: Mapped[int] = mapped_column(SmallInteger, default=0)
     finalidade: Mapped[str | None] = mapped_column(Text)
+    finalidade_geo: Mapped[str | None] = mapped_column(String(100))
     orgao_vinculante: Mapped[OrgaoVinculanteEnum] = mapped_column(
         SAEnum(OrgaoVinculanteEnum, name="orgao_vinculante_enum"),
         nullable=False,

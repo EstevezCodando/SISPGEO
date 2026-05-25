@@ -39,6 +39,7 @@ class ItemPedidoOut(BaseModel):
 class PedidoCreate(BaseModel):
     operacao_id: int | None = None
     data_entrega: date
+    finalidade_geo: str | None = None
     finalidade: str | None = None
     orgao_vinculante: OrgaoVinculanteEnum | None = None
     itens: list[ItemPedidoCreate]
@@ -60,6 +61,7 @@ class PedidoOut(BaseModel):
     data_entrega: date
     status: StatusPedidoEnum
     prioridade: int
+    finalidade_geo: str | None = None
     finalidade: str | None
     orgao_vinculante: OrgaoVinculanteEnum
     motivo_reprovacao: str | None

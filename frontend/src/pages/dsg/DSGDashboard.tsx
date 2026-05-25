@@ -797,6 +797,9 @@ export function DSGDashboard() {
                       <div className="space-y-1">
                         <p className="text-xs font-medium text-zinc-500 mb-2">
                           Itens por prioridade
+                          {p.finalidade_geo && (
+                            <span className="ml-2 italic text-zinc-600">· {p.finalidade_geo}</span>
+                          )}
                           {p.finalidade && (
                             <span className="ml-2 italic text-zinc-600">· {p.finalidade}</span>
                           )}

@@ -112,6 +112,8 @@ async def _run_migrations():
         # 2026-05: impressão per-item — quantidade e material por célula selecionada
         "ALTER TABLE itens_pedido ADD COLUMN IF NOT EXISTS impressao_quantidade SMALLINT",
         "ALTER TABLE itens_pedido ADD COLUMN IF NOT EXISTS impressao_tipo_material VARCHAR(20)",
+        # 2026-05: finalidade da geoinformação (dropdown) separado da informação complementar (textarea)
+        "ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS finalidade_geo VARCHAR(100)",
     ]
     for stmt in migrations:
         try:

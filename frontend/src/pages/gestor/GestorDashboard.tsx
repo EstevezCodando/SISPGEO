@@ -283,20 +283,18 @@ function ExpandedRow({ pedido: p, janelaAberta, colSpan }: ExpandedRowProps) {
       <tr className="bg-zinc-800/40">
         <td colSpan={colSpan} className="px-6 py-4">
           <div className="space-y-4">
-            {/* Operação + Finalidade/Justificativa */}
-            {(p.operacao_nome || p.finalidade) && (
+            {/* Finalidade Geo + Informação Complementar */}
+            {(p.finalidade_geo || p.operacao_nome || p.finalidade) && (
               <div className="flex flex-wrap gap-x-6 gap-y-1.5">
-                {p.operacao_nome && (
+                {(p.finalidade_geo || p.operacao_nome) && (
                   <div className="flex items-center gap-2 text-xs">
                     <Briefcase className="h-3.5 w-3.5 text-emerald-500/80 shrink-0" />
-                    <span className="font-semibold text-zinc-200">{p.operacao_nome}</span>
+                    <span className="font-semibold text-zinc-200">{p.finalidade_geo || p.operacao_nome}</span>
                   </div>
                 )}
                 {p.finalidade && (
                   <p className="text-xs text-zinc-400">
-                    <span className="font-medium text-zinc-300">
-                      {p.operacao_nome ? 'Finalidade:' : 'Justificativa:'}
-                    </span>{' '}
+                    <span className="font-medium text-zinc-300">Inf. Complementar:</span>{' '}
                     {p.finalidade}
                   </p>
                 )}
@@ -487,7 +485,7 @@ function SortableRow({
             </div>
           ) : (
             <span className="text-[11px] text-zinc-600 italic">
-              {p.finalidade ? 'ver justificativa ↓' : '—'}
+              {p.finalidade_geo || p.finalidade ? 'ver detalhes ↓' : '—'}
             </span>
           )}
         </td>

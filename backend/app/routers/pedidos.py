@@ -182,6 +182,7 @@ async def create_pedido(
         criador_id=current_user.id,
         operacao_id=body.operacao_id,
         data_entrega=body.data_entrega,
+        finalidade_geo=body.finalidade_geo,
         finalidade=body.finalidade,
         orgao_vinculante=ov,
         regiao_militar=current_user.regiao_militar,
@@ -476,14 +477,16 @@ async def exportar_relatorio(
     writer = csv.writer(csv_buf, dialect="excel")
     writer.writerow([
         "Pedido_ID", "Prioridade_Pedido", "Status",
-        "Solicitante", "OM", "Seção_OM", "Email", "Telefone",
-        "Finalidade", "Operacao", "Orgao_Vinculante", "Regiao_Militar",
+        "Solicitante", "OM", "Secao_OM", "Email", "Telefone",
+        "Finalidade_Geo", "Informacao_Complementar", "Orgao_Vinculante", "Regiao_Militar",
         "Data_Entrega", "Criado_Em",
         "Item_Prioridade", "MI", "INOM", "Tipo_Produto", "Escala",
-        "Disponivel_BDGEx", "Data_Producao_BDGEx",
+        "Disponivel_BDGEx", "Data_Producao_BDGEx", "Idade_Anos",
+        "Impressao_Solicitada", "Impressao_Quantidade", "Impressao_Material",
     ])
     for p in enriched:
         for item in sorted(p.itens, key=lambda x: x.prioridade):
+            idade_anos = (date.today() - item.data_producao_bdgex).days // 365 if item.data_producao_bdgex else ""
             writer.writerow([
                 p.id,
                 p.prioridade,
@@ -493,8 +496,8 @@ async def exportar_relatorio(
                 p.usuario_secao_om or "",
                 p.usuario_email or "",
                 p.usuario_telefone or "",
+                p.finalidade_geo or "",
                 p.finalidade or "",
-                p.operacao_nome or "",
                 p.orgao_vinculante.value if p.orgao_vinculante else "",
                 p.regiao_militar or "",
                 p.data_entrega.isoformat() if p.data_entrega else "",
@@ -506,6 +509,10 @@ async def exportar_relatorio(
                 item.escala.value,
                 "Sim" if item.disponivel_bdgex else "Não",
                 item.data_producao_bdgex.isoformat() if item.data_producao_bdgex else "",
+                idade_anos,
+                "Sim" if p.impressao_solicitada else "Não",
+                item.impressao_quantidade or "",
+                item.impressao_tipo_material or "",
             ])
     csv_bytes = csv_buf.getvalue().encode("utf-8-sig")  # BOM para Excel abrir corretamente
 
@@ -519,35 +526,42 @@ async def exportar_relatorio(
             suffix_map = {"1:25.000": "25k", "1:50.000": "50k", "1:100.000": "100k", "1:250.000": "250k"}
             suffix = suffix_map.get(sv, sv.replace(":", "").replace(".", "").replace(" ", ""))
             geom = _scale_geoms.get(sv, {}).get(item.inom)
+            _idade = (date.today() - item.data_producao_bdgex).days // 365 if item.data_producao_bdgex else None
             feat = {
                 "type": "Feature",
                 "geometry": geom,
                 "properties": {
                     # ── Identificação do pedido/item ────────────────────────
-                    "pedido_id":       p.id,
-                    "prioridade_pedido": p.prioridade,
-                    "prioridade_item": item.prioridade,
-                    "status":          p.status.value,
+                    "pedido_id":          p.id,
+                    "prioridade_pedido":  p.prioridade,
+                    "prioridade_item":    item.prioridade,
+                    "status":             p.status.value,
                     # ── Dados do solicitante ────────────────────────────────
-                    "solicitante":     p.usuario_nome,
-                    "om":              p.usuario_om,
-                    "secao_om":        p.usuario_secao_om,
-                    "c_mila":          p.regiao_militar,          # código C Mil. A (ex: "CMA", "CMAO")
-                    "tel_ritex":       p.usuario_telefone_ritex,
-                    "tel_comercial":   p.usuario_telefone,
-                    "email":           p.usuario_email,
+                    "solicitante":        p.usuario_nome,
+                    "om":                 p.usuario_om,
+                    "secao_om":           p.usuario_secao_om,
+                    "c_mila":             p.regiao_militar,
+                    "tel_ritex":          p.usuario_telefone_ritex,
+                    "tel_comercial":      p.usuario_telefone,
+                    "email":              p.usuario_email,
                     # ── Contexto do pedido ──────────────────────────────────
-                    "finalidade":      p.finalidade,
-                    "operacao":        p.operacao_nome,
-                    "orgao_vinculante": p.orgao_vinculante.value if p.orgao_vinculante else None,
+                    "finalidade_geo":     p.finalidade_geo,
+                    "informacao_complementar": p.finalidade,
+                    "orgao_vinculante":   p.orgao_vinculante.value if p.orgao_vinculante else None,
                     # ── Produto cartográfico ────────────────────────────────
-                    "mi":              item.mi,
-                    "inom":            item.inom,
-                    "tipo_produto":    item.tipo_produto.value,
-                    "escala":          item.escala.value,
-                    "data_entrega":    p.data_entrega.isoformat() if p.data_entrega else None,
-                    "criado_em":       p.criado_em.isoformat() if p.criado_em else None,
-                    "disponivel_bdgex": item.disponivel_bdgex,
+                    "mi":                 item.mi,
+                    "inom":               item.inom,
+                    "tipo_produto":       item.tipo_produto.value,
+                    "escala":             item.escala.value,
+                    "data_entrega":       p.data_entrega.isoformat() if p.data_entrega else None,
+                    "criado_em":          p.criado_em.isoformat() if p.criado_em else None,
+                    "disponivel_bdgex":   item.disponivel_bdgex,
+                    "data_producao_bdgex": item.data_producao_bdgex.isoformat() if item.data_producao_bdgex else None,
+                    "idade_anos":         _idade,
+                    # ── Impressão física ────────────────────────────────────
+                    "impressao_solicitada":  p.impressao_solicitada,
+                    "impressao_quantidade":  item.impressao_quantidade,
+                    "impressao_material":    item.impressao_tipo_material,
                 },
             }
             geojsons.setdefault(suffix, []).append(feat)
@@ -579,9 +593,32 @@ async def exportar_relatorio(
     hoje          = datetime.now().strftime("%d/%m/%Y %H:%M")
     geojson_files = "  ".join(f"pedidos_{s}.geojson" for s in sorted(geojsons))
 
-    # Cadeia: usa o código curto do C Mil. A para o diagrama
     cmila_short = cmila_code if cmila_code else "C Mil. A"
     om_display  = current_user.om or "OMDS"
+
+    # Cadeia de comando específica ao perfil do signatário
+    if current_user.perfil == PerfilEnum.SOLICITANTE:
+        _cadeia_titulo = f"Cadeia prevista — {om_display} subordinada ao COTER:"
+        _cadeia_diagrama = (
+            f"  {om_display}\n"
+            f"    └─► {cmila_short}  (Supervisor de Geoinformação)\n"
+            f"          └─► COTER  (Seção de Geoinformação e Cartografia)\n"
+            f"                └─► DSG  (Diretoria de Serviço Geográfico)"
+        )
+    elif current_user.perfil in SUPERVISOR_PROFILES:
+        _cmila_display = cmila_label if cmila_label != "—" else cmila_short
+        _cadeia_titulo = f"Cadeia prevista — {_cmila_display} ao COTER:"
+        _cadeia_diagrama = (
+            f"  {_cmila_display}\n"
+            f"    └─► COTER  (Seção de Geoinformação e Cartografia)\n"
+            f"          └─► DSG  (Diretoria de Serviço Geográfico)"
+        )
+    else:  # CONSOLIDADOR
+        _cadeia_titulo = "Cadeia prevista — COTER ao DSG:"
+        _cadeia_diagrama = (
+            "  COTER  (Seção de Geoinformação e Cartografia)\n"
+            "    └─► DSG  (Diretoria de Serviço Geográfico)"
+        )
 
     readme = f"""\
 LEIA-ME — SisPGeo: Sistema de Pedidos de Geoinformação
@@ -594,12 +631,12 @@ Perfil     : {perfil_label}
 Data/Hora  : {hoje}
 
 -------------------------------------------------------
-DADOS DO SOLICITANTE
+DADOS DO SIGNATÁRIO
 -------------------------------------------------------
 
-  OMDS           : {om_display}
+  OM / Órgão     : {om_display}
   Seção          : {secao}
-  C Mil. A       : {cmila_label}
+  Subordinação   : {cmila_label}
   Tel. Ritex     : {ritex}
   Tel. Comercial : {telefone}
   E-mail         : {current_user.email}
@@ -620,12 +657,10 @@ CONTEÚDO DESTE PACOTE
   {geojson_files}
                          Articulações por escala (abrir no QGIS / ArcGIS)
 
-Os arquivos GeoJSON contêm as geometrias das folhas cartográficas
-solicitadas, com todos os metadados (solicitante, OM, MI, INOM,
-tipo de produto, escala, finalidade, data de entrega).
-
-O arquivo CSV replica as mesmas informações em formato tabular,
-adequado para conferência, impressão e inclusão em ofícios.
+Os arquivos GeoJSON e o CSV contêm as geometrias das folhas
+cartográficas solicitadas com todos os metadados: solicitante,
+OM, MI, INOM, tipo de produto, escala, finalidade da geoinformação,
+informação complementar, dados de impressão e idade do produto.
 
 -------------------------------------------------------
 INSTRUÇÃO DE CONTINGÊNCIA — CADEIA DE COMANDO
@@ -639,12 +674,9 @@ responsável via cadeia de comando ao escalão imediatamente
 superior, até que as informações cheguem ao escalão competente
 para processamento.
 
-Cadeia prevista — OMDS subordinada ao COTER:
+{_cadeia_titulo}
 
-  {om_display}
-    └─► {cmila_short}  (Supervisor de Geoinformação)
-          └─► COTER  (Seção de Geoinformação e Cartografia)
-                └─► DSG  (Diretoria de Serviço Geográfico)
+{_cadeia_diagrama}
 
 O recebedor de cada escalão deverá confirmar o recebimento
 e dar prosseguimento ao trâmite de forma a não prejudicar
@@ -749,8 +781,8 @@ async def _build_admin_zip(
                     "tel_comercial":       p.usuario_telefone,
                     "email":               p.usuario_email,
                     # ── Contexto do pedido ──────────────────────────────────
-                    "finalidade":          p.finalidade,
-                    "operacao":            p.operacao_nome,
+                    "finalidade_geo":      p.finalidade_geo,
+                    "informacao_complementar": p.finalidade,
                     "orgao_vinculante":    p.orgao_vinculante.value if p.orgao_vinculante else None,
                     "observacoes":         p.observacoes,
                     "motivo_reprovacao":   p.motivo_reprovacao,
@@ -764,6 +796,11 @@ async def _build_admin_zip(
                     "criado_em":           p.criado_em.isoformat() if p.criado_em else None,
                     "disponivel_bdgex":    item.disponivel_bdgex,
                     "data_producao_bdgex": item.data_producao_bdgex.isoformat() if item.data_producao_bdgex else None,
+                    "idade_anos":          (date.today() - item.data_producao_bdgex).days // 365 if item.data_producao_bdgex else None,
+                    # ── Impressão física ────────────────────────────────────
+                    "impressao_solicitada": p.impressao_solicitada,
+                    "impressao_quantidade": item.impressao_quantidade,
+                    "impressao_material":   item.impressao_tipo_material,
                 },
             }
             geojsons.setdefault(suffix, []).append(feat)
@@ -774,14 +811,16 @@ async def _build_admin_zip(
     writer.writerow([
         "Pedido_ID", "Item_ID", "Prioridade_Pedido", "Prioridade_Item", "Status",
         "Solicitante", "OM", "Secao_OM", "C_MilA", "Tel_Ritex", "Tel_Comercial", "Email",
-        "Finalidade", "Operacao", "Orgao_Vinculante",
+        "Finalidade_Geo", "Informacao_Complementar", "Orgao_Vinculante",
         "Observacoes", "Motivo_Reprovacao", "Link_BDGEx",
         "Data_Entrega", "Criado_Em",
         "MI", "INOM", "Tipo_Produto", "Escala",
-        "Disponivel_BDGEx", "Data_Producao_BDGEx",
+        "Disponivel_BDGEx", "Data_Producao_BDGEx", "Idade_Anos",
+        "Impressao_Solicitada", "Impressao_Quantidade", "Impressao_Material",
     ])
     for p in enriched:
         for item in sorted(p.itens, key=lambda x: x.prioridade):
+            idade_anos = (date.today() - item.data_producao_bdgex).days // 365 if item.data_producao_bdgex else ""
             writer.writerow([
                 p.id,
                 item.id,
@@ -795,8 +834,8 @@ async def _build_admin_zip(
                 p.usuario_telefone_ritex or "",
                 p.usuario_telefone or "",
                 p.usuario_email or "",
+                p.finalidade_geo or "",
                 p.finalidade or "",
-                p.operacao_nome or "",
                 p.orgao_vinculante.value if p.orgao_vinculante else "",
                 p.observacoes or "",
                 p.motivo_reprovacao or "",
@@ -809,6 +848,10 @@ async def _build_admin_zip(
                 item.escala.value,
                 "Sim" if item.disponivel_bdgex else "Não",
                 item.data_producao_bdgex.isoformat() if item.data_producao_bdgex else "",
+                idade_anos,
+                "Sim" if p.impressao_solicitada else "Não",
+                item.impressao_quantidade or "",
+                item.impressao_tipo_material or "",
             ])
     csv_bytes = csv_buf.getvalue().encode("utf-8-sig")
 
@@ -829,33 +872,40 @@ async def _build_admin_zip(
         "=" * 70,
     ]
     for p in enriched:
+        imp_pedido = f"Sim ({p.impressao_quantidade}x {p.impressao_tipo_material})" if p.impressao_solicitada and p.impressao_quantidade else ("Sim" if p.impressao_solicitada else "Não")
         linhas += [
             "",
             f"PEDIDO #{p.id}  [{p.status.value}]  — Prioridade {p.prioridade}",
-            f"  Solicitante      : {p.usuario_nome or '—'}",
-            f"  OM               : {p.usuario_om or '—'}",
-            f"  Seção            : {p.usuario_secao_om or '—'}",
-            f"  C Mil. A         : {p.regiao_militar or '—'}",
-            f"  Tel. Ritex       : {p.usuario_telefone_ritex or '—'}",
-            f"  Tel. Comercial   : {p.usuario_telefone or '—'}",
-            f"  E-mail           : {p.usuario_email or '—'}",
-            f"  Órgão Vinculante : {p.orgao_vinculante.value if p.orgao_vinculante else '—'}",
-            f"  Finalidade       : {p.finalidade or '—'}",
-            f"  Operação         : {p.operacao_nome or '—'}",
-            f"  Data de Entrega  : {p.data_entrega.strftime('%d/%m/%Y') if p.data_entrega else '—'}",
-            f"  Criado em        : {p.criado_em.strftime('%d/%m/%Y %H:%M') if p.criado_em else '—'}",
-            f"  Observações      : {p.observacoes or '—'}",
-            f"  Motivo Reprovação: {p.motivo_reprovacao or '—'}",
-            f"  Link BDGEx       : {p.link_bdgex or '—'}",
+            f"  Solicitante         : {p.usuario_nome or '—'}",
+            f"  OM                  : {p.usuario_om or '—'}",
+            f"  Seção               : {p.usuario_secao_om or '—'}",
+            f"  C Mil. A            : {p.regiao_militar or '—'}",
+            f"  Tel. Ritex          : {p.usuario_telefone_ritex or '—'}",
+            f"  Tel. Comercial      : {p.usuario_telefone or '—'}",
+            f"  E-mail              : {p.usuario_email or '—'}",
+            f"  Órgão Vinculante    : {p.orgao_vinculante.value if p.orgao_vinculante else '—'}",
+            f"  Finalidade Geo      : {p.finalidade_geo or '—'}",
+            f"  Inf. Complementar   : {p.finalidade or '—'}",
+            f"  Data de Entrega     : {p.data_entrega.strftime('%d/%m/%Y') if p.data_entrega else '—'}",
+            f"  Criado em           : {p.criado_em.strftime('%d/%m/%Y %H:%M') if p.criado_em else '—'}",
+            f"  Impressão Solicitada: {imp_pedido}",
+            f"  Observações         : {p.observacoes or '—'}",
+            f"  Motivo Reprovação   : {p.motivo_reprovacao or '—'}",
+            f"  Link BDGEx          : {p.link_bdgex or '—'}",
             f"  Itens ({len(p.itens)}):",
         ]
         for i, item in enumerate(sorted(p.itens, key=lambda x: x.prioridade), 1):
             bdgex = "✓" if item.disponivel_bdgex else "✗"
-            prod = f" | Produção: {item.data_producao_bdgex.isoformat()}" if item.data_producao_bdgex else ""
+            if item.data_producao_bdgex:
+                _ia = (date.today() - item.data_producao_bdgex).days // 365
+                prod = f" | Produção: {item.data_producao_bdgex.strftime('%d/%m/%Y')} ({_ia} ano{'s' if _ia != 1 else ''})"
+            else:
+                prod = ""
+            imp_item = f" | Impr.: {item.impressao_quantidade}x {item.impressao_tipo_material}" if item.impressao_quantidade else ""
             linhas.append(
                 f"    {i:2}. [Prio {item.prioridade:2}] {item.tipo_produto.value}"
-                f" | {item.escala.value} | INOM: {item.inom}"
-                f" | MI: {item.mi or '—'} | BDGEx: {bdgex}{prod}"
+                f" | {item.escala.value} | MI: {item.mi or '—'} | INOM: {item.inom}"
+                f" | BDGEx: {bdgex}{prod}{imp_item}"
             )
         linhas.append("-" * 70)
     txt_bytes = "\n".join(linhas).encode("utf-8")

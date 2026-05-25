@@ -119,6 +119,7 @@ export interface Pedido {
   data_entrega: string
   status: StatusPedido
   prioridade: number
+  finalidade_geo: string | null
   finalidade: string | null
   orgao_vinculante: string
   motivo_reprovacao: string | null
