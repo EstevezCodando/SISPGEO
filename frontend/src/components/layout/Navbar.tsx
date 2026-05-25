@@ -33,7 +33,7 @@ export function Navbar() {
         {user && (
           <div className="flex items-center gap-3">
             <div className="hidden md:flex flex-col items-end text-xs leading-tight">
-              <span className="font-medium text-zinc-200">{formatNomeComPosto(user.nome, user.posto_graduacao)}</span>
+              <span className="font-medium text-zinc-200">{formatNomeComPosto(user.nome, user.posto_graduacao, user.nome_de_guerra)}</span>
               <span className="text-zinc-500">{PERFIL_LABELS[user.perfil] ?? user.perfil}</span>
             </div>
             <div className="flex items-center gap-1">

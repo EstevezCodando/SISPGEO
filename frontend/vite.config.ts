@@ -13,8 +13,6 @@ export default defineConfig({
           'vendor-leaflet': ['leaflet', 'react-leaflet'],
           // UI utilitários
           'vendor-ui':      ['lucide-react', 'date-fns', 'zustand'],
-          // Firebase Analytics — isolado para não bloquear bundle principal
-          'vendor-firebase': ['firebase/app', 'firebase/analytics'],
         },
       },
     },

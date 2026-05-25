@@ -6,6 +6,7 @@ from app.models.enums import PerfilEnum, OrgaoVinculanteEnum, PostoGraduacaoEnum
 class UsuarioOut(BaseModel):
     id: int
     nome: str
+    nome_de_guerra: str | None
     email: str
     telefone: str | None
     telefone_ritex: str | None
@@ -15,15 +16,22 @@ class UsuarioOut(BaseModel):
     posto_graduacao: str | None
     perfil: PerfilEnum
     orgao_vinculante: OrgaoVinculanteEnum | None
+    cgeo_id: int | None
     ativo: bool
+    email_confirmado: bool
+    ultima_senha_alterada: datetime | None
     ultima_confirmacao_dados: datetime | None
     pedidos_transferidos_em: datetime | None
+    tentativas_login: int
+    bloqueado_ate: datetime | None
     criado_em: datetime
+    atualizado_em: datetime
 
     model_config = {"from_attributes": True}
 
 
 class UsuarioUpdateRequest(BaseModel):
+    nome_de_guerra: str | None = None
     telefone: str | None = None
     telefone_ritex: str | None = None
     secao_om: str | None = None

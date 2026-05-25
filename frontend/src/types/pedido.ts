@@ -17,19 +17,28 @@ export type TipoProduto =
   | 'MDT'
   | 'MDS'
   | 'CDGV'
-  | 'IMPRESSAO'
+  | 'IMPRESSAO_CT'
+  | 'IMPRESSAO_COI'
+  | 'IMPRESSAO'  // legado
 
 export type Escala = '1:25.000' | '1:50.000' | '1:100.000' | '1:250.000'
 
 export const TIPO_PRODUTO_LABELS: Record<TipoProduto, string> = {
   CARTA_TOPOGRAFICA: 'Carta Topográfica',
-  CARTA_ORTOIMAGEM: 'Carta Ortoimagem',
-  ORTOIMAGEM: 'Ortoimagem',
-  MDT: 'Modelo Digital de Terreno (MDT)',
-  MDS: 'Modelo Digital de Superfície (MDS)',
-  CDGV: 'CDGV',
-  IMPRESSAO: 'Impressão de Produto Geoespacial',
+  CARTA_ORTOIMAGEM:  'Carta Ortoimagem',
+  ORTOIMAGEM:        'Ortoimagem',
+  MDT:               'Modelo Digital do Terreno (MDT)',
+  MDS:               'Modelo Digital de Superfície (MDS)',
+  CDGV:              'CDGV',
+  IMPRESSAO_CT:      'Impressão de Carta Topográfica',
+  IMPRESSAO_COI:     'Impressão de Carta Ortoimagem',
+  IMPRESSAO:         'Impressão Geoespacial (legado)',
 }
+
+export const TIPOS_IMPRESSAO = new Set<TipoProduto>(['IMPRESSAO_CT', 'IMPRESSAO_COI', 'IMPRESSAO'])
+
+export const MATERIAIS_IMPRESSAO = ['Canvas', 'Sulfite', 'Glossy', 'Tyvek'] as const
+export type MaterialImpressao = typeof MATERIAIS_IMPRESSAO[number]
 
 // Labels técnicos — usados por gestores/DSG/CGEO que precisam do detalhe interno
 export const STATUS_LABELS: Record<StatusPedido, string> = {
@@ -99,6 +108,8 @@ export interface ItemPedido {
   data_producao_bdgex: string | null
   solicitar_mesmo_disponivel: boolean
   prioridade: number
+  impressao_quantidade: number | null
+  impressao_tipo_material: string | null
 }
 
 export interface Pedido {
@@ -108,6 +119,7 @@ export interface Pedido {
   data_entrega: string
   status: StatusPedido
   prioridade: number
+  finalidade_geo: string | null
   finalidade: string | null
   orgao_vinculante: string
   motivo_reprovacao: string | null
@@ -130,6 +142,18 @@ export interface Pedido {
   usuario_telefone_ritex?: string | null
   usuario_secao_om?: string | null
   usuario_perfil?: string | null
+  cadeia_aprovacao: string[]
+  impressao_solicitada?: boolean
+  impressao_quantidade?: number | null
+  impressao_tipo_material?: string | null
+}
+
+/** Configuração de impressão física associada a um item do carrinho (1:1). */
+export interface ItemImpressao {
+  id: string              // == cartKey(item) — chave idêntica ao produtoId
+  produtoId: string       // FK → CartItem via cartKey()
+  quantidade: number
+  tipo: MaterialImpressao
 }
 
 export interface CartItem {
@@ -140,4 +164,8 @@ export interface CartItem {
   solicitar_mesmo_disponivel: boolean
   disponivel_bdgex: boolean
   geom?: object
+  /** true quando o usuário solicitou impressão física para este item */
+  impressao: boolean
+  /** FK → ItemImpressao.id; null enquanto !impressao */
+  impressaoId: string | null
 }

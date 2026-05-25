@@ -26,7 +26,7 @@ class TestRegisterUser:
 
         with pytest.raises(HTTPException) as exc:
             await auth_service.register_user(
-                mock_db, "João", "joao@eb.mil.br", "(61)99999-0000",
+                mock_db, "João Ferreira", "joao@eb.mil.br", "(61)99999-0000",
                 "1ª Brigada", "S3", "Senha@123",
             )
         assert exc.value.status_code == 400
@@ -39,17 +39,45 @@ class TestRegisterUser:
             patch("app.services.auth_service.get_password_hash", return_value="hash"),
             patch("app.services.auth_service.generate_token", return_value="tok123"),
             patch("app.services.auth_service.send_email", new_callable=AsyncMock) as mock_email,
-            patch("app.services.auth_service.cadastro_recebido", return_value=("Assunto", "<html/>")),
+            patch("app.services.auth_service.ativacao_conta", return_value=("Assunto", "<html/>")),
         ):
             await auth_service.register_user(
-                mock_db, "João", "joao@eb.mil.br", "(61)99999-0000",
+                mock_db, "João Ferreira", "joao@eb.mil.br", "(61)99999-0000",
                 "1ª Brigada", "S3", "Senha@123",
             )
 
-        # db.add chamado ao menos uma vez: usuário (ativação por admin, sem token de e-mail)
-        assert mock_db.add.call_count >= 1
+        # db.add chamado ao menos duas vezes: usuário + token de ativação
+        assert mock_db.add.call_count >= 2
         mock_db.commit.assert_called()
         mock_email.assert_called_once()
+
+    async def test_cadastro_com_nome_de_guerra(self, mock_db):
+        """Deve propagar nome_de_guerra ao criar o usuário."""
+        mock_db.scalar.return_value = None  # e-mail livre
+
+        usuario_criado = None
+
+        def capture_add(obj):
+            nonlocal usuario_criado
+            if isinstance(obj, Usuario):
+                usuario_criado = obj
+
+        mock_db.add.side_effect = capture_add
+
+        with (
+            patch("app.services.auth_service.get_password_hash", return_value="hash"),
+            patch("app.services.auth_service.generate_token", return_value="tok456"),
+            patch("app.services.auth_service.send_email", new_callable=AsyncMock),
+            patch("app.services.auth_service.ativacao_conta", return_value=("Assunto", "<html/>")),
+        ):
+            await auth_service.register_user(
+                mock_db, "Paulo Mendes", "paulo@eb.mil.br", "(61)99999-0001",
+                "CMDO C M P", "S2", "Senha@123",
+                nome_de_guerra="Paulo",
+            )
+
+        assert usuario_criado is not None
+        assert usuario_criado.nome_de_guerra == "Paulo"
 
 
 # ---------------------------------------------------------------------------

@@ -16,6 +16,8 @@ class ItemPedidoCreate(BaseModel):
     inom: str
     mi: str | None = None
     solicitar_mesmo_disponivel: bool = False
+    impressao_quantidade: int | None = None
+    impressao_tipo_material: str | None = None
 
 
 class ItemPedidoOut(BaseModel):
@@ -28,6 +30,8 @@ class ItemPedidoOut(BaseModel):
     data_producao_bdgex: date | None
     solicitar_mesmo_disponivel: bool
     prioridade: int = 0
+    impressao_quantidade: int | None = None
+    impressao_tipo_material: str | None = None
 
     model_config = {"from_attributes": True}
 
@@ -35,9 +39,13 @@ class ItemPedidoOut(BaseModel):
 class PedidoCreate(BaseModel):
     operacao_id: int | None = None
     data_entrega: date
+    finalidade_geo: str | None = None
     finalidade: str | None = None
     orgao_vinculante: OrgaoVinculanteEnum | None = None
     itens: list[ItemPedidoCreate]
+    impressao_solicitada: bool = False
+    impressao_quantidade: int | None = None
+    impressao_tipo_material: str | None = None
 
 
 class PedidoUpdate(BaseModel):
@@ -53,6 +61,7 @@ class PedidoOut(BaseModel):
     data_entrega: date
     status: StatusPedidoEnum
     prioridade: int
+    finalidade_geo: str | None = None
     finalidade: str | None
     orgao_vinculante: OrgaoVinculanteEnum
     motivo_reprovacao: str | None
@@ -75,6 +84,12 @@ class PedidoOut(BaseModel):
     usuario_telefone_ritex: str | None = None
     usuario_secao_om: str | None = None
     usuario_perfil: str | None = None
+    # Impressão física
+    impressao_solicitada: bool = False
+    impressao_quantidade: int | None = None
+    impressao_tipo_material: str | None = None
+    # Cadeia de aprovação calculada conforme órgão vinculante e região militar
+    cadeia_aprovacao: list[str] = []
 
     model_config = {"from_attributes": True}
 

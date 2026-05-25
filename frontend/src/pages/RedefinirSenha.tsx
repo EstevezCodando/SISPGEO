@@ -80,7 +80,7 @@ export function RedefinirSenha() {
             <h1 className="text-xl font-semibold text-zinc-100 tracking-tight">
               Nova senha
             </h1>
-            <p className="text-zinc-500 text-sm mt-1">SisPGeo — DSG/EB</p>
+            <p className="text-zinc-500 text-sm mt-1">SisPGeo – DSG/EB</p>
           </div>
 
           {/* Token ausente */}

@@ -16,9 +16,14 @@ function ExpandedDetails({ pedido: p }: { pedido: Pedido }) {
     <tr className="bg-zinc-800/30">
       <td colSpan={6} className="px-6 py-4">
         <div className="space-y-3">
+          {p.finalidade_geo && (
+            <p className="text-xs text-zinc-400">
+              <span className="font-medium text-zinc-300">Finalidade Geo:</span> {p.finalidade_geo}
+            </p>
+          )}
           {p.finalidade && (
             <p className="text-xs text-zinc-400">
-              <span className="font-medium text-zinc-300">Finalidade:</span> {p.finalidade}
+              <span className="font-medium text-zinc-300">Inf. Complementar:</span> {p.finalidade}
             </p>
           )}
           {p.motivo_reprovacao && (

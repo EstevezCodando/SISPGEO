@@ -35,16 +35,17 @@ const TILE_LAYERS: Record<Basemap, { url: string; attribution: string; maxZoom: 
 
 interface Props {
   inomGrid: FeatureCollection | null
-  showData?: boolean   // controla visibilidade dos dados do BDGEx (padrão: true)
-  basemap?: Basemap    // camada base (padrão: osm)
+  showData?: boolean    // controla visibilidade dos dados do BDGEx (padrão: true)
+  basemap?: Basemap     // camada base (padrão: osm)
+  somenteBdgex?: boolean // quando true, bloqueia clique em células sem dado BDGEx
 }
 
-export function InteractiveMap({ inomGrid, showData = true, basemap = 'osm' }: Props) {
+export function InteractiveMap({ inomGrid, showData = true, basemap = 'osm', somenteBdgex = false }: Props) {
   const mapRef = useRef<L.Map | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const inomLayerRef = useRef<L.GeoJSON | null>(null)
   const tileRef = useRef<L.TileLayer | null>(null)
-  const { addItem, removeItem, hasItem, tipoProduto, escala } = useCartStore()
+  const { addItem, removeItem, hasItem, items, tipoProduto, escala } = useCartStore()
 
   // ── Inicializa o mapa (sem tileLayer — adicionado separadamente) ──────────
   useEffect(() => {
@@ -85,11 +86,15 @@ export function InteractiveMap({ inomGrid, showData = true, basemap = 'osm' }: P
       renderer: L.canvas(),
       style: (feature) => {
         const props = (feature as Feature)?.properties ?? {}
-        const { inom, idade_anos } = props as { inom: string; idade_anos?: number | null }
+        const { inom, idade_anos, disponivel } = props as { inom: string; idade_anos?: number | null; disponivel?: boolean }
         const selected = hasItem(inom, tipoProduto as TipoProduto, escala as Escala)
+        const bloqueada = somenteBdgex && !disponivel
 
         if (selected) {
           return { color: '#3b82f6', weight: 2, fillColor: '#3b82f6', fillOpacity: 0.45 }
+        }
+        if (bloqueada) {
+          return { color: '#3f3f46', weight: 0.5, fillColor: '#3f3f46', fillOpacity: 0.25, dashArray: '3,3' }
         }
         if (showData) {
           const fill = getAgeColor(idade_anos)
@@ -102,28 +107,35 @@ export function InteractiveMap({ inomGrid, showData = true, basemap = 'osm' }: P
         return { color: '#555', weight: 0.5, fillColor: 'transparent', fillOpacity: 0 }
       },
       onEachFeature: (feature, layer) => {
-        const { inom, mi, data_conclusao, idade_anos } = feature.properties as {
-          inom: string; mi?: string; data_conclusao?: string; idade_anos?: number
+        const { inom, mi, data_conclusao, idade_anos, disponivel } = feature.properties as {
+          inom: string; mi?: string; data_conclusao?: string; idade_anos?: number; disponivel?: boolean
         }
-        let tip = `<b>${inom}</b>${mi ? `<br>MI: ${mi}` : ''}`
-        if (data_conclusao) tip += `<br>Publicação: ${data_conclusao.split('-').reverse().join('/')}`
-        if (idade_anos !== undefined && idade_anos !== null) tip += `<br>Idade: ${idade_anos} ano${idade_anos !== 1 ? 's' : ''}`
+        const bloqueada = somenteBdgex && !disponivel
+        let tip = mi
+          ? `<b style="color:#34d399">${mi}</b><br><span style="color:#a1a1aa;font-size:11px">${inom}</span>`
+          : `<b>${inom}</b>`
+        if (bloqueada) {
+          tip += '<br><span style="color:#71717a">Não disponível no BDGEx</span>'
+        } else {
+          if (data_conclusao) tip += `<br>Publicação: ${data_conclusao.split('-').reverse().join('/')}`
+          if (idade_anos !== undefined && idade_anos !== null) tip += `<br>Idade: ${idade_anos} ano${idade_anos !== 1 ? 's' : ''}`
+        }
         layer.bindTooltip(tip, { sticky: true })
 
         layer.on('click', () => {
           if (!tipoProduto || !escala) return
+          if (somenteBdgex && !disponivel) return  // bloqueia clique se não há dado BDGEx
           if (hasItem(inom, tipoProduto as TipoProduto, escala as Escala)) {
             removeItem(inom, tipoProduto as TipoProduto, escala as Escala)
           } else {
-            const item: CartItem = {
+            addItem({
               inom,
               mi: mi ?? null,
               tipo_produto: tipoProduto as TipoProduto,
               escala: escala as Escala,
               solicitar_mesmo_disponivel: false,
-              disponivel_bdgex: (feature.properties as Record<string, unknown>)?.disponivel === true,
-            }
-            addItem(item)
+              disponivel_bdgex: disponivel === true,
+            })
           }
           const path = layer as L.Path
           const nowSelected = hasItem(inom, tipoProduto as TipoProduto, escala as Escala)
@@ -141,7 +153,31 @@ export function InteractiveMap({ inomGrid, showData = true, basemap = 'osm' }: P
         })
       },
     }).addTo(mapRef.current)
-  }, [inomGrid, showData])
+  }, [inomGrid, showData, somenteBdgex])
+
+  // Sincroniza estilos do mapa quando itens são removidos externamente (sidebar ou modal)
+  useEffect(() => {
+    const layer = inomLayerRef.current
+    if (!layer) return
+    layer.eachLayer((sublayer) => {
+      const path = sublayer as L.Path & { feature?: Feature }
+      const props = path.feature?.properties as { inom?: string; idade_anos?: number | null; disponivel?: boolean } | undefined
+      if (!props?.inom) return
+      const { inom, idade_anos, disponivel } = props
+      const selected = hasItem(inom, tipoProduto as TipoProduto, escala as Escala)
+      const bloqueada = somenteBdgex && !disponivel
+      const fill = getAgeColor(idade_anos)
+      path.setStyle(
+        selected
+          ? { color: '#3b82f6', weight: 2, fillColor: '#3b82f6', fillOpacity: 0.45 }
+          : bloqueada
+            ? { color: '#3f3f46', weight: 0.5, fillColor: '#3f3f46', fillOpacity: 0.25, dashArray: '3,3' }
+            : showData
+              ? { color: '#444', weight: 0.5, fillColor: fill, fillOpacity: fill === 'transparent' ? 0 : 0.55 }
+              : { color: '#555', weight: 0.5, fillColor: 'transparent', fillOpacity: 0 },
+      )
+    })
+  }, [items]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return <div ref={containerRef} className="w-full h-full" style={{ minHeight: 400 }} />
 }

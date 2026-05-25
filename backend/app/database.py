@@ -1,9 +1,17 @@
+from sqlalchemy.engine.url import URL as _SAURL
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
 from app.config import settings
 
 engine = create_async_engine(
-    settings.DATABASE_URL,
+    _SAURL.create(
+        drivername="postgresql+asyncpg",
+        username=settings.DB_USER,
+        password=settings.DB_PASSWORD,
+        host=settings.DB_HOST,
+        port=settings.DB_PORT,
+        database=settings.DB_NAME,
+    ),
     # echo=True usa logging síncrono no event loop assíncrono → bloqueia fila de requests.
     # Nunca ligar em produção; em dev use `SQLALCHEMY_ECHO=true` apenas para debug pontual.
     echo=False,

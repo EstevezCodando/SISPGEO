@@ -31,6 +31,7 @@ import { pedidosApi } from '../api/pedidos'
 import { janelasApi, type MinhaJanela } from '../api/janelas'
 import { operacoesApi, type Operacao } from '../api/operacoes'
 import { LoadingSpinner } from '../components/shared/LoadingSpinner'
+import { CadeiaAprovacao } from '../components/shared/CadeiaAprovacao'
 import { useAuthStore } from '../store/authStore'
 import type { Pedido, ItemPedido } from '../types/pedido'
 import { TIPO_PRODUTO_LABELS, getStatusSolicitante } from '../types/pedido'
@@ -140,12 +141,14 @@ function SortablePedidoRow_Base({
   const tipos = [...new Set(p.itens.map(i => TIPO_PRODUTO_LABELS[i.tipo_produto]))].join(' · ') || '—'
   const escalas = [...new Set(p.itens.map(i => i.escala))].join(', ')
 
-  // Descrição: operação nomeada OU "Outros: [início da justificativa]"
-  const descricao = p.operacao_nome
-    ? p.operacao_nome
-    : p.finalidade
-      ? `Outros: ${p.finalidade.length > 50 ? p.finalidade.substring(0, 50) + '…' : p.finalidade}`
-      : null
+  // Descrição: finalidade_geo OU operação nomeada OU início da informação complementar
+  const descricao = p.finalidade_geo
+    ? p.finalidade_geo
+    : p.operacao_nome
+      ? p.operacao_nome
+      : p.finalidade
+        ? (p.finalidade.length > 50 ? p.finalidade.substring(0, 50) + '…' : p.finalidade)
+        : null
 
   const statusSimpl = getStatusSolicitante(p.status)
 
@@ -283,9 +286,15 @@ function SortablePedidoRow_Base({
                 {format(new Date(p.data_entrega + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR })}
               </p>
             </div>
+            {p.finalidade_geo && (
+              <div className="col-span-2 sm:col-span-3">
+                <p className="text-zinc-500 mb-0.5">Finalidade da Geoinformação</p>
+                <p className="text-zinc-300">{p.finalidade_geo}</p>
+              </div>
+            )}
             {p.finalidade && (
               <div className="col-span-2 sm:col-span-3">
-                <p className="text-zinc-500 mb-0.5">Finalidade</p>
+                <p className="text-zinc-500 mb-0.5">Informação Complementar</p>
                 <p className="text-zinc-300">{p.finalidade}</p>
               </div>
             )}
@@ -313,6 +322,11 @@ function SortablePedidoRow_Base({
                   <ExternalLink className="h-3.5 w-3.5" />
                   Acessar dados no BDGEx
                 </a>
+              </div>
+            )}
+            {p.cadeia_aprovacao && p.cadeia_aprovacao.length > 0 && (
+              <div className="col-span-2 sm:col-span-3">
+                <CadeiaAprovacao cadeia={p.cadeia_aprovacao} status={p.status} />
               </div>
             )}
           </div>

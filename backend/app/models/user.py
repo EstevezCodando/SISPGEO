@@ -10,6 +10,7 @@ class Usuario(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     nome: Mapped[str] = mapped_column(String(200), nullable=False)
+    nome_de_guerra: Mapped[str | None] = mapped_column(String(100))
     email: Mapped[str] = mapped_column(String(200), unique=True, nullable=False, index=True)
     telefone: Mapped[str | None] = mapped_column(String(20))
     telefone_ritex: Mapped[str | None] = mapped_column(String(10))   # formato NNN-NNNN (Ritex)

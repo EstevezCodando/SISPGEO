@@ -1,583 +1,531 @@
-# SISGEO — Arquitetura, Contratos e Fluxos
+# SisPGeo — Arquitetura de Dados e Relacionamentos
 
-> Sistema Integrado de Solicitações de Geoinformação  
-> DSG/EB — Diretoria de Serviço Geográfico do Exército Brasileiro
+> **Sistema de Pedidos de Geoinformação**  
+> Diretoria de Serviço Geográfico — Exército Brasileiro  
+> Stack: FastAPI + async SQLAlchemy (PostgreSQL/PostGIS) · React + TypeScript + Zustand
+
+---
+
+## Sumário
+
+1. [Visão Geral](#1-visão-geral)
+2. [Enumerações (Domínios de Valor)](#2-enumerações-domínios-de-valor)
+3. [Modelos ORM — Backend](#3-modelos-orm--backend)
+4. [Schemas Pydantic — Backend](#4-schemas-pydantic--backend)
+5. [Types TypeScript — Frontend](#5-types-typescript--frontend)
+6. [Stores Zustand — Frontend](#6-stores-zustand--frontend)
+7. [Relacionamentos e Chaves Estrangeiras](#7-relacionamentos-e-chaves-estrangeiras)
+8. [Fluxo de Status do Pedido](#8-fluxo-de-status-do-pedido)
+9. [Cadeia de Aprovação por Órgão Vinculante](#9-cadeia-de-aprovação-por-órgão-vinculante)
+10. [Hierarquia de Perfis e Roteamento](#10-hierarquia-de-perfis-e-roteamento)
 
 ---
 
 ## 1. Visão Geral
 
-O SISGEO digitaliza o processo de solicitação de produtos geoespaciais entre as Organizações Militares (OM) e a DSG. O fluxo percorre uma cadeia hierárquica de aprovação antes de chegar à produção cartográfica.
+O SisPGeo gerencia a solicitação, aprovação, produção e entrega de **produtos de
+geoinformação** (cartas topográficas, ortoimagens, MDT/MDS, impressões, CDGV)
+produzidos pelo BDGEx/DSG.
+
+### Entidades principais
 
 ```
-Solicitante (OMDS)
-    │  submete pedido
-    ▼
-Supervisor (C. Mil. A)
-    │  consolida e encaminha
-    ▼
-Consolidador (COTER / COLOG / etc.)
-    │  revisa e envia à DSG
-    ▼
-Gestor Cartográfico (DSG)
-    │  distribui para análise
-    ▼
-Analista CGEO
-    │  avalia viabilidade e produz
-    ▼
-Produto entregue no BDGEx
+Usuario ──(1:N)──► Pedido ──(1:N)──► ItemPedido
+                      │
+           ┌──────────┼──────────┐
+           │          │          │
+        Operacao  AuditLog  PedidoHistorico
+                               │
+                        PedidoTransferencia
 ```
+
+### Tabelas do banco
+
+| Tabela                   | Propósito                                              |
+|--------------------------|--------------------------------------------------------|
+| `usuarios`               | Autenticação, perfil, OM, contatos                     |
+| `tokens_senha`           | Reset de senha e ativação de conta por e-mail          |
+| `pedidos`                | Cabeçalho do pedido e cadeia de aprovação              |
+| `itens_pedido`           | Células/folhas solicitadas (1 item = 1 INOM)           |
+| `operacoes`              | Agrupador de pedidos por operação militar              |
+| `janelas_pedidos`        | Controle de períodos em que solicitações são aceitas   |
+| `notificacoes`           | Notificações in-app por usuário                        |
+| `audit_logs`             | Rastreio imutável de ações sobre pedidos               |
+| `pedido_historico`       | Histórico imutável de transições de status             |
+| `pedido_transferencias`  | Rastreio de transferências de responsabilidade         |
+| `api_metricas`           | Métricas de performance por endpoint                   |
+| `bdgex_cache`            | Cache de disponibilidade BDGEx com geometria PostGIS   |
+| `oms_customizadas`       | OMs cadastradas manualmente (não constam no SIAPE)     |
+| `config_entrega`         | Singleton de configuração de datas mínimas de entrega  |
 
 ---
 
-## 2. Stack Tecnológica
+## 2. Enumerações (Domínios de Valor)
 
-| Camada | Tecnologia |
-|--------|-----------|
-| Frontend | React 18 + TypeScript + Vite + Tailwind CSS |
-| Backend | FastAPI (Python 3.12) + SQLAlchemy async |
-| Banco | PostgreSQL 15 (via asyncpg) |
-| Auth | JWT (HS256) — Bearer token |
-| E-mail | SMTP (configurável via env) |
-| Mapas | Leaflet + React-Leaflet |
-| Deploy | Docker Compose (nginx reverse proxy) |
+### `PerfilEnum` — Hierarquia de acesso
+
+| Valor                    | Descrição                               | Grupo              |
+|--------------------------|-----------------------------------------|--------------------|
+| `SOLICITANTE`            | Usuário de OM demandante                | Solicitantes       |
+| `SUPERVISOR_CMP`         | SSGeoInt — C Mil Planalto               | Supervisores (RM)  |
+| `SUPERVISOR_CML`         | SSGeoInt — C Mil Leste                  | Supervisores (RM)  |
+| `SUPERVISOR_CMS`         | SSGeoInt — C Mil Sul                    | Supervisores (RM)  |
+| `SUPERVISOR_CMO`         | SSGeoInt — C Mil Oeste                  | Supervisores (RM)  |
+| `SUPERVISOR_CMAO`        | SSGeoInt — C Mil Amazônia Ocidental     | Supervisores (RM)  |
+| `SUPERVISOR_CMA`         | SSGeoInt — C Mil Amazônia               | Supervisores (RM)  |
+| `SUPERVISOR_CMNOR`       | SSGeoInt — C Mil Nordeste               | Supervisores (RM)  |
+| `SUPERVISOR_CMSE`        | SSGeoInt — C Mil Sudeste                | Supervisores (RM)  |
+| `CONSOLIDADOR_COTER`     | Seção Geo do COTER                      | Consolidadores     |
+| `CONSOLIDADOR_DSG`       | DSG — consolidação interna              | Consolidadores     |
+| `CONSOLIDADOR_DEC`       | DEC — consolidação                      | Consolidadores     |
+| `CONSOLIDADOR_COLOG`     | COLOG — consolidação                    | Consolidadores     |
+| `CONSOLIDADOR_DECEX`     | DECEx — consolidação                    | Consolidadores     |
+| `GESTOR_CARTOGRAFICO`    | DSG — define CGEO e valida viabilidade  | Gestores DSG       |
+| `ANALISTA_CGEO`          | CGEO — atende e entrega pedidos         | Gestores DSG       |
+| `SUPERVISOR` *(legado)*  | Supervisor sem CMilA específico         | Legados            |
+| `CONSOLIDADOR` *(legado)*| Consolidador genérico                   | Legados            |
+
+**Sets de conveniência (backend + frontend):**
+- `SUPERVISOR_PROFILES` — todos os `SUPERVISOR_*` + `SUPERVISOR` legado
+- `CONSOLIDADOR_PROFILES` — todos os `CONSOLIDADOR_*` + `CONSOLIDADOR` legado
+
+### `OrgaoVinculanteEnum` — Órgão do solicitante
+
+| Valor    | Descrição                              | Roteamento do pedido             |
+|----------|----------------------------------------|----------------------------------|
+| `COTER`  | Comando de Operações Terrestres        | → Supervisor do CMilA            |
+| `DSG`    | Diretoria de Serviço Geográfico        | → Consolidador DSG (direto)      |
+| `DEC`    | Diretoria de Educação e Cultura        | → Consolidador DEC (direto)      |
+| `COLOG`  | Comando Logístico                      | → Consolidador COLOG (direto)    |
+| `DECEx`  | Departamento de Educação e Cultura     | → Consolidador DECEx (direto)    |
+| `DCT`    | Departamento C&T *(banco only)*        | Não exibido no cadastro          |
+
+### `StatusPedidoEnum` — Ciclo de vida do pedido
+
+| Valor                      | Significado                                       |
+|----------------------------|---------------------------------------------------|
+| `RASCUNHO`                 | Criado, não enviado para revisão                  |
+| `AGUARDANDO_SUPERVISOR`    | Aguardando aprovação do supervisor do CMilA       |
+| `AGUARDANDO_CONSOLIDADOR`  | Aguardando consolidação pelo órgão                |
+| `DEVOLVIDO`                | Devolvido ao solicitante para ajustes             |
+| `AGUARDANDO_CARTOGRAFICO`  | Aguardando atribuição a CGEO pelo Gestor DSG      |
+| `ATRIBUIDO_CGEO`           | CGEO designado, análise em andamento              |
+| `APROVADO`                 | Aprovado, em produção pelo CGEO                   |
+| `REPROVADO`                | Inviável — produção impossível                    |
+| `CANCELADO`                | Cancelado pelo solicitante ou gestor              |
+| `PRODUZIDO`                | Produto entregue — dados disponíveis no BDGEx     |
+
+### `TipoProdutoEnum` — Produtos geoespaciais
+
+| Valor               | Descrição                                | É impressão? |
+|---------------------|------------------------------------------|:------------:|
+| `CARTA_TOPOGRAFICA` | Carta Topográfica digital                | Não          |
+| `CARTA_ORTOIMAGEM`  | Carta Ortoimagem digital                 | Não          |
+| `ORTOIMAGEM`        | Imagem ortorretificada                   | Não          |
+| `MDT`               | Modelo Digital de Terreno                | Não          |
+| `MDS`               | Modelo Digital de Superfície             | Não          |
+| `CDGV`              | Conjunto de Dados Geoespaciais Vetoriais | Não          |
+| `IMPRESSAO_CT`      | Impressão de Carta Topográfica           | **Sim**      |
+| `IMPRESSAO_COI`     | Impressão de Carta Ortoimagem            | **Sim**      |
+| `IMPRESSAO`         | Impressão Geoespacial *(legado)*         | **Sim**      |
+
+`TIPOS_IMPRESSAO = { IMPRESSAO_CT, IMPRESSAO_COI, IMPRESSAO }` — set usado para
+bifurcar lógica de UX (campos quantidade + material obrigatórios por item).
+
+### `EscalaEnum`
+
+`1:25.000` · `1:50.000` · `1:100.000` · `1:250.000`
+
+### `PostoGraduacaoEnum`
+
+18 valores representando praças e oficiais do Exército (Gen Ex → Sd).
+Exibido como prefixo do nome do usuário na interface.
+
+### `MaterialImpressao` (frontend only)
+
+`'Canvas'` · `'Sulfite'` · `'Glossy'` · `'Tyvek'`
+Tipo de suporte físico para impressão. Armazenado como `String(20)` no banco.
 
 ---
 
-## 3. Perfis de Usuário
+## 3. Modelos ORM — Backend
 
-### 3.1 Tabela de Perfis
+### `Usuario` — tabela `usuarios`
 
-| Perfil (enum) | Nome legível | Papel no sistema |
-|---|---|---|
-| `SOLICITANTE` | Solicitante OMDS | Cria e submete pedidos de produtos geoespaciais |
-| `SUPERVISOR` | Supervisor C. Mil. A | Revisa e consolida pedidos da sua região (CMilA) |
-| `CONSOLIDADOR` | Consolidador (COTER/COLOG) | Agrupa pedidos e os encaminha à DSG |
-| `GESTOR_CARTOGRAFICO` | Gestor Cartográfico (DSG) | Distribui pedidos para os CGEOs; exporta relatórios |
-| `ANALISTA_CGEO` | Analista CGEO | Analisa viabilidade e registra entrega no BDGEx |
+| Coluna                      | Tipo           | Descrição                                              |
+|-----------------------------|----------------|--------------------------------------------------------|
+| `id`                        | Integer PK     | Identificador único auto-incremento                    |
+| `nome`                      | String(150)    | Nome completo                                          |
+| `email`                     | String(150) UQ | E-mail institucional (@eb.mil.br) — chave de login     |
+| `senha_hash`                | String(200)    | Bcrypt hash — **nunca exposto pela API**               |
+| `om`                        | String(100)    | Organização Militar (sigla ou nome)                    |
+| `secao_om`                  | String(100)?   | Seção dentro da OM                                     |
+| `telefone`                  | String(30)?    | Telefone convencional                                  |
+| `telefone_ritex`            | String(30)?    | Ramal RITEX (rede interna EB)                          |
+| `posto_graduacao`           | SAEnum?        | Posto/Graduação — `PostoGraduacaoEnum`                 |
+| `perfil`                    | SAEnum         | Nível de acesso — `PerfilEnum`                         |
+| `orgao_vinculante`          | SAEnum?        | Órgão superior — `OrgaoVinculanteEnum`                 |
+| `regiao_militar`            | String(20)?    | CMilA da OM (CMP, CML, CMS…) — roteamento ao supervisor|
+| `cgeo_id`                   | Integer?       | ID do CGEO ao qual este usuário está vinculado         |
+| `ativo`                     | Boolean        | Conta ativa (admin ou auto-ativação via e-mail)        |
+| `email_confirmado`          | Boolean        | E-mail confirmado via link de ativação                 |
+| `tentativas_login`          | SmallInt       | Contador de tentativas falhas (reset ao logar)         |
+| `bloqueado_ate`             | DateTime?      | Bloqueio temporário por força bruta                    |
+| `ultima_senha_alterada`     | DateTime?      | Timestamp da última alteração de senha                 |
+| `ultima_confirmacao_dados`  | DateTime?      | Última vez que o usuário confirmou seus dados          |
+| `pedidos_transferidos_em`   | DateTime?      | Data da última transferência de pedidos (bulk)         |
+| `criado_em`                 | DateTime       | Timestamp de criação (server_default)                  |
+| `atualizado_em`             | DateTime       | Timestamp de última atualização (onupdate)             |
 
-### 3.2 Atributos Obrigatórios por Perfil
-
-| Atributo | SOLICITANTE | SUPERVISOR | CONSOLIDADOR | GESTOR_CARTOGRAFICO | ANALISTA_CGEO |
-|---|---|---|---|---|---|
-| `om` | OM de lotação | OM (HQ do CMilA) | OM (ex: COTER) | DSG | CGEO |
-| `regiao_militar` | Código CMilA (ex: `CMP`) | Código CMilA | Código CMilA | — | — |
-| `orgao_vinculante` | COTER / COLOG / etc. | COTER / COLOG / etc. | Próprio órgão | — | — |
-
-**Roteamento de pedidos:**
-- O `SUPERVISOR` recebe pedidos filtrando por `regiao_militar` (campo no pedido, herdado do solicitante).
-- O `CONSOLIDADOR` recebe pedidos filtrando por `orgao_vinculante` (campo no pedido, herdado do solicitante).
-- O `GESTOR_CARTOGRAFICO` vê todos os pedidos com status `AGUARDANDO_CARTOGRAFICO`.
-- O `ANALISTA_CGEO` vê pedidos com status `ATRIBUIDO_CGEO` e `cgeo_id == seu id`.
-
-### 3.3 Comandos Militares de Área (CMilA)
-
-| Código | Nome |
-|--------|------|
-| `CMA` | Comando Militar da Amazônia |
-| `CME` | Comando Militar do Leste |
-| `CML` | Comando Militar do Leste (variante) |
-| `CMN` | Comando Militar do Norte |
-| `CMNE` | Comando Militar do Nordeste |
-| `CMP` | Comando Militar do Planalto (Brasília) |
-| `CMO` | Comando Militar do Oeste |
-| `CMS` | Comando Militar do Sul |
-| `CMSE` | Comando Militar do Sudeste |
-
-O código CMilA é o valor armazenado no campo `regiao_militar` de `Usuario` e `Pedido`.
-
-### 3.4 Órgãos Vinculantes (OrgaoVinculanteEnum)
-
-| Valor | Descrição |
-|-------|-----------|
-| `COTER` | Comando de Operações Terrestres |
-| `COLOG` | Comando Logístico |
-| `DECEx` | Departamento de Educação e Cultura do Exército |
-| `DEC` | Departamento de Engenharia e Construção |
+**Índices:** `email` (unique), `perfil`, `ativo+email_confirmado`.
 
 ---
 
-## 4. Modelo de Dados
+### `TokenSenha` — tabela `tokens_senha`
 
-### 4.1 Tabela `usuarios`
+Tabela polimórfica: serve tanto para **reset de senha** quanto para
+**ativação de conta** por e-mail.
 
-```sql
-CREATE TABLE usuarios (
-    id                      SERIAL PRIMARY KEY,
-    nome                    VARCHAR(200) NOT NULL,
-    email                   VARCHAR(200) UNIQUE NOT NULL,
-    telefone                VARCHAR(20),
-    secao_om                VARCHAR(200),
-    om                      VARCHAR(200) NOT NULL,          -- OM de lotação
-    regiao_militar          VARCHAR(20),                    -- Código CMilA (ex: CMP)
-    orgao_vinculante        orgao_vinculante_enum,          -- COTER, COLOG, etc.
-    perfil                  perfil_enum NOT NULL,           -- SOLICITANTE, SUPERVISOR, etc.
-    cgeo_id                 INTEGER,                        -- Apenas ANALISTA_CGEO
-    senha_hash              VARCHAR(255) NOT NULL,
-    ativo                   BOOLEAN DEFAULT FALSE,
-    email_confirmado        BOOLEAN DEFAULT FALSE,
-    ultima_senha_alterada   TIMESTAMPTZ,
-    ultima_confirmacao_dados TIMESTAMPTZ,
-    pedidos_transferidos_em TIMESTAMPTZ,                   -- Marca quando herdou pedidos
-    tentativas_login        INTEGER DEFAULT 0,
-    bloqueado_ate           TIMESTAMPTZ,
-    criado_em               TIMESTAMPTZ DEFAULT NOW(),
-    atualizado_em           TIMESTAMPTZ DEFAULT NOW()
-);
+| Coluna       | Tipo        | Descrição                                            |
+|--------------|-------------|------------------------------------------------------|
+| `id`         | Integer PK  |                                                      |
+| `usuario_id` | Integer FK  | → `usuarios.id`                                      |
+| `token`      | String UQ   | Token aleatório seguro (`secrets.token_urlsafe`)     |
+| `expira_em`  | DateTime    | Expiração UTC (24h ativação, 1h reset)               |
+| `usado_em`   | DateTime?   | Preenchido ao consumir o token (idempotência)        |
+
+---
+
+### `Pedido` — tabela `pedidos`
+
+| Coluna                    | Tipo         | Descrição                                               |
+|---------------------------|--------------|----------------------------------------------------------|
+| `id`                      | Integer PK   |                                                          |
+| `usuario_id`              | Integer FK   | → `usuarios.id` — **responsável atual** (mutável)        |
+| `criador_id`              | Integer FK?  | → `usuarios.id` — criador original (**imutável**)        |
+| `operacao_id`             | Integer FK?  | → `operacoes.id` — agrupamento opcional                  |
+| `data_entrega`            | Date         | Data sugerida de entrega pelo solicitante                |
+| `status`                  | SAEnum       | Estado atual — `StatusPedidoEnum`                        |
+| `prioridade`              | SmallInt     | Ordem de exibição/atendimento (0 = padrão)               |
+| `finalidade`              | Text?        | Objetivo do pedido (obrigatório quando `operacao=null`)  |
+| `orgao_vinculante`        | SAEnum       | Determina cadeia de aprovação — `OrgaoVinculanteEnum`    |
+| `regiao_militar`          | String(20)?  | CMilA do solicitante — roteia ao supervisor correto      |
+| `gestor_demandante_id`    | Integer FK?  | → `usuarios.id` — supervisor que aprovou                 |
+| `gestor_dsg_id`           | Integer FK?  | → `usuarios.id` — consolidador/gestor DSG que aprovou   |
+| `cgeo_id`                 | Integer?     | ID do CGEO (sem FK — evita ambiguidade async)            |
+| `motivo_reprovacao`       | Text?        | Justificativa de reprovação/cancelamento                 |
+| `observacoes`             | Text?        | Observações do gestor ao entregar                        |
+| `link_bdgex`              | Text?        | URL do produto no BDGEx                                  |
+| `auto_submitted`          | Boolean      | True se submetido automaticamente pelo sistema           |
+| `impressao_solicitada`    | Boolean      | Derivado: `true` se qualquer item tem impressão          |
+| `impressao_quantidade`    | SmallInt?    | Campo legado global (substituído por per-item)           |
+| `impressao_tipo_material` | String(20)?  | Campo legado global (substituído por per-item)           |
+| `submetido_gestor_em`     | DateTime?    | Timestamp ao entrar em `AGUARDANDO_SUPERVISOR`           |
+| `submetido_dsg_em`        | DateTime?    | Timestamp ao entrar em `AGUARDANDO_CONSOLIDADOR`         |
+| `aprovado_em`             | DateTime?    | Timestamp ao atingir `APROVADO`                          |
+| `produzido_em`            | DateTime?    | Timestamp ao atingir `PRODUZIDO`                         |
+| `cancelado_em`            | DateTime?    | Timestamp ao atingir `CANCELADO` ou `REPROVADO`          |
+| `criado_em`               | DateTime     | Criação (server_default)                                 |
+| `atualizado_em`           | DateTime     | Última atualização (onupdate)                            |
+
+**Relacionamento:** `itens` → `ItemPedido[]` com `lazy="selectin"` (carregado
+automaticamente nas queries async).
+
+---
+
+### `ItemPedido` — tabela `itens_pedido`
+
+Cada registro representa **uma folha/célula** do índice cartográfico.
+
+| Coluna                    | Tipo         | Descrição                                             |
+|---------------------------|--------------|-------------------------------------------------------|
+| `id`                      | Integer PK   |                                                       |
+| `pedido_id`               | Integer FK   | → `pedidos.id` CASCADE DELETE                         |
+| `tipo_produto`            | SAEnum       | Produto solicitado — `TipoProdutoEnum`                |
+| `escala`                  | SAEnum       | Escala cartográfica — `EscalaEnum`                    |
+| `inom`                    | String(50)   | Índice de Nomenclatura (ex: SF-22-X-D-IV)             |
+| `mi`                      | String(50)?  | Número MI — identificador alternativo                 |
+| `geom`                    | Geometry?    | Polígono da folha WGS-84 SRID 4326 (PostGIS)          |
+| `disponivel_bdgex`        | Boolean      | Produto existe no BDGEx no momento do pedido          |
+| `data_producao_bdgex`     | Date?        | Data de produção do dado no BDGEx                     |
+| `solicitar_mesmo_disponivel` | Boolean   | Forçar produção mesmo que já disponível               |
+| `prioridade`              | SmallInt     | Ordem de atendimento dentro do pedido                 |
+| `impressao_quantidade`    | SmallInt?    | Cópias para **este item** (per-item)                  |
+| `impressao_tipo_material` | String(20)?  | Material para **este item** (Canvas/Sulfite/Glossy/Tyvek) |
+| `criado_em`               | DateTime     | Criação                                               |
+
+> **Princípio de separação de responsabilidade:** `impressao_quantidade` e
+> `impressao_tipo_material` pertencem ao `ItemPedido`, não ao `Pedido`.
+> Cada folha tem sua configuração de impressão independente.
+> `Pedido.impressao_solicitada` é **derivado**:
+> `any(i.impressao_quantidade for i in itens if i.impressao_quantidade)`.
+
+---
+
+### `Operacao` — tabela `operacoes`
+
+Agrupa pedidos de uma mesma operação militar.
+
+| Coluna       | Tipo        | Descrição                       |
+|--------------|-------------|---------------------------------|
+| `id`         | Integer PK  |                                 |
+| `nome`       | String(100) | Nome da operação                |
+| `om`         | String(100) | OM responsável                  |
+| `criado_por` | Integer FK  | → `usuarios.id`                 |
+| `criado_em`  | DateTime    |                                 |
+
+---
+
+### `JanelaPedidos` — tabela `janelas_pedidos`
+
+Controla o período em que solicitações são aceitas para cada perfil/tipo.
+
+| Coluna          | Tipo       | Descrição                                    |
+|-----------------|------------|----------------------------------------------|
+| `id`            | Integer PK |                                              |
+| `tipo_janela`   | SAEnum     | `TipoJanelaEnum` — a qual perfil se aplica   |
+| `data_inicio`   | DateTime   | Início do período                            |
+| `data_fim`      | DateTime   | Fim do período                               |
+| `criado_por`    | Integer FK | → `usuarios.id` (admin que criou)            |
+| `criado_em`     | DateTime   |                                              |
+| `atualizado_em` | DateTime   |                                              |
+| `configurada`   | Boolean    | Se há janela configurada (vs. padrão aberta) |
+
+---
+
+### `Notificacao` — tabela `notificacoes`
+
+| Coluna       | Tipo       | Descrição                          |
+|--------------|------------|------------------------------------|
+| `id`         | Integer PK |                                    |
+| `usuario_id` | Integer FK | → `usuarios.id` — destinatário     |
+| `titulo`     | String     | Cabeçalho da notificação           |
+| `mensagem`   | Text       | Corpo                              |
+| `lida`       | Boolean    | Estado de leitura                  |
+| `pedido_id`  | Integer FK?| → `pedidos.id` — contexto opcional |
+| `criado_em`  | DateTime   |                                    |
+
+---
+
+### `AuditLog` — tabela `audit_logs`
+
+Rastreio imutável de todas as ações sobre pedidos.
+
+| Coluna       | Tipo       | Descrição                                        |
+|--------------|------------|--------------------------------------------------|
+| `id`         | Integer PK |                                                  |
+| `pedido_id`  | Integer FK | → `pedidos.id`                                   |
+| `usuario_id` | Integer FK | → `usuarios.id` — quem executou                  |
+| `acao`       | String     | Identificador da ação (submit, review, cancel…)  |
+| `detalhe`    | Text?      | JSON ou texto livre com contexto                 |
+| `ip`         | String?    | IP de origem da requisição                       |
+| `user_agent` | String?    | Browser/cliente                                  |
+| `criado_em`  | DateTime   |                                                  |
+
+---
+
+### `PedidoHistorico` — tabela `pedido_historico`
+
+Registra cada transição de status com contexto completo.
+
+| Coluna            | Tipo       | Descrição                                           |
+|-------------------|------------|-----------------------------------------------------|
+| `id`              | Integer PK |                                                     |
+| `pedido_id`       | Integer FK | → `pedidos.id`                                      |
+| `usuario_id`      | Integer FK | → `usuarios.id` — quem acionou a transição          |
+| `status_anterior` | SAEnum?    | Status antes da transição                           |
+| `status_novo`     | SAEnum     | Status após a transição                             |
+| `acao`            | String     | Ação executada (submit, aprovar, reprovar, pronto…) |
+| `motivo`          | Text?      | Justificativa informada                             |
+| `observacoes`     | Text?      | Observações adicionais                              |
+| `ip`              | String?    | IP de origem                                        |
+| `criado_em`       | DateTime   | Timestamp da transição                              |
+
+---
+
+### `PedidoTransferencia` — tabela `pedido_transferencias`
+
+Rastreia transferências de responsabilidade entre usuários.
+
+| Coluna             | Tipo       | Descrição                                      |
+|--------------------|------------|------------------------------------------------|
+| `id`               | Integer PK |                                                |
+| `pedido_id`        | Integer FK | → `pedidos.id`                                 |
+| `de_usuario_id`    | Integer FK | → `usuarios.id` — responsável anterior         |
+| `para_usuario_id`  | Integer FK | → `usuarios.id` — novo responsável             |
+| `executado_por_id` | Integer FK | → `usuarios.id` — quem executou a transferência|
+| `motivo`           | Text?      |                                                |
+| `criado_em`        | DateTime   |                                                |
+
+---
+
+### `BdgexCache` — tabela `bdgex_cache`
+
+Cache de disponibilidade de folhas cartográficas no BDGEx.
+
+| Coluna          | Tipo       | Descrição                                          |
+|-----------------|------------|----------------------------------------------------|
+| `id`            | Integer PK |                                                    |
+| `inom`          | String UQ  | Índice único de nomenclatura da folha              |
+| `escala`        | SAEnum     | Escala da folha                                    |
+| `tipo_produto`  | SAEnum     | Tipo de produto                                    |
+| `disponivel`    | Boolean    | Produto disponível no BDGEx                        |
+| `data_producao` | Date?      | Data de produção no BDGEx                          |
+| `geom`          | Geometry?  | Polígono da folha (PostGIS POLYGON SRID 4326)      |
+| `atualizado_em` | DateTime   | Última sincronização com BDGEx                     |
+
+---
+
+### `ConfigEntrega` — tabela `config_entrega` (singleton `id=1`)
+
+| Coluna          | Tipo     | Descrição                                           |
+|-----------------|----------|-----------------------------------------------------|
+| `id`            | Integer PK | Sempre `id=1` — singleton                         |
+| `data_base`     | Date     | Data base para cálculo dos prazos mínimos           |
+| `prazos_minimos`| JSON     | `{ TipoProduto: dias }` — override por produto      |
+| `atualizado_em` | DateTime |                                                     |
+
+---
+
+## 4. Schemas Pydantic — Backend
+
+### Schemas de criação/envio (Request)
+
+#### `ItemPedidoCreate`
+```
+tipo_produto                TipoProdutoEnum
+escala                      EscalaEnum
+inom                        str
+mi                          str | None
+solicitar_mesmo_disponivel  bool = False
+impressao_quantidade        int | None     ← config de impressão deste item
+impressao_tipo_material     str | None     ← material para este item
 ```
 
-### 4.2 Tabela `pedidos`
-
-```sql
-CREATE TABLE pedidos (
-    id                      SERIAL PRIMARY KEY,
-    usuario_id              INTEGER REFERENCES usuarios(id),   -- Responsável atual
-    criador_id              INTEGER REFERENCES usuarios(id),   -- Criador original (imutável)
-    operacao_id             INTEGER REFERENCES operacoes(id),  -- Operação associada (opt.)
-    data_entrega            DATE NOT NULL,
-    status                  status_pedido_enum NOT NULL,
-    prioridade              SMALLINT DEFAULT 0,               -- Menor = maior prioridade
-    finalidade              TEXT,
-    orgao_vinculante        orgao_vinculante_enum NOT NULL,   -- COTER, COLOG, etc.
-    regiao_militar          VARCHAR(20),                      -- CMilA herdado do solicitante
-    motivo_reprovacao       TEXT,
-    observacoes             TEXT,
-    link_bdgex              TEXT,                             -- URL entrega BDGEx
-    cgeo_id                 INTEGER,                          -- CGEO responsável
-    gestor_cmila_id         INTEGER,                          -- SUPERVISOR que revisou
-    gestor_consolidador_id  INTEGER,                          -- CONSOLIDADOR que aprovou
-    gestor_cartografico_id  INTEGER,                          -- GESTOR_CARTOGRAFICO que atribuiu
-    submetido_gestor_em     TIMESTAMPTZ,
-    submetido_dsg_em        TIMESTAMPTZ,
-    aprovado_em             TIMESTAMPTZ,
-    cancelado_em            TIMESTAMPTZ,
-    produzido_em            TIMESTAMPTZ,
-    criado_em               TIMESTAMPTZ DEFAULT NOW(),
-    atualizado_em           TIMESTAMPTZ DEFAULT NOW()
-);
+#### `PedidoCreate`
+```
+operacao_id                 int | None
+data_entrega                date
+finalidade                  str | None
+orgao_vinculante            OrgaoVinculanteEnum | None
+itens                       list[ItemPedidoCreate]
+impressao_solicitada        bool = False   ← derivado dos itens no backend
 ```
 
-### 4.3 Tabela `itens_pedido`
-
-```sql
-CREATE TABLE itens_pedido (
-    id                        SERIAL PRIMARY KEY,
-    pedido_id                 INTEGER REFERENCES pedidos(id) ON DELETE CASCADE,
-    tipo_produto              tipo_produto_enum NOT NULL,
-    escala                    escala_enum NOT NULL,
-    inom                      VARCHAR(50) NOT NULL,           -- Articulação INOM
-    mi                        VARCHAR(50),                    -- Número MI (quando disponível)
-    disponivel_bdgex          BOOLEAN DEFAULT FALSE,
-    data_producao_bdgex       DATE,
-    solicitar_mesmo_disponivel BOOLEAN DEFAULT FALSE,
-    prioridade                SMALLINT DEFAULT 0              -- Ordem de prioridade no pedido
-);
+#### `ReviewPedidoRequest`
+```
+acao        Literal["aprovar", "editar", "reprovar"]
+motivo      str | None
+observacoes str | None
 ```
 
----
-
-## 5. Ciclo de Vida do Pedido
-
-### 5.1 Diagrama de Status
-
+#### `CGEOReviewRequest`
 ```
-                    ┌─────────────┐
-                    │   RASCUNHO  │ ◄── Criado pelo SOLICITANTE
-                    └──────┬──────┘
-                           │ submit (SOLICITANTE)
-                           ▼
-               ┌──────────────────────────┐
-               │  AGUARDANDO_SUPERVISOR   │ ◄── Aguarda revisão do C. Mil. A
-               └──────────┬───────────────┘
-                          │ consolidate (SUPERVISOR)
-          ┌───────────────┼───────────────┐
-          │ reprovar      │ consolidar    │ devolver
-          ▼               ▼               ▼
-     CANCELADO  AGUARDANDO_CONSOLIDADOR  DEVOLVIDO ──► AGUARDANDO_SUPERVISOR
-                          │
-                          │ consolidate (CONSOLIDADOR)
-                          ▼
-              ┌───────────────────────────┐
-              │  AGUARDANDO_CARTOGRAFICO  │ ◄── Na fila da DSG
-              └───────────┬───────────────┘
-                          │ assign_cgeo (GESTOR_CARTOGRAFICO)
-                          ▼
-                 ┌─────────────────┐
-                 │  ATRIBUIDO_CGEO │ ◄── Em análise no CGEO
-                 └────────┬────────┘
-                          │ cgeo-review: aprovar
-                          ▼
-                    ┌─────────────┐
-                    │   APROVADO  │ ◄── Em atendimento
-                    └──────┬──────┘
-                           │ cgeo-review: pronto
-                           ▼
-                    ┌─────────────┐
-                    │  PRODUZIDO  │ ◄── Dados no BDGEx
-                    └─────────────┘
-
-     REPROVADO ◄── cgeo-review: reprovar (de ATRIBUIDO_CGEO)
+acao        Literal["aprovar", "reprovar", "pronto"]
+motivo      str | None
+link_bdgex  str | None
 ```
 
-### 5.2 Transições de Status por Perfil
+### Schemas de resposta (Response)
 
-| De | Para | Quem executa | Endpoint |
-|----|------|--------------|----------|
-| RASCUNHO | AGUARDANDO_SUPERVISOR | SOLICITANTE | `POST /pedidos/{id}/submit` |
-| AGUARDANDO_SUPERVISOR | AGUARDANDO_CONSOLIDADOR | SUPERVISOR | `POST /pedidos/consolidate` |
-| AGUARDANDO_SUPERVISOR | DEVOLVIDO | SUPERVISOR | `PUT /pedidos/{id}/review` (acao=editar) |
-| AGUARDANDO_SUPERVISOR | CANCELADO | SUPERVISOR | `PUT /pedidos/{id}/review` (acao=reprovar) |
-| DEVOLVIDO | AGUARDANDO_SUPERVISOR | SOLICITANTE | `POST /pedidos/{id}/submit` |
-| AGUARDANDO_CONSOLIDADOR | AGUARDANDO_CARTOGRAFICO | CONSOLIDADOR | `POST /pedidos/consolidate` |
-| AGUARDANDO_CARTOGRAFICO | ATRIBUIDO_CGEO | GESTOR_CARTOGRAFICO | `PUT /pedidos/{id}/assign-cgeo` |
-| ATRIBUIDO_CGEO | APROVADO | ANALISTA_CGEO | `PUT /pedidos/{id}/cgeo-review` (acao=aprovar) |
-| ATRIBUIDO_CGEO | REPROVADO | ANALISTA_CGEO | `PUT /pedidos/{id}/cgeo-review` (acao=reprovar) |
-| APROVADO | PRODUZIDO | ANALISTA_CGEO | `PUT /pedidos/{id}/cgeo-review` (acao=pronto) |
-
----
-
-## 6. Contratos de API
-
-### 6.1 Autenticação
-
-#### `POST /api/v1/auth/register`
-Cria um novo usuário com perfil SOLICITANTE (inativo, aguarda ativação admin).
-
-**Request:**
-```json
-{
-  "nome": "string",
-  "email": "string @eb.mil.br",
-  "telefone": "string",
-  "om": "string",
-  "secao_om": "string",
-  "regiao_militar": "CMP",
-  "orgao_vinculante": "COTER",
-  "senha": "string (≥8 chars, maiúscula, minúscula, número, especial)"
-}
+#### `ItemPedidoOut`
+```
+id                          int
+tipo_produto                TipoProdutoEnum
+escala                      EscalaEnum
+inom                        str
+mi                          str | None
+disponivel_bdgex            bool
+data_producao_bdgex         date | None
+solicitar_mesmo_disponivel  bool
+prioridade                  int
+impressao_quantidade        int | None     ← por item
+impressao_tipo_material     str | None     ← por item
 ```
 
-**Response 201:**
-```json
-{ "message": "Cadastro realizado com sucesso" }
+#### `PedidoOut`
 ```
-
-**Erros:** 400 — email já cadastrado | email inválido | senha fraca
-
----
-
-#### `POST /api/v1/auth/login`
-Autentica e retorna JWT.
-
-**Request:**
-```json
-{ "email": "string", "senha": "string" }
-```
-
-**Response 200:**
-```json
-{ "access_token": "string (JWT)" }
-```
-
-**Erros:** 401 — credenciais inválidas | 403 — conta bloqueada/inativa/senha expirada
-
----
-
-### 6.2 Pedidos
-
-#### `POST /api/v1/pedidos/`
-Cria pedido em rascunho. Requer perfil SOLICITANTE.
-
-**Request:**
-```json
-{
-  "data_entrega": "YYYY-MM-DD",
-  "finalidade": "string (opcional)",
-  "operacao_id": null,
-  "orgao_vinculante": "COTER",
-  "itens": [
-    {
-      "tipo_produto": "CARTA_TOPOGRAFICA",
-      "escala": "1:50.000",
-      "inom": "SC-22-Y-A",
-      "mi": "2682",
-      "solicitar_mesmo_disponivel": false
-    }
-  ]
-}
-```
-
-**Response 201:** `PedidoOut` (ver schema §6.7)
-
----
-
-#### `GET /api/v1/pedidos/`
-Lista pedidos visíveis ao usuário atual.
-
-| Perfil | Pedidos retornados |
-|--------|-------------------|
-| SOLICITANTE | Próprios pedidos |
-| SUPERVISOR | Pedidos com `regiao_militar == user.regiao_militar` |
-| CONSOLIDADOR | Pedidos com `orgao_vinculante == user.orgao_vinculante` |
-| GESTOR_CARTOGRAFICO | Pedidos com status AGUARDANDO_CARTOGRAFICO ou ATRIBUIDO_CGEO |
-| ANALISTA_CGEO | Pedidos com `cgeo_id == user.cgeo_id` |
-
-**Response 200:** `PedidoOut[]`
-
----
-
-#### `GET /api/v1/pedidos/pending`
-Lista pedidos aguardando ação do usuário atual.
-
-| Perfil | Status filtrado |
-|--------|----------------|
-| SUPERVISOR | AGUARDANDO_SUPERVISOR, filtrado por regiao_militar |
-| CONSOLIDADOR | AGUARDANDO_CONSOLIDADOR, filtrado por orgao_vinculante |
-| GESTOR_CARTOGRAFICO | AGUARDANDO_CARTOGRAFICO |
-| ANALISTA_CGEO | ATRIBUIDO_CGEO, filtrado por cgeo_id |
-
-**Response 200:** `PedidoOut[]`
-
----
-
-#### `POST /api/v1/pedidos/{id}/submit`
-Submete pedido em RASCUNHO (ou DEVOLVIDO) para o próximo escalão.
-
-**Response 200:** `PedidoOut`
-
-**Erros:** 400 — pedido já submetido | sem itens | 403 — não é o dono
-
----
-
-#### `PUT /api/v1/pedidos/{id}/review`
-Revisão individual por Supervisor ou Consolidador.
-
-**Request:**
-```json
-{
-  "acao": "aprovar | editar | reprovar",
-  "motivo": "string (obrigatório em reprovar)",
-  "observacoes": "string (opcional)"
-}
-```
-
-**Response 200:** `PedidoOut`
-
----
-
-#### `POST /api/v1/pedidos/consolidate`
-Consolida e encaminha lote de pedidos ao próximo escalão.
-
-**Request:**
-```json
-{ "pedido_ids": [1, 2, 3] }
-```
-
-**Response 200:**
-```json
-{ "submetidos": 3 }
-```
-
-**Erros:** 403 — perfil não autorizado
-
----
-
-#### `GET /api/v1/pedidos/duplicatas`
-Retorna grupos de itens duplicados (mesmo INOM + produto + escala em pedidos distintos). Disponível para SUPERVISOR, CONSOLIDADOR, GESTOR_CARTOGRAFICO.
-
-**Response 200:**
-```json
-[
-  {
-    "inom": "SC-22-Y-A",
-    "mi": "2682",
-    "tipo_produto": "CARTA_TOPOGRAFICA",
-    "escala": "1:50.000",
-    "pedidos": [
-      { "id": 1, "usuario_nome": "Sgt Gustavo", "status": "AGUARDANDO_SUPERVISOR" }
-    ]
-  }
-]
-```
-
----
-
-#### `GET /api/v1/pedidos/export`
-Exporta ZIP com relatório e GeoJSON. Apenas GESTOR_CARTOGRAFICO.
-
-**Response 200:** `application/zip`
-
-Conteúdo do ZIP:
-- `relatorio.txt` — lista de pedidos com atributos em texto
-- `pedidos.geojson` — FeatureCollection com geometrias das articulações e atributos (id, solicitante, orgao_vinculante, produto, escala, status)
-
----
-
-#### `PUT /api/v1/pedidos/reorder`
-Reordena pedidos por prioridade (salva índice como `prioridade`).
-
-**Request:**
-```json
-{ "ordered_ids": [3, 1, 2] }
-```
-
-**Response 200:** `{ "ok": true }`
-
-Disponível para: SOLICITANTE, SUPERVISOR, CONSOLIDADOR.
-
----
-
-#### `PUT /api/v1/pedidos/{id}/items/reorder`
-Reordena itens dentro de um pedido por prioridade.
-
-**Request:**
-```json
-{ "ordered_ids": [12, 10, 11] }
-```
-
-**Response 200:** `{ "ok": true }`
-
----
-
-#### `PUT /api/v1/pedidos/{id}/assign-cgeo`
-Atribui pedido a um CGEO. Apenas GESTOR_CARTOGRAFICO.
-
-**Request:**
-```json
-{ "cgeo_id": 42 }
-```
-
-**Response 200:** `PedidoOut`
-
----
-
-#### `PUT /api/v1/pedidos/{id}/cgeo-review`
-Análise do CGEO: aprovar, reprovar ou marcar como pronto (entregue).
-
-**Request:**
-```json
-{
-  "acao": "aprovar | reprovar | pronto",
-  "motivo": "string (obrigatório em reprovar)",
-  "link_bdgex": "https://... (obrigatório em pronto)"
-}
-```
-
-**Response 200:** `PedidoOut`
-
----
-
-### 6.3 Usuários
-
-#### `GET /api/v1/users/me`
-Retorna dados do usuário autenticado.
-
-**Response 200:** `UsuarioOut`
-
----
-
-#### `PUT /api/v1/users/me`
-Atualiza telefone e seção. OM e regiao_militar só podem ser alterados após herança executada.
-
-**Request:**
-```json
-{
-  "telefone": "string",
-  "secao_om": "string",
-  "om": "string (requer herança)",
-  "regiao_militar": "string (requer herança)"
-}
+id                          int
+usuario_id                  int            ← responsável atual
+operacao_id                 int | None
+data_entrega                date
+status                      StatusPedidoEnum
+prioridade                  int
+finalidade                  str | None
+orgao_vinculante            OrgaoVinculanteEnum
+motivo_reprovacao           str | None
+observacoes                 str | None
+link_bdgex                  str | None
+criado_em                   datetime
+atualizado_em               datetime
+itens                       list[ItemPedidoOut]
+regiao_militar              str | None
+# Campos enriquecidos (não ORM — populados nos endpoints via _enrich())
+usuario_nome                str | None     ← JOIN usuarios
+operacao_nome               str | None     ← JOIN operacoes
+criador_id                  int | None     ← criador original
+criador_nome                str | None
+auto_submitted              bool
+usuario_om                  str | None     ← contatos do solicitante
+usuario_email               str | None
+usuario_telefone            str | None
+usuario_telefone_ritex      str | None
+usuario_secao_om            str | None
+usuario_perfil              str | None
+impressao_solicitada        bool
+cadeia_aprovacao            list[str]      ← calculado dinamicamente
 ```
 
 ---
 
-#### `GET /api/v1/users/` (admin)
-Lista todos os usuários. Apenas GESTOR_CARTOGRAFICO.
+## 5. Types TypeScript — Frontend
 
----
+### `ItemImpressao` — configuração de impressão por item
 
-#### `PUT /api/v1/users/{id}/profile` (admin)
-Altera perfil, orgao_vinculante e cgeo_id de um usuário.
-
-**Request:**
-```json
-{
-  "perfil": "SUPERVISOR",
-  "orgao_vinculante": "COTER",
-  "cgeo_id": null
-}
-```
-
----
-
-### 6.4 Janelas de Pedidos
-
-#### `GET /api/v1/janelas/`
-Lista janelas de submissão abertas para o perfil do usuário.
-
-#### `POST /api/v1/janelas/` (GESTOR_CARTOGRAFICO)
-Cria nova janela de submissão.
-
-**Request:**
-```json
-{
-  "perfil_alvo": "SOLICITANTE",
-  "inicio": "2026-01-01T00:00:00Z",
-  "fim": "2026-03-31T23:59:59Z",
-  "descricao": "string"
-}
-```
-
----
-
-### 6.5 Operações Militares
-
-#### `GET /api/v1/operacoes/`
-Lista operações disponíveis para o usuário atual.
-
-#### `POST /api/v1/operacoes/` (GESTOR_CARTOGRAFICO)
-Cria operação militar.
-
----
-
-### 6.6 Mapa / Grade INOM
-
-#### `GET /api/v1/map/inom-grid?scale=1:50.000`
-Retorna GeoJSON com a grade INOM para a escala informada.
-
-Escalas: `1:25.000`, `1:50.000`, `1:100.000`, `1:250.000`
-
-Para `1:50.000`: retorna shapefile real `asc_mi_50k.shp` com campos `inom` e `mi`.
-
----
-
-### 6.7 Schema PedidoOut
+Entidade independente separada do `CartItem` por **Single Responsibility**.
+Cada `CartItem` pode ter no máximo uma `ItemImpressao` associada (1:1).
 
 ```typescript
-interface PedidoOut {
-  id: number
-  usuario_id: number
-  criador_id: number | null
-  operacao_id: number | null
-  data_entrega: string          // YYYY-MM-DD
-  status: StatusPedido
-  prioridade: number            // Menor = mais prioritário
-  finalidade: string | null
-  orgao_vinculante: string      // COTER, COLOG, etc.
-  regiao_militar: string | null // CMP, CMA, etc.
-  motivo_reprovacao: string | null
-  observacoes: string | null
-  link_bdgex: string | null
-  criado_em: string             // ISO 8601
-  atualizado_em: string
-  itens: ItemPedidoOut[]
-  // Campos enriquecidos (não estão na tabela, populados no endpoint)
-  usuario_nome: string | null
-  criador_nome: string | null
-  operacao_nome: string | null
+interface ItemImpressao {
+  id: string              // == cartKey(item) — chave idêntica a produtoId
+  produtoId: string       // FK → CartItem via cartKey()
+  quantidade: number      // cópias solicitadas (mín. 1)
+  tipo: MaterialImpressao // 'Canvas' | 'Sulfite' | 'Glossy' | 'Tyvek'
 }
+```
 
-interface ItemPedidoOut {
+O `id` ser igual ao `cartKey` elimina lookup reverso (relação 1:1 garantida).
+
+**Extensibilidade (Open/Closed):** para adicionar `tamanho` (A0/A1), `acabamento`,
+`laminacao`, basta estender esta interface sem alterar `CartItem`.
+
+---
+
+### `CartItem` — produto no carrinho (pré-submissão)
+
+```typescript
+interface CartItem {
+  inom: string                       // Índice de Nomenclatura da Folha
+  mi: string | null                  // Número MI (identificador alternativo)
+  tipo_produto: TipoProduto          // Tipo do produto geoespacial
+  escala: Escala                     // Escala cartográfica
+  solicitar_mesmo_disponivel: boolean // Forçar mesmo com dado disponível
+  disponivel_bdgex: boolean          // Cache local — disponível no BDGEx?
+  geom?: object                      // Geometria GeoJSON (preview no mapa)
+  impressao: boolean                 // Flag: impressão física solicitada
+  impressaoId: string | null         // FK → ItemImpressao.id (null se !impressao)
+}
+```
+
+**Relacionamento com `ItemImpressao`:** `impressaoId = cartKey(item)` quando
+`impressao=true`. O store mantém o mapa `impressoes: Record<string, ItemImpressao>`.
+
+---
+
+### `ItemPedido` — item persistido (pós-submissão, resposta da API)
+
+```typescript
+interface ItemPedido {
   id: number
   tipo_produto: TipoProduto
   escala: Escala
@@ -587,260 +535,275 @@ interface ItemPedidoOut {
   data_producao_bdgex: string | null
   solicitar_mesmo_disponivel: boolean
   prioridade: number
+  impressao_quantidade: number | null    // per-item — mesma semântica de CartItem
+  impressao_tipo_material: string | null
 }
 ```
 
 ---
 
-## 7. Mapa de Funções do Backend
+### `Pedido` — resposta completa da API (cabeçalho + itens + enriquecimentos)
 
-### 7.1 `app/services/pedido_service.py`
-
-| Função | Assinatura | Responsabilidade |
-|--------|-----------|------------------|
-| `submit_pedido` | `(db, pedido, current_user) → Pedido` | Avança pedido de RASCUNHO para o próximo escalão; notifica gestores via e-mail e in-app |
-| `review_pedido` | `(db, pedido, gestor, acao, motivo, observacoes) → Pedido` | Revisão individual: aprovar, devolver ou reprovar |
-| `consolidate_pedidos` | `(db, pedido_ids, gestor) → dict` | Encaminha lote de pedidos para o próximo escalão |
-| `assign_cgeo` | `(db, pedido, cgeo_id, dsg) → Pedido` | Atribui pedido a um CGEO para análise |
-| `cgeo_review` | `(db, pedido, cgeo_user, acao, motivo, link_bdgex) → Pedido` | CGEO: aprovar atendimento, reprovar, ou marcar entregue |
-| `transferir_pedidos` | `(db, source_user, novo_responsavel, executor) → int` | Transfere pedidos ativos entre usuários da mesma OM |
-
-**Tabelas de roteamento internas:**
-
-```python
-# Roteamento na submissão: quem envia → (próximo status, quem notificar)
-_SUBMIT_ROUTING = {
-    SOLICITANTE:  (AGUARDANDO_SUPERVISOR,   SUPERVISOR),
-    SUPERVISOR:   (AGUARDANDO_CONSOLIDADOR, CONSOLIDADOR),
-    CONSOLIDADOR: (AGUARDANDO_CARTOGRAFICO, GESTOR_CARTOGRAFICO),
-}
-
-# Como encontrar o gestor destinatário:
-# SUPERVISOR  → filtra por regiao_militar (campo do pedido)
-# CONSOLIDADOR → filtra por orgao_vinculante (campo do pedido)
-# GESTOR_CARTOGRAFICO → todos ativos com esse perfil
-```
-
----
-
-### 7.2 `app/services/auth_service.py`
-
-| Função | Assinatura | Responsabilidade |
-|--------|-----------|------------------|
-| `register_user` | `(db, nome, email, telefone, om, secao_om, senha, regiao_militar, orgao_vinculante) → Usuario` | Cria usuário SOLICITANTE inativo; envia e-mail de boas-vindas |
-| `confirm_email` | `(db, token) → Usuario` | Confirma e-mail via token; ativa conta |
-| `authenticate_user` | `(db, email, senha, ip) → str (JWT)` | Valida credenciais; aplica controle de tentativas; retorna JWT |
-| `request_password_reset` | `(db, email, ip) → None` | Gera token de redefinição (máx. 3/dia); envia por e-mail |
-| `reset_password` | `(db, token, nova_senha) → None` | Redefine senha via token válido |
-
-**Políticas de segurança:**
-- Máx. 5 tentativas de login → bloqueio de 15 min
-- Senha expira em 365 dias
-- Token de reset expira em 1 hora
-- Token de confirmação expira em 24 horas
-
----
-
-### 7.3 `app/services/notification_service.py`
-
-| Método | Assinatura | Responsabilidade |
-|--------|-----------|------------------|
-| `notify_user` | `(usuario_id, titulo, mensagem, pedido_id?) → int` | Cria notificação in-app para um usuário específico |
-| `notify_by_perfil` | `(perfil, titulo, mensagem, pedido_id?, regiao_militar?, orgao_vinculante?) → int` | Cria notificações para todos os usuários de um perfil com filtros opcionais |
-
----
-
-### 7.4 Routers Registrados em `main.py`
-
-| Prefixo | Módulo | Tag |
-|---------|--------|-----|
-| `/api/v1/auth` | `routers.auth` | Autenticação |
-| `/api/v1/users` | `routers.users` | Usuários |
-| `/api/v1/pedidos` | `routers.pedidos` | Pedidos |
-| `/api/v1/operacoes` | `routers.operacoes` | Operações |
-| `/api/v1/janelas` | `routers.janelas` | Janelas |
-| `/api/v1/map` | `routers.map_layers` | Mapa/Grade INOM |
-| `/api/v1/om-data` | `routers.om_data` | Dados de OMs |
-| `/api/v1/historico` | `routers.historico` | Histórico de ações |
-| `/api/v1/metricas` | `routers.metricas` | Métricas da API |
-| `/api/v1/transferencias` | `routers.transferencias` | Transferência de pedidos |
-
----
-
-## 8. Mapa de Componentes Frontend
-
-### 8.1 Estrutura de Páginas
-
-```
-src/pages/
-├── Login.tsx                    — Autenticação JWT
-├── Register.tsx                 — Cadastro de solicitante (com orgao_vinculante)
-├── Dashboard.tsx                — Painel inicial com cards por perfil
-├── Ajuda.tsx                    — Catálogo de produtos e guia de uso
-├── MeusPedidos.tsx              — Lista de pedidos do SOLICITANTE (DnD prioridade)
-├── SolicitarProdutos.tsx        — Criação de pedido com grade INOM no mapa
-├── MeusDados.tsx                — Perfil e herança de pedidos
-├── Integracoes.tsx              — Integrações externas
-├── gestor/
-│   └── GestorDashboard.tsx      — SUPERVISOR e CONSOLIDADOR: revisa, consolida, DnD
-├── dsg/
-│   ├── DSGDashboard.tsx         — GESTOR_CARTOGRAFICO: atribui CGEOs, exporta ZIP
-│   ├── JanelasPedidos.tsx       — Gerencia janelas de submissão
-│   └── Relatorios.tsx           — Relatórios e métricas
-├── cgeo/
-│   └── CGEODashboard.tsx        — ANALISTA_CGEO: analisa viabilidade
-└── admin/
-    ├── GerenciarUsuarios.tsx    — Ativa/altera perfis de usuários
-    ├── AdminPedidos.tsx         — Visão admin de todos os pedidos
-    └── ApiMetricas.tsx          — Métricas de uso da API
-```
-
-### 8.2 Componentes Compartilhados
-
-| Componente | Arquivo | Responsabilidade |
-|-----------|---------|------------------|
-| `AppLayout` | `components/layout/AppLayout.tsx` | Layout raiz: Navbar + Sidebar + main |
-| `Navbar` | `components/layout/Navbar.tsx` | Barra superior com logo DSG e notificações |
-| `Sidebar` | `components/layout/Sidebar.tsx` | Navegação lateral filtrada por perfil |
-| `StatusBadge` | `components/shared/StatusBadge.tsx` | Badge colorido para status do pedido |
-| `LoadingSpinner` | `components/shared/LoadingSpinner.tsx` | Indicador de carregamento |
-| `PedidosMap` | `components/map/PedidosMap.tsx` | Mapa Leaflet com articulações INOM |
-
-### 8.3 Stores (Zustand)
-
-| Store | Arquivo | Estado |
-|-------|---------|--------|
-| `useAuthStore` | `store/authStore.ts` | `user`, `token`, métodos de autenticação |
-
-**Métodos do authStore:**
 ```typescript
-setUser(user: Usuario): void
-setToken(token: string): void
-logout(): void
-isGestor(): boolean          // true se SUPERVISOR ou CONSOLIDADOR
-isDSG(): boolean             // true se GESTOR_CARTOGRAFICO
-isCGEO(): boolean            // true se ANALISTA_CGEO
-```
-
-### 8.4 Clientes de API
-
-| Módulo | Arquivo | Endpoints cobertos |
-|--------|---------|-------------------|
-| `authApi` | `api/auth.ts` | register, login, forgotPassword, resetPassword, confirmEmail |
-| `pedidosApi` | `api/pedidos.ts` | CRUD completo de pedidos, submit, review, consolidate, reorder, duplicatas, export |
-| `operacoesApi` | `api/operacoes.ts` | list, create de operações |
-| `usersApi` | `api/users.ts` | me, update, changePassword, admin actions |
-
----
-
-## 9. Variáveis de Ambiente
-
-### Backend (`.env`)
-
-| Variável | Descrição | Exemplo |
-|----------|-----------|---------|
-| `DATABASE_URL` | URL de conexão PostgreSQL async | `postgresql+asyncpg://user:pass@db:5432/sisgeo` |
-| `SECRET_KEY` | Chave JWT (mín. 32 chars) | `...` |
-| `FRONTEND_URL` | URL do frontend (CORS) | `http://localhost` |
-| `ENV` | Ambiente (`development`/`production`) | `production` |
-| `SMTP_HOST` | Servidor SMTP | `smtp.eb.mil.br` |
-| `SMTP_PORT` | Porta SMTP | `587` |
-| `SMTP_USER` | Usuário SMTP | `noreply@eb.mil.br` |
-| `SMTP_PASSWORD` | Senha SMTP | `...` |
-| `EMAIL_FROM` | Remetente dos e-mails | `SISGEO <noreply@eb.mil.br>` |
-| `BDGEX_MOCK` | Habilita usuários de teste | `true` (apenas dev) |
-| `BDGEX_URL` | URL da API BDGEx | `https://bdgex.eb.mil.br` |
-| `DADOS_PATH` | Caminho para shapefiles | `/app/dados` |
-
----
-
-## 10. Executar o Sistema
-
-### Desenvolvimento (com rebuild)
-
-```bash
-# Parar e remover volumes (reset completo do banco)
-docker compose down -v
-
-# Rebuild e subir
-docker compose up --build -d
-
-# Ver logs do backend
-docker compose logs -f backend
-
-# Rodar script de criação de usuários de hierarquia (opcional)
-docker exec coter_backend python /app/scripts/create_hierarchy_users.py
-```
-
-### Credenciais padrão (BDGEX_MOCK=true)
-
-| Usuário | E-mail | Senha | Perfil |
-|---------|--------|-------|--------|
-| Admin DSG | `admin@eb.mil.br` | `Admin@1234` | GESTOR_CARTOGRAFICO |
-| Sgt Gustavo | `gustavo@eb.mil.br` | `Gustavo@1234` | SOLICITANTE |
-| Cb João | `joao@eb.mil.br` | `Joao@1234` | SOLICITANTE |
-| Maj Paulo | `supervisor.cmilA@eb.mil.br` | `Supervisor@1234` | SUPERVISOR (CMP/COTER) |
-| TC Carlos | `consolidador.coter@eb.mil.br` | `Consolidador@1234` | CONSOLIDADOR (COTER) |
-| Cap Ricardo | `analista.cgeo@eb.mil.br` | `AnalistaCGEO@1234` | ANALISTA_CGEO |
-
-### Requisitos de Infraestrutura (Debian)
-
-| Recurso | Mínimo | Recomendado |
-|---------|--------|-------------|
-| CPU | 2 vCPU | 4 vCPU |
-| RAM | 4 GB | 8 GB |
-| Disco (SO + app) | 20 GB | 40 GB |
-| Disco (dados/shapefiles) | 10 GB | 50 GB (para crescimento) |
-| Rede | 10 Mbps | 100 Mbps |
-| Porta externa | 80 (HTTP) / 443 (HTTPS) | HTTPS com certificado |
-
----
-
-## 11. Produtos Geoespaciais
-
-| Produto | Enum | Escalas disponíveis | Prazo médio |
-|---------|------|---------------------|-------------|
-| Carta Topográfica | `CARTA_TOPOGRAFICA` | 25k, 50k, 100k, 250k | 180 dias |
-| Carta Ortoimagem | `CARTA_ORTOIMAGEM` | 25k, 50k, 100k, 250k | 180 dias |
-| Ortoimagem | `ORTOIMAGEM` | 25k, 50k, 100k, 250k | 120 dias |
-| Modelo Digital de Terreno | `MDT` | 25k, 50k, 100k, 250k | 120 dias |
-| Modelo Digital de Superfície | `MDS` | 25k, 50k, 100k, 250k | 120 dias |
-| Conjunto de Dados Geoespaciais Vetoriais | `CDGV` | 25k, 50k, 100k, 250k | 240 dias |
-| Impressão de Produto Geoespacial | `IMPRESSAO` | 25k, 50k, 100k, 250k | 30 dias |
-
----
-
-## 12. Rastreabilidade e Auditoria
-
-Cada ação sobre um pedido é registrada na tabela `historico_pedidos`:
-
-```sql
-CREATE TABLE historico_pedidos (
-    id          SERIAL PRIMARY KEY,
-    pedido_id   INTEGER REFERENCES pedidos(id),
-    usuario_id  INTEGER REFERENCES usuarios(id),
-    acao        VARCHAR(50),           -- "submeter", "aprovar", "reprovar", etc.
-    status_de   VARCHAR(50),
-    status_para VARCHAR(50),
-    motivo      TEXT,
-    criado_em   TIMESTAMPTZ DEFAULT NOW()
-);
-```
-
-Transferências entre usuários são registradas na tabela `pedido_transferencias`:
-
-```sql
-CREATE TABLE pedido_transferencias (
-    id               SERIAL PRIMARY KEY,
-    pedido_id        INTEGER REFERENCES pedidos(id),
-    de_usuario_id    INTEGER REFERENCES usuarios(id),
-    para_usuario_id  INTEGER REFERENCES usuarios(id),
-    executor_id      INTEGER REFERENCES usuarios(id),
-    observacao       TEXT,
-    transferido_em   TIMESTAMPTZ DEFAULT NOW()
-);
+interface Pedido {
+  id: number
+  usuario_id: number              // Responsável atual (mutável após transferência)
+  operacao_id: number | null
+  data_entrega: string            // ISO date YYYY-MM-DD
+  status: StatusPedido
+  prioridade: number
+  finalidade: string | null
+  orgao_vinculante: string
+  motivo_reprovacao: string | null
+  observacoes: string | null
+  link_bdgex: string | null
+  criado_em: string               // ISO datetime
+  atualizado_em: string
+  itens: ItemPedido[]
+  regiao_militar: string | null
+  // Enriquecidos (JOINs resolvidos no backend)
+  usuario_nome: string | null
+  operacao_nome: string | null
+  criador_id: number | null       // Criador original (imutável mesmo após transferência)
+  criador_nome: string | null
+  cgeo_id?: number | null
+  auto_submitted?: boolean
+  usuario_om?: string | null
+  usuario_email?: string | null
+  usuario_telefone?: string | null
+  usuario_telefone_ritex?: string | null
+  usuario_secao_om?: string | null
+  usuario_perfil?: string | null
+  cadeia_aprovacao: string[]      // Labels calculados da cadeia de aprovação
+  impressao_solicitada?: boolean
+}
 ```
 
 ---
 
-*Documento gerado em 2026-05-19. Manter atualizado a cada mudança de contrato ou fluxo.*
+### `Usuario` — sessão autenticada
+
+```typescript
+interface Usuario {
+  id: number
+  nome: string
+  email: string                          // @eb.mil.br
+  telefone: string | null
+  telefone_ritex: string | null
+  secao_om: string | null
+  om: string
+  regiao_militar: string | null          // CMilA: CMP, CML, CMS, CMO, CMAO, CMA, CMNOR, CMSE
+  posto_graduacao: string | null
+  perfil: Perfil
+  orgao_vinculante: OrgaoVinculante | null
+  cgeo_id: number | null
+  ativo: boolean
+  email_confirmado: boolean
+  ultima_senha_alterada: string | null
+  ultima_confirmacao_dados: string | null
+  pedidos_transferidos_em: string | null
+  tentativas_login: number
+  bloqueado_ate: string | null
+  criado_em: string
+  atualizado_em: string
+}
+```
+
+---
+
+## 6. Stores Zustand — Frontend
+
+### `cartStore` — estado do carrinho de solicitação
+
+```typescript
+CartState {
+  // Seleções do formulário (globais ao carrinho)
+  tipoProduto: TipoProduto | null
+  escala: Escala | null
+  dataEntrega: string | null
+  operacaoId: number | null
+  finalidade: string
+  // Coleções
+  items: CartItem[]
+  impressoes: Record<string, ItemImpressao>  // chave = cartKey(item)
+}
+```
+
+**Ações:**
+
+| Ação                              | Descrição                                               |
+|-----------------------------------|---------------------------------------------------------|
+| `addItem(item)`                   | Adiciona ao carrinho com `impressao=false`, `impressaoId=null` |
+| `removeItem(inom, tipo, escala)`  | Remove item e limpa entidades de impressão órfãs        |
+| `hasItem(inom, tipo?, escala?)`   | Verifica presença no carrinho                           |
+| `setItemImpressao(key, qty, tipo)`| Cria/atualiza `ItemImpressao`; marca `item.impressao=true` |
+| `removeItemImpressao(key)`        | Remove `ItemImpressao`; limpa `item.impressao=false`    |
+| `clear()`                         | Zera todo o estado após submissão                       |
+
+**`cartKey(item)`** — função pura, chave única no carrinho:
+```
+"${tipo_produto}|||${escala}|||${inom}"
+```
+Permite o mesmo INOM em produtos/escalas distintos coexistir no carrinho.
+
+---
+
+### `authStore` — sessão do usuário
+
+```typescript
+AuthState {
+  user: Usuario | null
+  token: string | null    // persiste em localStorage
+}
+```
+
+**Predicados de acesso:**
+
+| Método       | Condição                                                 |
+|--------------|----------------------------------------------------------|
+| `isGestor()` | `perfil ∈ SUPERVISOR_PROFILES ∪ CONSOLIDADOR_PROFILES`  |
+| `isDSG()`    | `perfil === 'GESTOR_CARTOGRAFICO'`                       |
+| `isCGEO()`   | `perfil === 'ANALISTA_CGEO'`                             |
+
+---
+
+## 7. Relacionamentos e Chaves Estrangeiras
+
+```
+usuarios (1) ──────────────────────► (N) pedidos.usuario_id         [responsável atual]
+usuarios (1) ──────────────────────► (N) pedidos.criador_id         [criador imutável]
+usuarios (1) ──────────────────────► (N) pedidos.gestor_demandante_id
+usuarios (1) ──────────────────────► (N) pedidos.gestor_dsg_id
+usuarios (1) ──────────────────────► (N) operacoes.criado_por
+usuarios (1) ──────────────────────► (N) notificacoes.usuario_id
+usuarios (1) ──────────────────────► (N) audit_logs.usuario_id
+usuarios (1) ──────────────────────► (N) pedido_historico.usuario_id
+usuarios (1) ──────────────────────► (N) tokens_senha.usuario_id
+usuarios (1) ──────────────────────► (N) pedido_transferencias.de_usuario_id
+usuarios (1) ──────────────────────► (N) pedido_transferencias.para_usuario_id
+usuarios (1) ──────────────────────► (N) pedido_transferencias.executado_por_id
+
+operacoes (1) ─────────────────────► (N) pedidos.operacao_id        [nullable]
+
+pedidos (1) ────────────────────────► (N) itens_pedido.pedido_id    [CASCADE DELETE]
+pedidos (1) ────────────────────────► (N) notificacoes.pedido_id    [nullable]
+pedidos (1) ────────────────────────► (N) audit_logs.pedido_id
+pedidos (1) ────────────────────────► (N) pedido_historico.pedido_id
+pedidos (1) ────────────────────────► (N) pedido_transferencias.pedido_id
+```
+
+### `usuario_id` vs `criador_id`
+
+| Campo         | Muda após transferência? | Propósito                          |
+|---------------|:------------------------:|------------------------------------|
+| `usuario_id`  | **Sim**                  | Quem é responsável pelo pedido agora |
+| `criador_id`  | Não                      | Quem fez a solicitação originalmente |
+
+### Nota sobre `pedidos.cgeo_id`
+
+Coluna `Integer` sem FK declarada. Intencional: evita ambiguidade de carregamento
+assíncrono com múltiplas foreign keys para `usuarios`. A integridade referencial
+é garantida pela camada de serviço.
+
+---
+
+## 8. Fluxo de Status do Pedido
+
+```
+                     SOLICITANTE envia
+                           │
+                    ┌──────▼──────┐
+                    │  RASCUNHO   │◄──────────────────────────────────────┐
+                    └──────┬──────┘                                        │
+                           │ submit()                                      │
+          orgao=COTER ─────┼───── orgao=DSG/DEC/COLOG/DECEx               │
+               │           │               │                               │
+               ▼           │               ▼                               │
+  AGUARDANDO_SUPERVISOR    │   AGUARDANDO_CONSOLIDADOR                editar()
+               │           │               │                               │
+         aprovar()         │         aprovar()                             │
+               │           │               │                               │
+               └──────┬────┘               │                               │
+                      │                    │                               │
+                      └──────────┬─────────┘                               │
+                                 │                                         │
+                       AGUARDANDO_CARTOGRAFICO ──── reprovar() ──► REPROVADO
+                                 │
+                          assign_cgeo()
+                                 │
+                         ATRIBUIDO_CGEO ──────────── reprovar() ──► REPROVADO
+                                 │
+                            aprovar()  (CGEO)
+                                 │
+                             APROVADO ───────────── reprovar() ──► REPROVADO
+                                 │
+                             pronto()  (CGEO)
+                                 │
+                            PRODUZIDO
+
+DEVOLVIDO: editar() em qualquer estágio gestor → volta a RASCUNHO
+CANCELADO: cancel() pelo solicitante em RASCUNHO ou DEVOLVIDO
+```
+
+---
+
+## 9. Cadeia de Aprovação por Órgão Vinculante
+
+| `orgao_vinculante` | Etapa 1     | Etapa 2                 | Etapa 3              | Etapa 4 |
+|--------------------|-------------|-------------------------|----------------------|---------|
+| `COTER`            | Solicitante | Supervisor {CMilA}      | Consolidador COTER   | DSG     |
+| `DSG`              | Solicitante | Consolidador DSG        | DSG                  | —       |
+| `DEC`              | Solicitante | Consolidador DEC        | DSG                  | —       |
+| `COLOG`            | Solicitante | Consolidador COLOG      | DSG                  | —       |
+| `DECEx`            | Solicitante | Consolidador DECEx      | DSG                  | —       |
+
+**Regra de pulo:** pedidos de solicitantes vinculados a DSG/DEC/COLOG/DECEx
+saltam a etapa de supervisor e entram direto na fila do consolidador do órgão.
+
+**CMilA → Supervisor** via `pedidos.regiao_militar` (`RM_TO_SUPERVISOR`):
+
+| `regiao_militar` | Perfil notificado      |
+|------------------|------------------------|
+| `CMP`            | `SUPERVISOR_CMP`       |
+| `CML`            | `SUPERVISOR_CML`       |
+| `CMS`            | `SUPERVISOR_CMS`       |
+| `CMO`            | `SUPERVISOR_CMO`       |
+| `CMAO`           | `SUPERVISOR_CMAO`      |
+| `CMA`            | `SUPERVISOR_CMA`       |
+| `CMNOR`          | `SUPERVISOR_CMNOR`     |
+| `CMSE`           | `SUPERVISOR_CMSE`      |
+
+---
+
+## 10. Hierarquia de Perfis e Roteamento
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     DSG — Produção                               │
+│   GESTOR_CARTOGRAFICO  ──atribui──►  ANALISTA_CGEO              │
+└────────────────────────┬────────────────────────────────────────┘
+                         ▲ AGUARDANDO_CARTOGRAFICO
+┌────────────────────────┴────────────────────────────────────────┐
+│                  Consolidadores por Órgão                        │
+│   CONSOLIDADOR_COTER / _DSG / _DEC / _COLOG / _DECEX            │
+└────────────────────────┬────────────────────────────────────────┘
+                         ▲ AGUARDANDO_CONSOLIDADOR
+                   (apenas COTER passa por aqui ↓)
+┌────────────────────────┴────────────────────────────────────────┐
+│           Supervisores Regionais (um por CMilA)                  │
+│   SUPERVISOR_CMP / _CML / _CMS / _CMO / _CMAO / _CMA           │
+│   SUPERVISOR_CMNOR / _CMSE                                       │
+└────────────────────────┬────────────────────────────────────────┘
+                         ▲ AGUARDANDO_SUPERVISOR
+┌────────────────────────┴────────────────────────────────────────┐
+│                      Solicitantes                                │
+│                      SOLICITANTE                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Supervisores e Consolidadores** também criam pedidos próprios, que entram
+diretamente no nível correspondente da hierarquia (self-submit automático).
+
+---
+
+*Documento gerado em 2026-05-22. Sincronizar a cada mudança estrutural nos modelos.*

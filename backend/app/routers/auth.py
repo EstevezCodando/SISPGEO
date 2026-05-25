@@ -47,6 +47,7 @@ async def register(
         body.om, body.secao_om, body.senha,
         body.regiao_militar, body.orgao_vinculante,
         body.telefone_ritex, body.posto_graduacao,
+        body.nome_de_guerra,
     )
     db.add(AuditLog(
         usuario_id=user.id,

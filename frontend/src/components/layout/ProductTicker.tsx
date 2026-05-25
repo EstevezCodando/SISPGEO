@@ -2,10 +2,12 @@ const PRODUCTS = [
   { label: 'Carta Topográfica', color: '#3b82f6' },
   { label: 'Carta Ortoimagem', color: '#8b5cf6' },
   { label: 'Ortoimagem', color: '#f59e0b' },
-  { label: 'Modelo Digital de Terreno (MDT)', color: '#10b981' },
+  { label: 'Modelo Digital do Terreno (MDT)', color: '#10b981' },
   { label: 'Modelo Digital de Superfície (MDS)', color: '#06b6d4' },
   { label: 'CDGV — Conjunto de Dados Geoespaciais Vetoriais', color: '#f97316' },
-  { label: 'Impressão de Produto Geoespacial', color: '#ec4899' },
+  { label: 'Impressão de Carta Topográfica', color: '#ec4899' },
+  { label: 'Impressão de Carta Ortoimagem', color: '#db2777' },
+  { label: 'Impressão de Ortoimagem', color: '#be185d' },
 ]
 
 // Separator between products

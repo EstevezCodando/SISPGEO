@@ -5,9 +5,9 @@ Chamam a API real (uvicorn rodando em localhost:8000 dentro do container).
 São executados pelo CI *depois* de o backend estar de pé.
 
 Para rodar localmente:
-    docker compose up -d db backend mailhog
-    docker exec coter_backend pip install pytest httpx -q
-    docker exec coter_backend python -m pytest tests/test_api_integration.py -v
+    docker compose up -d db backend mailpit
+    docker exec sispgeo_backend pip install pytest httpx -q
+    docker exec sispgeo_backend python -m pytest tests/test_api_integration.py -v
 """
 
 import pytest

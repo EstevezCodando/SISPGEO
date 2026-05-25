@@ -2,6 +2,7 @@ import api from './client'
 
 export interface RegisterPayload {
   nome: string
+  nome_de_guerra?: string
   email: string
   telefone: string
   telefone_ritex?: string   // NNN-NNNN (Ritex)

@@ -14,14 +14,13 @@ import api from '../api/client'
 import { formatNomeComPosto } from '../data/postos'
 import { pedidosApi } from '../api/pedidos'
 import { janelasApi, type MinhaJanela } from '../api/janelas'
-import { operacoesApi, type Operacao } from '../api/operacoes'
 import { configApi, type ConfigEntrega } from '../api/config'
-import { useCartStore } from '../store/cartStore'
+import { useCartStore, cartKey } from '../store/cartStore'
 import { useAuthStore } from '../store/authStore'
 import { InteractiveMap, type Basemap } from '../components/map/InteractiveMap'
 import { PedidosMap } from '../components/map/PedidosMap'
 import type { TipoProduto, Escala } from '../types/pedido'
-import { TIPO_PRODUTO_LABELS } from '../types/pedido'
+import { TIPO_PRODUTO_LABELS, TIPOS_IMPRESSAO, MATERIAIS_IMPRESSAO } from '../types/pedido'
 import type { CartItem } from '../types/pedido'
 
 const ESCALAS: Escala[] = ['1:25.000', '1:50.000', '1:100.000', '1:250.000']
@@ -35,8 +34,26 @@ const PRAZO_FALLBACK: Record<TipoProduto, number> = {
   MDT:                 40,
   MDS:                 40,
   CDGV:               180,
-  IMPRESSAO:           30,
+  IMPRESSAO_CT:        30,
+  IMPRESSAO_COI:       30,
+  IMPRESSAO:           30,  // legado
 }
+
+// Tipos de produto exibidos no dropdown (sem IMPRESSAO legado)
+const TIPOS_PRODUTO_VISIVEIS: TipoProduto[] = [
+  'CARTA_TOPOGRAFICA', 'CARTA_ORTOIMAGEM', 'ORTOIMAGEM',
+  'MDT', 'MDS', 'CDGV', 'IMPRESSAO_CT', 'IMPRESSAO_COI',
+]
+
+const FINALIDADES_GEO = [
+  'Operação Militar',
+  'Exercício Combinado',
+  'Exercício Integrador',
+  'Manobra Escolar',
+  'Instrução Militar',
+  'Atualização de Campo de Instrução',
+  'Atualização',
+] as const
 
 const inputCls = 'w-full bg-zinc-800 border border-zinc-700 rounded-lg px-2.5 py-1.5 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed'
 const labelCls = 'block text-xs font-medium text-zinc-400 mb-1'
@@ -68,9 +85,11 @@ function RevisaoGeoJSONLayer({
         const cartItem = itemMap.get(inom)
         // Prioridade: feature.properties.mi → CartItem.mi → ausente
         const mi = props.mi ?? cartItem?.mi ?? null
-        let tip = `<b>${inom}</b>`
-        if (mi) tip += `<br><span style="color:#a1a1aa">MI:</span> <span style="color:#34d399;font-weight:600">${mi}</span>`
-        if (cartItem) tip += `<br><span style="color:#71717a">${TIPO_PRODUTO_LABELS[cartItem.tipo_produto]} · ${cartItem.escala}</span>`
+        const tip = mi
+          ? `<b style="color:#34d399">${mi}</b><br><span style="color:#a1a1aa;font-size:11px">${inom}</span>`
+          + (cartItem ? `<br><span style="color:#71717a">${TIPO_PRODUTO_LABELS[cartItem.tipo_produto]} · ${cartItem.escala}</span>` : '')
+          : `<b>${inom}</b>`
+          + (cartItem ? `<br><span style="color:#71717a">${TIPO_PRODUTO_LABELS[cartItem.tipo_produto]} · ${cartItem.escala}</span>` : '')
         lyr.bindTooltip(tip, { sticky: true, className: 'leaflet-dark-tooltip' })
       },
     }).addTo(map)
@@ -90,13 +109,24 @@ function RevisaoGeoJSONLayer({
 // ── Modal de Revisão ──────────────────────────────────────────────────────────
 interface RevisaoModalProps {
   items: CartItem[]
+  impressoes: Record<string, import('../types/pedido').ItemImpressao>
   onRemoveItem: (item: CartItem) => void
+  onSetItemImpressao: (key: string, qty: number, tipo: import('../types/pedido').MaterialImpressao) => void
+  onRemoveItemImpressao: (key: string) => void
   onClose: () => void
   onConfirm: () => void
   submitting: boolean
+  isImpressao: boolean
+  finalidadeGeo: string
+  finalidade: string
+  onSetFinalidade: (v: string) => void
 }
 
-function RevisaoModal({ items, onRemoveItem, onClose, onConfirm, submitting }: RevisaoModalProps) {
+function RevisaoModal({
+  items, impressoes, onRemoveItem, onSetItemImpressao, onRemoveItemImpressao,
+  onClose, onConfirm, submitting,
+  isImpressao, finalidadeGeo, finalidade, onSetFinalidade,
+}: RevisaoModalProps) {
   const { user } = useAuthStore()
 
   // Fonte de geometrias: carregada uma única vez ao abrir o modal
@@ -185,7 +215,7 @@ function RevisaoModal({ items, onRemoveItem, onClose, onConfirm, submitting }: R
                 <div className="flex items-center gap-2 text-zinc-300">
                   <User className="h-3.5 w-3.5 text-zinc-500 shrink-0" />
                   <span className="font-medium">
-                    {user ? formatNomeComPosto(user.nome, user.posto_graduacao) : '—'}
+                    {user ? formatNomeComPosto(user.nome, user.posto_graduacao, user.nome_de_guerra) : '-'}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 text-zinc-400">
@@ -202,32 +232,165 @@ function RevisaoModal({ items, onRemoveItem, onClose, onConfirm, submitting }: R
               </div>
             </div>
 
-            {/* Lista de itens */}
-            <div className="flex-1 overflow-auto p-4">
-              <p className="text-xs font-semibold text-zinc-400 mb-2 uppercase tracking-wide">
-                Produtos ({items.length})
-              </p>
-              <div className="space-y-1.5">
-                {items.map((item) => (
-                  <div
-                    key={item.inom}
-                    className="flex items-start justify-between gap-2 bg-zinc-800/60 border border-zinc-700/40 rounded-lg px-3 py-2 text-xs"
-                  >
-                    <div className="min-w-0">
-                      <p className="font-mono font-medium text-emerald-400 truncate">{item.inom}</p>
-                      <p className="text-zinc-400">{TIPO_PRODUTO_LABELS[item.tipo_produto]}</p>
-                      <p className="text-zinc-500">{item.escala}</p>
-                    </div>
-                    <button
-                      onClick={() => onRemoveItem(item)}
-                      disabled={items.length <= 1}
-                      className="text-zinc-600 hover:text-red-400 disabled:opacity-30 disabled:cursor-not-allowed transition-colors mt-0.5 shrink-0"
-                      title="Remover item"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                ))}
+            {/* Lista de itens + Finalidade + Impressão (área rolável) */}
+            <div className="flex-1 overflow-auto p-4 space-y-4">
+              {/* Produtos */}
+              <div>
+                <p className="text-xs font-semibold text-zinc-400 mb-2 uppercase tracking-wide">
+                  Produtos ({items.length})
+                </p>
+                <div className="space-y-2">
+                  {items.map((item) => {
+                    const key = cartKey(item)
+                    const imp = impressoes[key]
+                    return (
+                      <div
+                        key={key}
+                        className="bg-zinc-800/60 border border-zinc-700/40 rounded-lg px-3 py-2 text-xs space-y-2"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            {item.mi
+                              ? <>
+                                  <p className="font-medium text-emerald-400 truncate">{item.mi}</p>
+                                  <p className="font-mono text-zinc-500 text-[10px] truncate">{item.inom}</p>
+                                </>
+                              : <p className="font-mono font-medium text-emerald-400 truncate">{item.inom}</p>
+                            }
+                            <p className="text-zinc-400">{TIPO_PRODUTO_LABELS[item.tipo_produto]}</p>
+                            <p className="text-zinc-500">{item.escala}</p>
+                          </div>
+                          <button
+                            onClick={() => onRemoveItem(item)}
+                            disabled={items.length <= 1}
+                            className="text-zinc-600 hover:text-red-400 disabled:opacity-30 disabled:cursor-not-allowed transition-colors mt-0.5 shrink-0"
+                            title="Remover item"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+
+                        {/* Impressão por item */}
+                        {isImpressao ? (
+                          // Produto de impressão: campos obrigatórios
+                          <div className="grid grid-cols-2 gap-1.5 pt-1 border-t border-white/5">
+                            <div>
+                              <label className="block text-[10px] text-zinc-500 mb-1">
+                                Qtd. <span className="text-red-400">*</span>
+                              </label>
+                              <input
+                                type="number" min={1} max={999}
+                                value={imp?.quantidade ?? ''}
+                                onChange={(e) => {
+                                  const qty = e.target.value ? Number(e.target.value) : 0
+                                  if (qty > 0) onSetItemImpressao(key, qty, imp?.tipo ?? 'Sulfite')
+                                  else onRemoveItemImpressao(key)
+                                }}
+                                placeholder="Qtd."
+                                className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs text-zinc-100 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[10px] text-zinc-500 mb-1">
+                                Material <span className="text-red-400">*</span>
+                              </label>
+                              <select
+                                value={imp?.tipo ?? ''}
+                                onChange={(e) => {
+                                  const tipo = e.target.value as import('../types/pedido').MaterialImpressao
+                                  if (tipo) onSetItemImpressao(key, imp?.quantidade ?? 1, tipo)
+                                }}
+                                className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs text-zinc-100 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                              >
+                                <option value="" className="bg-zinc-800">—</option>
+                                {MATERIAIS_IMPRESSAO.map(m => (
+                                  <option key={m} value={m} className="bg-zinc-800">{m}</option>
+                                ))}
+                              </select>
+                            </div>
+                          </div>
+                        ) : (
+                          // Produto digital: impressão opcional por item
+                          <div className="pt-1 border-t border-white/5">
+                            <label className="flex items-center gap-2 cursor-pointer select-none">
+                              <input
+                                type="checkbox"
+                                checked={item.impressao}
+                                onChange={(e) => {
+                                  if (e.target.checked) onSetItemImpressao(key, 1, 'Sulfite')
+                                  else onRemoveItemImpressao(key)
+                                }}
+                                className="accent-emerald-500"
+                              />
+                              <span className="text-[10px] text-zinc-400">Impressão física?</span>
+                            </label>
+                            {item.impressao && (
+                              <div className="grid grid-cols-2 gap-1.5 mt-1.5 pl-4">
+                                <div>
+                                  <label className="block text-[10px] text-zinc-500 mb-1">
+                                    Qtd. <span className="text-red-400">*</span>
+                                  </label>
+                                  <input
+                                    type="number" min={1} max={999}
+                                    value={imp?.quantidade ?? ''}
+                                    onChange={(e) => {
+                                      const qty = e.target.value ? Number(e.target.value) : 1
+                                      onSetItemImpressao(key, qty, imp?.tipo ?? 'Sulfite')
+                                    }}
+                                    placeholder="Qtd."
+                                    className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs text-zinc-100 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-[10px] text-zinc-500 mb-1">
+                                    Material <span className="text-red-400">*</span>
+                                  </label>
+                                  <select
+                                    value={imp?.tipo ?? ''}
+                                    onChange={(e) => {
+                                      const tipo = e.target.value as import('../types/pedido').MaterialImpressao
+                                      if (tipo) onSetItemImpressao(key, imp?.quantidade ?? 1, tipo)
+                                    }}
+                                    className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs text-zinc-100 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                                  >
+                                    <option value="" className="bg-zinc-800">—</option>
+                                    {MATERIAIS_IMPRESSAO.map(m => (
+                                      <option key={m} value={m} className="bg-zinc-800">{m}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Informação Complementar */}
+              <div>
+                <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide text-amber-400">
+                  Informação Complementar <span className="normal-case font-normal tracking-normal">(obrigatório)</span>
+                </label>
+                {finalidadeGeo && (
+                  <span className="inline-block mb-1.5 px-2 py-0.5 rounded-full bg-zinc-700/60 border border-zinc-600/40 text-[10px] text-zinc-400">
+                    {finalidadeGeo}
+                  </span>
+                )}
+                <textarea
+                  value={finalidade}
+                  onChange={(e) => onSetFinalidade(e.target.value)}
+                  rows={3}
+                  placeholder="Descreva o objetivo do pedido (mín. 10 caracteres)..."
+                  className="w-full bg-zinc-800 border border-amber-500/50 rounded-lg px-2.5 py-2 text-xs text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 resize-none transition-colors"
+                />
+                {finalidade.trim().length > 0 && finalidade.trim().length < 10 && (
+                  <p className="text-[11px] text-amber-400 mt-1">
+                    {10 - finalidade.trim().length} caractere(s) restante(s)
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -239,7 +402,7 @@ function RevisaoModal({ items, onRemoveItem, onClose, onConfirm, submitting }: R
             onClick={onClose}
             className="flex-1 py-2.5 rounded-lg border border-white/10 text-zinc-400 text-sm hover:bg-white/5 transition-colors"
           >
-            Voltar e editar
+            Voltar
           </button>
           <button
             onClick={onConfirm}
@@ -247,7 +410,7 @@ function RevisaoModal({ items, onRemoveItem, onClose, onConfirm, submitting }: R
             className="flex-1 py-2.5 rounded-lg bg-emerald-500 text-white text-sm font-semibold hover:bg-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
           >
             <Check className="h-4 w-4" />
-            {submitting ? 'Enviando...' : 'Revisado'}
+            {submitting ? 'Enviando...' : 'Confirmar'}
           </button>
         </div>
       </div>
@@ -260,14 +423,14 @@ export function SolicitarProdutos() {
   const navigate = useNavigate()
   const { user } = useAuthStore()
   const {
-    items, tipoProduto, escala, dataEntrega, operacaoId, finalidade,
-    setTipoProduto, setEscala, setDataEntrega, setOperacaoId, setFinalidade,
+    items, tipoProduto, escala, dataEntrega, finalidadeGeo, finalidade, impressoes,
+    setTipoProduto, setEscala, setDataEntrega, setFinalidadeGeo, setFinalidade,
+    setItemImpressao, removeItemImpressao,
     removeItem, clear,
   } = useCartStore()
 
-  const [operacoes, setOperacoes] = useState<Operacao[]>([])
-  const [novaOperacao, setNovaOperacao] = useState('')
-  const [showNewOp, setShowNewOp] = useState(false)
+  const isImpressao = tipoProduto ? TIPOS_IMPRESSAO.has(tipoProduto) : false
+
   const [inomGrid, setInomGrid] = useState<FeatureCollection | null>(null)
   const [isLoadingGrid, setIsLoadingGrid] = useState(false)
   // Cache de grades por (tipoProduto|||escala) — evita re-fetch e re-parse ao alternar produtos
@@ -279,13 +442,7 @@ export function SolicitarProdutos() {
   const [submitting, setSubmitting] = useState(false)
   const [minhaJanela, setMinhaJanela] = useState<MinhaJanela | null>(null)
   const [configEntrega, setConfigEntrega] = useState<ConfigEntrega | null>(null)
-  const finalidadeRef = useRef<HTMLTextAreaElement>(null)
-
-  // "Outros" = operacaoId null
-  const isOutros = operacaoId === null
-
   useEffect(() => {
-    operacoesApi.list().then((r) => setOperacoes(r.data)).catch(() => {})
     // Verifica janela ativa para este perfil
     janelasApi.minhaJanela()
       .then(r => setMinhaJanela(r.data))
@@ -337,39 +494,19 @@ export function SolicitarProdutos() {
     return format(addDays(new Date(configEntrega?.data_base + 'T00:00:00' || new Date()), prazo), 'yyyy-MM-dd')
   })()
 
-  const handleCreateOperacao = async () => {
-    if (!novaOperacao.trim()) return
-    try {
-      const r = await operacoesApi.create(novaOperacao.trim())
-      setOperacoes((prev) => [...prev, r.data])
-      setOperacaoId(r.data.id)
-      setNovaOperacao('')
-      setShowNewOp(false)
-      toast.success('Operação criada')
-    } catch {
-      toast.error('Erro ao criar operação')
-    }
-  }
-
-  const handleOperacaoChange = (v: string) => {
-    if (v === '__new__') { setShowNewOp(true); return }
-    setOperacaoId(v ? Number(v) : null)
-    // Se "Outros" selecionado, foca na finalidade
-    if (!v) {
-      setTimeout(() => {
-        finalidadeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-        finalidadeRef.current?.focus()
-      }, 100)
-    }
-  }
-
   const handleSubmit = async () => {
     if (items.length === 0) { toast.error('Adicione ao menos um produto'); return }
     if (!dataEntrega) { toast.error('Informe a data de entrega'); return }
-    if (isOutros && finalidade.trim().length < 10) {
-      toast.error('Preencha a finalidade com ao menos 10 caracteres ao selecionar "Outros"')
-      finalidadeRef.current?.focus()
+    if (finalidade.trim().length < 10) {
+      toast.error('Preencha a informação complementar com ao menos 10 caracteres')
       return
+    }
+    if (isImpressao) {
+      const semImpressao = items.filter(i => !impressoes[cartKey(i)])
+      if (semImpressao.length > 0) {
+        toast.error(`Configure quantidade e material para ${semImpressao.length} item(ns) de impressão`)
+        return
+      }
     }
     if (!user?.orgao_vinculante) {
       toast.error('Seu perfil não tem órgão vinculante configurado. Contate o Gestor Cartográfico (DSG).')
@@ -379,20 +516,27 @@ export function SolicitarProdutos() {
     setSubmitting(true)
     try {
       const pedido = await pedidosApi.create({
-        operacao_id: operacaoId,
+        operacao_id: null,
         data_entrega: dataEntrega,
+        finalidade_geo: finalidadeGeo || null,
         finalidade: finalidade || null,
-        itens: items.map((i) => ({
-          tipo_produto: i.tipo_produto,
-          escala: i.escala,
-          inom: i.inom,
-          mi: i.mi,
-          solicitar_mesmo_disponivel: i.solicitar_mesmo_disponivel,
-        })),
+        itens: items.map((i) => {
+          const imp = impressoes[cartKey(i)]
+          return {
+            tipo_produto: i.tipo_produto,
+            escala: i.escala,
+            inom: i.inom,
+            mi: i.mi,
+            solicitar_mesmo_disponivel: i.solicitar_mesmo_disponivel,
+            impressao_quantidade: imp?.quantidade ?? null,
+            impressao_tipo_material: imp?.tipo ?? null,
+          }
+        }),
+        impressao_solicitada: items.some(i => i.impressao),
       })
 
-      const isSupervisorOrConsolidador =
-        user?.perfil === 'SUPERVISOR' || user?.perfil === 'CONSOLIDADOR'
+      const { isGestor } = useAuthStore.getState()
+      const isSupervisorOrConsolidador = isGestor()
 
       if (isSupervisorOrConsolidador) {
         // Supervisor/Consolidador: auto-submete para entrar direto na fila de pendentes
@@ -419,12 +563,7 @@ export function SolicitarProdutos() {
   const handleOpenRevisao = () => {
     if (items.length === 0) { toast.error('Adicione ao menos um produto ao carrinho'); return }
     if (!dataEntrega) { toast.error('Informe a data sugerida de entrega'); return }
-    if (isOutros && finalidade.trim().length < 10) {
-      toast.error('Preencha a finalidade com ao menos 10 caracteres ao selecionar "Outros"')
-      finalidadeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      finalidadeRef.current?.focus()
-      return
-    }
+    if (!finalidadeGeo) { toast.error('Selecione a finalidade da geoinformação'); return }
     setShowRevisao(true)
   }
 
@@ -492,66 +631,37 @@ export function SolicitarProdutos() {
       {/* Seletores */}
       <div className="bg-zinc-900 border border-white/10 rounded-xl p-4 shrink-0">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          {/* Operação */}
+          {/* Finalidade da Geoinformação */}
           <div>
-            <label className={labelCls}>Operação</label>
-            {showNewOp ? (
-              <div className="flex gap-1">
-                <input
-                  value={novaOperacao}
-                  onChange={(e) => setNovaOperacao(e.target.value)}
-                  maxLength={100}
-                  className={inputCls}
-                  placeholder="Nome da operação"
-                />
-                <button onClick={handleCreateOperacao} className="bg-emerald-500 text-white px-2 rounded-lg text-xs hover:bg-emerald-400 transition-colors">OK</button>
-                <button onClick={() => setShowNewOp(false)} className="text-zinc-400 px-1 text-xs hover:text-zinc-200">✕</button>
-              </div>
-            ) : (
-              <select
-                value={operacaoId ?? ''}
-                onChange={(e) => handleOperacaoChange(e.target.value)}
-                className={inputCls}
-              >
-                <option value="" className="bg-zinc-800">Outros</option>
-                {operacoes.map((op) => <option key={op.id} value={op.id} className="bg-zinc-800">{op.nome}</option>)}
-                <option value="__new__" className="bg-zinc-800">+ Nova Operação</option>
-              </select>
-            )}
-            {/* Alerta "Outros" */}
-            {isOutros && (
-              <div className="flex items-start gap-1.5 mt-1.5 p-2 bg-amber-500/10 border border-amber-500/20 rounded-lg">
-                <AlertTriangle className="h-3.5 w-3.5 text-amber-400 shrink-0 mt-0.5" />
-                <p className="text-[11px] text-amber-300/90 leading-snug">
-                  Preencha a <strong>finalidade</strong> abaixo descrevendo o objetivo do pedido, ou selecione{' '}
-                  <button
-                    type="button"
-                    onClick={() => setShowNewOp(true)}
-                    className="underline text-amber-300 hover:text-amber-200 font-semibold transition-colors"
-                  >
-                    + Nova Operação
-                  </button>{' '}
-                  para cadastrar uma operação específica.
-                </p>
-              </div>
-            )}
+            <label className={labelCls}>Finalidade da Geoinformação</label>
+            <select
+              value={finalidadeGeo}
+              onChange={(e) => setFinalidadeGeo(e.target.value)}
+              className={inputCls}
+            >
+              <option value="" className="bg-zinc-800">Selecione...</option>
+              {FINALIDADES_GEO.map((fg) => (
+                <option key={fg} value={fg} className="bg-zinc-800">{fg}</option>
+              ))}
+            </select>
           </div>
 
-          {/* Tipo de Produto */}
+          {/* Tipo de Produto / Serviço */}
           <div>
-            <label className={labelCls}>Tipo de Produto</label>
+            <label className={labelCls}>Tipo de Produto / Serviço</label>
             <select
               value={tipoProduto ?? ''}
               onChange={(e) => {
-                setTipoProduto((e.target.value as TipoProduto) || null)
+                const novo = (e.target.value as TipoProduto) || null
+                setTipoProduto(novo)
                 setEscala(null)
                 setDataEntrega(null)
               }}
               className={inputCls}
             >
               <option value="" className="bg-zinc-800">Selecione...</option>
-              {Object.entries(TIPO_PRODUTO_LABELS).map(([k, v]) => (
-                <option key={k} value={k} className="bg-zinc-800">{v}</option>
+              {TIPOS_PRODUTO_VISIVEIS.map((k) => (
+                <option key={k} value={k} className="bg-zinc-800">{TIPO_PRODUTO_LABELS[k]}</option>
               ))}
             </select>
           </div>
@@ -672,6 +782,7 @@ export function SolicitarProdutos() {
                   inomGrid={inomGrid}
                   showData={showData}
                   basemap={basemap}
+                  somenteBdgex={isImpressao}
                 />
                 {isLoadingGrid && (
                   <div className="absolute inset-0 z-[1000] flex items-center justify-center bg-zinc-950/60 rounded-b-xl pointer-events-none">
@@ -699,48 +810,59 @@ export function SolicitarProdutos() {
                 Clique nas células do mapa para adicionar produtos ao carrinho
               </p>
             ) : (
-              items.map((item) => (
-                <div key={item.inom} className="bg-zinc-800 border border-white/5 rounded-lg p-2 text-xs flex items-start justify-between gap-1">
-                  <div className="min-w-0">
-                    <p className="font-medium text-zinc-200 truncate">{item.inom}</p>
-                    <p className="text-zinc-400">{TIPO_PRODUTO_LABELS[item.tipo_produto]}</p>
-                    <p className="text-zinc-500">{item.escala}</p>
+              items.map((item) => {
+                const key = cartKey(item)
+                const imp = impressoes[key]
+                return (
+                  <div key={key} className="bg-zinc-800 border border-white/5 rounded-lg p-2 text-xs">
+                    <div className="flex items-start justify-between gap-1">
+                      <div className="min-w-0">
+                        {item.mi
+                          ? <>
+                              <p className="font-medium text-emerald-400 truncate">{item.mi}</p>
+                              <p className="font-mono text-zinc-500 text-[10px] truncate">{item.inom}</p>
+                            </>
+                          : <p className="font-mono font-medium text-zinc-200 truncate">{item.inom}</p>
+                        }
+                        <p className="text-zinc-400">{TIPO_PRODUTO_LABELS[item.tipo_produto]}</p>
+                        <p className="text-zinc-500">{item.escala}</p>
+                      </div>
+                      <button onClick={() => removeItem(item.inom, item.tipo_produto, item.escala)} className="text-zinc-500 hover:text-red-400 transition-colors shrink-0 mt-0.5">
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                    {/* Indicador de impressão por item no carrinho */}
+                    {isImpressao && (
+                      <div className={`mt-1.5 pt-1.5 border-t border-white/5 text-[10px] ${imp ? 'text-emerald-400' : 'text-amber-400'}`}>
+                        {imp
+                          ? `${imp.quantidade}x ${imp.tipo}`
+                          : '⚠ Configure na revisão'}
+                      </div>
+                    )}
+                    {!isImpressao && item.impressao && imp && (
+                      <div className="mt-1.5 pt-1.5 border-t border-white/5 text-[10px] text-emerald-400">
+                        Impressão: {imp.quantidade}x {imp.tipo}
+                      </div>
+                    )}
                   </div>
-                  <button onClick={() => removeItem(item.inom, item.tipo_produto, item.escala)} className="text-zinc-500 hover:text-red-400 transition-colors shrink-0 mt-0.5">
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              ))
+                )
+              })
             )}
           </div>
 
-          <div className="p-3 border-t border-white/10 space-y-2">
-            <div>
-              <label className={`${labelCls} ${isOutros ? 'text-amber-400' : ''}`}>
-                Finalidade {isOutros && <span className="text-amber-400">*</span>}
-              </label>
-              <textarea
-                ref={finalidadeRef}
-                value={finalidade}
-                onChange={(e) => setFinalidade(e.target.value)}
-                rows={3}
-                placeholder={isOutros ? 'Obrigatório: descreva a finalidade (mín. 10 caracteres)...' : 'Descreva a finalidade da solicitação...'}
-                className={`w-full bg-zinc-800 border rounded-lg px-2.5 py-1.5 text-xs text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-1 resize-none transition-colors ${
-                  isOutros
-                    ? 'border-amber-500/50 focus:ring-amber-500 focus:border-amber-500'
-                    : 'border-zinc-700 focus:ring-emerald-500 focus:border-emerald-500'
-                }`}
-              />
-              {isOutros && finalidade.trim().length > 0 && finalidade.trim().length < 10 && (
-                <p className="text-[11px] text-amber-400 mt-1">
-                  {10 - finalidade.trim().length} caractere(s) restante(s)
-                </p>
-              )}
-            </div>
+          <div className="p-3 border-t border-white/10">
+            {items.length > 0 && isImpressao && (
+              <div className="flex flex-wrap gap-1.5 mb-2.5">
+                <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[11px] text-emerald-400">
+                  <ClipboardCheck className="h-3 w-3" />
+                  Impressão: configure na revisão
+                </span>
+              </div>
+            )}
             <button
               onClick={handleOpenRevisao}
               disabled={items.length === 0}
-              className="w-full bg-emerald-500 text-white py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-1.5 hover:bg-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="w-full bg-emerald-500 text-white py-2.5 rounded-lg text-sm font-medium flex items-center justify-center gap-1.5 hover:bg-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-[0_2px_12px_-2px_rgba(16,185,129,0.4)]"
             >
               <ClipboardCheck className="h-4 w-4" />
               Revisar Pedido
@@ -753,10 +875,17 @@ export function SolicitarProdutos() {
       {showRevisao && (
         <RevisaoModal
           items={items}
+          impressoes={impressoes}
           onRemoveItem={(item) => removeItem(item.inom, item.tipo_produto, item.escala)}
+          onSetItemImpressao={setItemImpressao}
+          onRemoveItemImpressao={removeItemImpressao}
           onClose={() => setShowRevisao(false)}
           onConfirm={handleSubmit}
           submitting={submitting}
+          isImpressao={isImpressao}
+          finalidadeGeo={finalidadeGeo}
+          finalidade={finalidade}
+          onSetFinalidade={setFinalidade}
         />
       )}
     </div>

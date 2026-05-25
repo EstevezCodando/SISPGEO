@@ -32,21 +32,22 @@ async def _create_admin():
         if existing:
             return
         user = Usuario(
-            nome="Cel Administrador DSG",
+            nome="Administrador DSG",
+            nome_de_guerra="Admin",
             email="admin@eb.mil.br",
             telefone="(61) 3415-0000",
             secao_om="Seção de TI",
             om="DSG",
             perfil=PerfilEnum.GESTOR_CARTOGRAFICO,
             posto_graduacao=PostoGraduacaoEnum.CORONEL,
-            senha_hash=get_password_hash("Admin@1234"),
+            senha_hash=get_password_hash(settings.ADMIN_PASSWORD),
             ativo=True,
             email_confirmado=True,
             ultima_senha_alterada=datetime.now(timezone.utc),
         )
         db.add(user)
         await db.commit()
-        logger.info("✓ Usuário admin criado: admin@eb.mil.br / Admin@1234")
+        logger.info("✓ Usuário admin criado: admin@eb.mil.br")
 
 
 async def _run_migrations():
@@ -93,6 +94,8 @@ async def _run_migrations():
         "ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS auto_submitted BOOLEAN DEFAULT FALSE",
         # 2026-05: posto/graduação do militar (Civil, Sd EV, Cb, Cap, TC, Cel...)
         "ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS posto_graduacao VARCHAR(50)",
+        # 2026-05: nome de guerra — exibido no lugar do nome completo nas referências do sistema
+        "ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS nome_de_guerra VARCHAR(100)",
         # 2026-05: configuração global de data base de entrega (singleton id=1)
         """CREATE TABLE IF NOT EXISTS config_entrega (
             id INTEGER PRIMARY KEY DEFAULT 1,
@@ -102,6 +105,15 @@ async def _run_migrations():
         )""",
         # Seed da configuração inicial (não sobrescreve se já existir)
         "INSERT INTO config_entrega (id, data_base) VALUES (1, '2026-11-18') ON CONFLICT (id) DO NOTHING",
+        # 2026-05: impressão física do pedido — quantidade de cópias e tipo de material (nível pedido — legado)
+        "ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS impressao_solicitada BOOLEAN DEFAULT FALSE",
+        "ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS impressao_quantidade SMALLINT",
+        "ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS impressao_tipo_material VARCHAR(20)",
+        # 2026-05: impressão per-item — quantidade e material por célula selecionada
+        "ALTER TABLE itens_pedido ADD COLUMN IF NOT EXISTS impressao_quantidade SMALLINT",
+        "ALTER TABLE itens_pedido ADD COLUMN IF NOT EXISTS impressao_tipo_material VARCHAR(20)",
+        # 2026-05: finalidade da geoinformação (dropdown) separado da informação complementar (textarea)
+        "ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS finalidade_geo VARCHAR(100)",
     ]
     for stmt in migrations:
         try:
@@ -114,6 +126,25 @@ async def _run_migrations():
     # ── Migrações de enum — exigem AUTOCOMMIT (fora de bloco de transação) ────
     enum_migrations = [
         "ALTER TYPE tipo_janela_enum ADD VALUE IF NOT EXISTS 'SUPERVISOR'",
+        # 2026-05: supervisores regionais por CMilA
+        "ALTER TYPE perfil_enum ADD VALUE IF NOT EXISTS 'SUPERVISOR_CMP'",
+        "ALTER TYPE perfil_enum ADD VALUE IF NOT EXISTS 'SUPERVISOR_CML'",
+        "ALTER TYPE perfil_enum ADD VALUE IF NOT EXISTS 'SUPERVISOR_CMS'",
+        "ALTER TYPE perfil_enum ADD VALUE IF NOT EXISTS 'SUPERVISOR_CMO'",
+        "ALTER TYPE perfil_enum ADD VALUE IF NOT EXISTS 'SUPERVISOR_CMAO'",
+        "ALTER TYPE perfil_enum ADD VALUE IF NOT EXISTS 'SUPERVISOR_CMA'",
+        "ALTER TYPE perfil_enum ADD VALUE IF NOT EXISTS 'SUPERVISOR_CMNOR'",  # legado
+        "ALTER TYPE perfil_enum ADD VALUE IF NOT EXISTS 'SUPERVISOR_CMNE'",
+        "ALTER TYPE perfil_enum ADD VALUE IF NOT EXISTS 'SUPERVISOR_CMSE'",
+        # 2026-05: consolidadores por órgão vinculante
+        "ALTER TYPE perfil_enum ADD VALUE IF NOT EXISTS 'CONSOLIDADOR_COTER'",
+        "ALTER TYPE perfil_enum ADD VALUE IF NOT EXISTS 'CONSOLIDADOR_DSG'",
+        "ALTER TYPE perfil_enum ADD VALUE IF NOT EXISTS 'CONSOLIDADOR_DEC'",
+        "ALTER TYPE perfil_enum ADD VALUE IF NOT EXISTS 'CONSOLIDADOR_COLOG'",
+        "ALTER TYPE perfil_enum ADD VALUE IF NOT EXISTS 'CONSOLIDADOR_DECEX'",
+        # 2026-05: tipos de impressão específicos
+        "ALTER TYPE tipo_produto_enum ADD VALUE IF NOT EXISTS 'IMPRESSAO_CT'",
+        "ALTER TYPE tipo_produto_enum ADD VALUE IF NOT EXISTS 'IMPRESSAO_COI'",
     ]
     async with engine.connect() as conn:
         await conn.execution_options(isolation_level="AUTOCOMMIT")
@@ -138,7 +169,8 @@ async def _create_test_users():
         - consolidador.coter@eb.mil.br / Consolidador@1234 — CONSOLIDADOR, OM=COTER
         - analista.cgeo@eb.mil.br / AnalistaCGEO@1234 — ANALISTA_CGEO, OM=DSG
     """
-    if not getattr(settings, "BDGEX_MOCK", False):
+    # Dupla guarda: BDGEX_MOCK E não-produção — nunca criar usuários de teste em prod
+    if not settings.BDGEX_MOCK or settings.ENV == "production":
         return
 
     from app.models.user import Usuario
@@ -148,7 +180,8 @@ async def _create_test_users():
     test_users = [
         # Solicitante OMDS — 22º B I (CMP - Comando Militar do Planalto)
         dict(
-            nome="2º Sgt Gustavo Silva",
+            nome="Gustavo Silva",
+            nome_de_guerra="Silva",
             email="gustavo@eb.mil.br",
             telefone="(61) 99900-0001",
             secao_om="S3",
@@ -161,7 +194,8 @@ async def _create_test_users():
         ),
         # Solicitante auxiliar (mesmo batalhão)
         dict(
-            nome="Cb João Ferreira",
+            nome="João Ferreira",
+            nome_de_guerra="Ferreira",
             email="joao@eb.mil.br",
             telefone="(61) 99900-0002",
             secao_om="S3",
@@ -174,7 +208,8 @@ async def _create_test_users():
         ),
         # Supervisor do C. Mil. A Planalto
         dict(
-            nome="Maj Paulo Supervisor",
+            nome="Paulo Supervisor",
+            nome_de_guerra="Paulo",
             email="supervisor.cmilA@eb.mil.br",
             telefone="(61) 99900-0010",
             secao_om="Seção de Geoinformação",
@@ -187,7 +222,8 @@ async def _create_test_users():
         ),
         # Consolidador COTER
         dict(
-            nome="TC Carlos Consolidador",
+            nome="Carlos Consolidador",
+            nome_de_guerra="Carlos",
             email="consolidador.coter@eb.mil.br",
             telefone="(61) 99900-0020",
             secao_om="Seção de Geoinformação e Cartografia",
@@ -200,7 +236,8 @@ async def _create_test_users():
         ),
         # Analista CGEO
         dict(
-            nome="Cap Ricardo CGEO",
+            nome="Ricardo CGEO",
+            nome_de_guerra="Ricardo",
             email="analista.cgeo@eb.mil.br",
             telefone="(61) 99900-0030",
             secao_om="Seção de Análise",
@@ -251,7 +288,7 @@ async def _create_test_janelas():
         CONSOLIDADOR : 02/08/2026 – 31/08/2026
         GESTOR_CARTOGRAFICO (DSG): 01/09/2026 – 30/09/2026
     """
-    if not getattr(settings, "BDGEX_MOCK", False):
+    if not settings.BDGEX_MOCK or settings.ENV == "production":
         return
 
     from app.models.janela import JanelaPedidos
@@ -376,4 +413,4 @@ app.include_router(config_router.router, prefix="/api/v1")
 
 @app.get("/api/v1/health")
 async def health():
-    return {"status": "ok", "version": "0.1.0"}
+    return {"status": "ok", "version": app.version}

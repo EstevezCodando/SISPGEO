@@ -25,14 +25,42 @@ import { useAuthStore } from '../../store/authStore'
 import { useExportRelatorio } from '../../hooks/useExportRelatorio'
 
 const CONSOLIDATE_LABELS: Record<string, string> = {
-  SUPERVISOR:   'Encaminhar ao COTER',
-  CONSOLIDADOR: 'Enviar à DSG',
+  // Supervisores regionais encaminham para COTER
+  SUPERVISOR_CMP:  'Encaminhar ao COTER',
+  SUPERVISOR_CML:  'Encaminhar ao COTER',
+  SUPERVISOR_CMS:  'Encaminhar ao COTER',
+  SUPERVISOR_CMO:  'Encaminhar ao COTER',
+  SUPERVISOR_CMAO: 'Encaminhar ao COTER',
+  SUPERVISOR_CMA:  'Encaminhar ao COTER',
+  SUPERVISOR_CMNE: 'Encaminhar ao COTER',
+  SUPERVISOR_CMSE: 'Encaminhar ao COTER',
+  SUPERVISOR:      'Encaminhar ao COTER',
+  // Consolidadores encaminham para DSG
+  CONSOLIDADOR_COTER:  'Enviar à DSG',
+  CONSOLIDADOR_DSG:    'Enviar à DSG',
+  CONSOLIDADOR_DEC:    'Enviar à DSG',
+  CONSOLIDADOR_COLOG:  'Enviar à DSG',
+  CONSOLIDADOR_DECEX:  'Enviar à DSG',
+  CONSOLIDADOR:        'Enviar à DSG',
 }
 
 const PERFIL_LABELS: Record<string, string> = {
   SOLICITANTE:         'OMDS',
-  SUPERVISOR:          'C. Mil. A',
-  CONSOLIDADOR:        'COTER',
+  SUPERVISOR_CMP:      'Supervisor CMP',
+  SUPERVISOR_CML:      'Supervisor CML',
+  SUPERVISOR_CMS:      'Supervisor CMS',
+  SUPERVISOR_CMO:      'Supervisor CMO',
+  SUPERVISOR_CMAO:     'Supervisor CMAO',
+  SUPERVISOR_CMA:      'Supervisor CMA',
+  SUPERVISOR_CMNE:     'Supervisor CMNE',
+  SUPERVISOR_CMSE:     'Supervisor CMSE',
+  SUPERVISOR:          'Supervisor',
+  CONSOLIDADOR_COTER:  'Consolidador COTER',
+  CONSOLIDADOR_DSG:    'Consolidador DSG',
+  CONSOLIDADOR_DEC:    'Consolidador DEC',
+  CONSOLIDADOR_COLOG:  'Consolidador COLOG',
+  CONSOLIDADOR_DECEX:  'Consolidador DECEx',
+  CONSOLIDADOR:        'Consolidador',
   GESTOR_CARTOGRAFICO: 'DSG',
   ANALISTA_CGEO:       'CGEO',
 }
@@ -255,20 +283,18 @@ function ExpandedRow({ pedido: p, janelaAberta, colSpan }: ExpandedRowProps) {
       <tr className="bg-zinc-800/40">
         <td colSpan={colSpan} className="px-6 py-4">
           <div className="space-y-4">
-            {/* Operação + Finalidade/Justificativa */}
-            {(p.operacao_nome || p.finalidade) && (
+            {/* Finalidade Geo + Informação Complementar */}
+            {(p.finalidade_geo || p.operacao_nome || p.finalidade) && (
               <div className="flex flex-wrap gap-x-6 gap-y-1.5">
-                {p.operacao_nome && (
+                {(p.finalidade_geo || p.operacao_nome) && (
                   <div className="flex items-center gap-2 text-xs">
                     <Briefcase className="h-3.5 w-3.5 text-emerald-500/80 shrink-0" />
-                    <span className="font-semibold text-zinc-200">{p.operacao_nome}</span>
+                    <span className="font-semibold text-zinc-200">{p.finalidade_geo || p.operacao_nome}</span>
                   </div>
                 )}
                 {p.finalidade && (
                   <p className="text-xs text-zinc-400">
-                    <span className="font-medium text-zinc-300">
-                      {p.operacao_nome ? 'Finalidade:' : 'Justificativa:'}
-                    </span>{' '}
+                    <span className="font-medium text-zinc-300">Inf. Complementar:</span>{' '}
                     {p.finalidade}
                   </p>
                 )}
@@ -459,7 +485,7 @@ function SortableRow({
             </div>
           ) : (
             <span className="text-[11px] text-zinc-600 italic">
-              {p.finalidade ? 'ver justificativa ↓' : '—'}
+              {p.finalidade_geo || p.finalidade ? 'ver detalhes ↓' : '—'}
             </span>
           )}
         </td>

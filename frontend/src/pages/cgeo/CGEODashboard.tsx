@@ -36,9 +36,14 @@ function PedidoInfo({ p }: { p: Pedido }) {
           <span className="text-zinc-500">Operação:</span> {p.operacao_nome}
         </p>
       )}
+      {p.finalidade_geo && (
+        <p className="text-sm text-zinc-400 mt-0.5">
+          <span className="text-zinc-500">Finalidade Geo:</span> {p.finalidade_geo}
+        </p>
+      )}
       {p.finalidade && (
         <p className="text-sm text-zinc-400 mt-0.5">
-          <span className="text-zinc-500">Finalidade:</span> {p.finalidade}
+          <span className="text-zinc-500">Inf. Complementar:</span> {p.finalidade}
         </p>
       )}
       {p.observacoes && (

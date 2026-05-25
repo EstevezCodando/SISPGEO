@@ -15,10 +15,10 @@ import { TIPO_PRODUTO_LABELS, STATUS_LABELS } from '../../types/pedido'
 /** Com quem está o pedido (escalão atual) */
 const STATUS_RESPONSAVEL: Record<string, string> = {
   RASCUNHO:                'Solicitante (rascunho)',
-  AGUARDANDO_SUPERVISOR:   'Supervisor C Mil. A',
-  AGUARDANDO_CONSOLIDADOR: 'Consolidador COTER/COLOG',
+  AGUARDANDO_SUPERVISOR:   'Supervisor CMilA (COTER)',
+  AGUARDANDO_CONSOLIDADOR: 'Consolidador do órgão vinculante',
   DEVOLVIDO:               'Solicitante (em revisão)',
-  AGUARDANDO_CARTOGRAFICO: 'DSG (aguardando atribuição)',
+  AGUARDANDO_CARTOGRAFICO: 'Gestor Cartográfico — DSG',
   ATRIBUIDO_CGEO:          'CGEO (em análise)',
   APROVADO:                'CGEO (em atendimento)',
   REPROVADO:               'Encerrado — inviável',
@@ -425,7 +425,8 @@ export function AdminPedidos() {
                             <p className="font-semibold text-zinc-400 mb-2">Detalhes</p>
                             <div className="space-y-1 text-zinc-500">
                               {p.operacao_nome && <p><span className="text-zinc-400">Operação:</span> {p.operacao_nome}</p>}
-                              {p.finalidade && <p><span className="text-zinc-400">Finalidade:</span> {p.finalidade}</p>}
+                              {p.finalidade_geo && <p><span className="text-zinc-400">Finalidade Geo:</span> {p.finalidade_geo}</p>}
+                              {p.finalidade && <p><span className="text-zinc-400">Inf. Complementar:</span> {p.finalidade}</p>}
                               {p.observacoes && <p><span className="text-zinc-400">Observações:</span> {p.observacoes}</p>}
                               {p.link_bdgex && (
                                 <p>

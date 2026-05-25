@@ -66,7 +66,7 @@ Cada transição de status gera **notificações in-app e por e-mail**. A DSG po
 | Pydantic | 2.9.2 | Validação e serialização de dados |
 | pydantic-settings | 2.6.1 | Configuração via variáveis de ambiente |
 | bcrypt | 4.2.1 | Hash seguro de senhas |
-| python-jose | 3.3.0 | JWT (HS256) |
+| PyJWT | 2.10.1 | JWT (HS256) — substitui python-jose (CVE-2024-33663) |
 | Resend | 2.10.0 | Envio de e-mail transacional (primário) |
 | aiosmtplib | — | Envio via SMTP (fallback — Mailpit em dev) |
 | httpx | 0.27.2 | Cliente HTTP (mock BDGEx) |
@@ -123,10 +123,54 @@ Cada transição de status gera **notificações in-app e por e-mail**. A DSG po
 # Clone o repositório
 git clone https://github.com/EstevezCodando/SISGEO.git
 cd SISGEO
+```
 
-# Copie e ajuste as variáveis de ambiente
-cp .env.example .env
+#### Gerar as credenciais obrigatórias — `step0.py`
 
+Execute o script de configuração inicial antes de subir o sistema.
+Ele funciona em **Windows, Linux e macOS** — usa apenas a biblioteca padrão do Python (sem instalar nada):
+
+```bash
+python step0.py        # Windows (Prompt / PowerShell) ou Linux/macOS
+python3 step0.py       # Linux/macOS (alternativa)
+```
+
+O script irá:
+1. Criar o `.env` a partir do `.env.example` (se ainda não existir)
+2. Gerar a `SECRET_KEY` automaticamente com `secrets.token_hex(32)` — equivalente criptográfico de `openssl rand -hex 32`
+3. Solicitar `DB_PASSWORD` e `ADMIN_PASSWORD` interativamente com confirmação
+4. Gravar tudo no `.env` sem sobrescrever valores já definidos
+
+Exemplo de execução:
+
+```
+──────────────────────────────────────────────────────
+  SisPGeo — Configuração inicial  (step0.py)
+──────────────────────────────────────────────────────
+  ✓ .env criado a partir de .env.example
+
+  1/3 · SECRET_KEY
+  ✓ SECRET_KEY gerada: a3f8b2e1c4d7f0··· (64 chars)
+
+  2/3 · DB_PASSWORD
+  DB_PASSWORD: ****
+  Confirme a senha: ****
+  ✓ DB_PASSWORD definida.
+
+  3/3 · ADMIN_PASSWORD
+  ADMIN_PASSWORD: ****
+  Confirme a senha: ****
+  ✓ ADMIN_PASSWORD definida.
+
+  ✓ .env atualizado — variáveis gravadas: SECRET_KEY, DB_PASSWORD, ADMIN_PASSWORD
+
+  Próximo passo:
+  ┌─────────────────────────────────────────────┐
+  │  docker compose up --build -d               │
+  └─────────────────────────────────────────────┘
+```
+
+```bash
 # Suba todos os serviços
 docker compose up --build -d
 ```
@@ -143,11 +187,13 @@ A aplicação ficará disponível em:
 
 | E-mail | Senha | Perfil |
 |---|---|---|
-| `admin@eb.mil.br` | `Admin@1234` | GESTOR_CARTOGRAFICO (DSG) |
+| `admin@eb.mil.br` | valor de `ADMIN_PASSWORD` no `.env` | GESTOR_CARTOGRAFICO (DSG) |
 | `gustavo@eb.mil.br` | `Gustavo@1234` | SOLICITANTE |
 | `joao@eb.mil.br` | `Joao@1234` | SOLICITANTE |
 
-> Criados automaticamente quando `BDGEX_MOCK=true` (padrão em desenvolvimento).
+> Os usuários de teste (`gustavo`, `joao`) são criados apenas quando
+> `BDGEX_MOCK=true`. **Nunca ative `BDGEX_MOCK=true` em produção.**  
+> A senha do admin é sempre a definida em `ADMIN_PASSWORD` — não há senha padrão hardcoded.
 
 ### Comandos úteis
 
@@ -162,7 +208,7 @@ docker compose build --no-cache frontend && docker compose up -d frontend
 docker compose down -v && docker compose up --build -d
 
 # Acessar o container do backend
-docker exec -it coter_backend bash
+docker exec -it sispgeo_backend bash
 ```
 
 ---
@@ -343,12 +389,17 @@ Copie `.env.example` para `.env` e ajuste conforme o ambiente:
 
 ```env
 # Banco de dados
-DATABASE_URL=postgresql+asyncpg://coter_user:coter_secret@db:5432/coter
+DB_PASSWORD=senha_forte_aqui   # obrigatório — falha na subida se vazio
 
 # Segurança JWT
-SECRET_KEY=troque-por-uma-chave-aleatoria-longa-e-segura
+# Gere com: openssl rand -hex 32
+SECRET_KEY=                    # obrigatório — falha na subida se vazio
 ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=480
+
+# Usuário admin inicial (admin@eb.mil.br)
+# Requisitos: maiúscula, minúscula, número e caractere especial (mín. 8 chars)
+ADMIN_PASSWORD=                # obrigatório — falha na subida se vazio
 
 # E-mail — Resend (produção)
 RESEND_API_KEY=re_sua_chave_aqui
@@ -361,14 +412,40 @@ SMTP_TLS=false
 
 # BDGEx
 BDGEX_API_URL=https://bdgex.eb.mil.br/api
-BDGEX_MOCK=true
+BDGEX_MOCK=false               # nunca true em produção
 
 # Aplicação
 ENV=development
 FRONTEND_URL=http://localhost
 ```
 
-> **Produção:** defina `BDGEX_MOCK=false`, um `SECRET_KEY` forte e configure o Resend com domínio verificado.
+#### Como gerar `SECRET_KEY`
+
+**🐧 Linux / macOS:**
+```bash
+openssl rand -hex 32
+# Saída: a3f8b2e1c4d7f09a2b5e8c1d4a7f0e3b6c9d2e5f8a1b4c7d0e3f6a9b2c5d8e1
+```
+
+**🪟 Windows — PowerShell:**
+```powershell
+[System.Convert]::ToHexString(
+    [System.Security.Cryptography.RandomNumberGenerator]::GetBytes(32)
+).ToLower()
+# Saída: a3f8b2e1c4d7f09a2b5e8c1d4a7f0e3b6c9d2e5f8a1b4c7d0e3f6a9b2c5d8e1
+```
+
+**🪟 Windows — Git Bash ou WSL:**
+```bash
+openssl rand -hex 32
+```
+
+Cole o valor gerado na variável `SECRET_KEY` no arquivo `.env`.
+
+> **Produção:** `BDGEX_MOCK=false`, `ENV=production`, `SECRET_KEY` gerada com
+> `openssl rand -hex 32`, `ADMIN_PASSWORD` com requisitos de complexidade e
+> `FRONTEND_URL` apontando para `https://`.  
+> O sistema **recusa a inicialização** se qualquer uma dessas regras for violada.
 
 ---
 
@@ -478,14 +555,14 @@ SisPGeo/
 
 ```bash
 # Rodar todos os testes dentro do container
-docker exec coter_backend python -m pytest tests/ -v
+docker exec sispgeo_backend python -m pytest tests/ -v
 
 # Apenas testes unitários (sem banco)
-docker exec coter_backend python -m pytest tests/ -v \
+docker exec sispgeo_backend python -m pytest tests/ -v \
   --ignore=tests/test_api_integration.py
 
 # Apenas testes de integração (requer backend em execução)
-docker exec coter_backend python -m pytest tests/test_api_integration.py -v
+docker exec sispgeo_backend python -m pytest tests/test_api_integration.py -v
 ```
 
 Os testes unitários usam `MagicMock` / `AsyncMock` — sem dependência de banco de dados. Os testes de integração chamam a API real rodando no container e requerem `BDGEX_MOCK=true`.

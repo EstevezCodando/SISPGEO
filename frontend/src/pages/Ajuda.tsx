@@ -57,7 +57,7 @@ const PRODUTOS: Produto[] = [
   },
   {
     sigla: 'MDT',
-    nome: 'Modelo Digital de Terreno',
+    nome: 'Modelo Digital do Terreno',
     imagem: '/mdt.png',
     definicao:
       'Representação numérica contínua da altitude do terreno sem obstáculos artificiais ou vegetação (somente o chão). Formato de grade matricial.',
@@ -95,15 +95,28 @@ const PRODUTOS: Produto[] = [
     prazo: '180 dias',
   },
   {
-    sigla: 'IMP',
-    nome: 'Impressão Geoespacial',
+    sigla: 'IMP-CT',
+    nome: 'Impressão de Carta Topográfica',
     imagem: '/cartatopografica.png',
     definicao:
-      'Impressão em papel de produtos cartográficos existentes no acervo (cartas, ortoimagens, etc.). Não envolve nova produção de dados, apenas o serviço de impressão e envio.',
+      'Serviço de impressão de Carta Topográfica já existente no acervo BDGEx. Não envolve nova produção cartográfica — apenas reprodução física da folha solicitada, podendo ser em diferentes tipos de material.',
     usos: [
       'Uso em campo sem disponibilidade de meios digitais',
       'Briefings e apresentações operacionais',
       'Arquivo físico de documentação cartográfica',
+    ],
+    prazo: '30 dias',
+  },
+  {
+    sigla: 'IMP-COI',
+    nome: 'Impressão de Carta Ortoimagem',
+    imagem: '/cartaortoimagem.png',
+    definicao:
+      'Serviço de impressão de Carta Ortoimagem já existente no acervo BDGEx. Combina imagem de satélite e informações vetoriais em folha impressa para uso operacional em campo.',
+    usos: [
+      'Reconhecimento de área combinando imagem real e cartografia',
+      'Uso em campo sem disponibilidade de meios digitais',
+      'Documentação de operações e exercícios',
     ],
     prazo: '30 dias',
   },
@@ -150,12 +163,7 @@ function ProdutoModal({ produto, onClose }: { produto: Produto; onClose: () => v
           {/* Conteúdo */}
           <div className="md:w-[45%] p-6 flex flex-col justify-between border-t md:border-t-0 md:border-l border-white/10">
             <div>
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-xs font-bold px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-mono tracking-wide">
-                  {produto.sigla}
-                </span>
-                <h3 className="text-base font-semibold text-zinc-100">{produto.nome}</h3>
-              </div>
+              <h3 className="text-base font-semibold text-zinc-100 mb-3">{produto.nome}</h3>
 
               <p className="text-sm text-zinc-400 leading-relaxed mb-5">{produto.definicao}</p>
 
@@ -214,12 +222,7 @@ function ProdutoCard({ produto }: { produto: Produto }) {
 
         {/* Info compacta */}
         <div className="p-4">
-          <div className="flex items-center gap-2 mb-1.5">
-            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-mono">
-              {produto.sigla}
-            </span>
-            <span className="text-sm font-semibold text-zinc-100">{produto.nome}</span>
-          </div>
+          <p className="text-sm font-semibold text-zinc-100 mb-1.5">{produto.nome}</p>
           <p className="text-xs text-zinc-500 leading-relaxed line-clamp-2">{produto.definicao}</p>
           <p className="text-[11px] text-zinc-600 mt-2">
             Prazo mín.: <span className="text-zinc-400 font-medium">{produto.prazo}</span>
@@ -285,7 +288,7 @@ interface ProdutoComplexidade {
 }
 
 const COMPLEXIDADE_DATA: ProdutoComplexidade[] = [
-  { nome: 'Impressão',         prazo: '30 dias',        complexidade: 1, x: 4,  y: 8,  hex: '#10b981' },
+  { nome: 'Impressão CT/COI',  prazo: '30 dias',        complexidade: 1, x: 4,  y: 8,  hex: '#10b981' },
   { nome: 'Ortoimagem/MDT/MDS', prazo: '40 dias',       complexidade: 2, x: 18, y: 25, hex: '#38bdf8' },
   { nome: 'Carta Ortoimagem',  prazo: '60 dias',        complexidade: 3, x: 32, y: 50, hex: '#a78bfa' },
   { nome: 'CDGV (Vetores)',    prazo: '180 dias',       complexidade: 4, x: 72, y: 72, hex: '#fbbf24' },
@@ -479,7 +482,7 @@ const FAQS: FAQ[] = [
   },
   {
     q: 'Qual a diferença entre MDT e MDS?',
-    a: 'O MDT (Modelo Digital de Terreno) representa somente o chão — sem vegetação nem edificações. O MDS (Modelo Digital de Superfície) inclui tudo o que está sobre o terreno, como árvores e prédios. Para cálculo de trafegabilidade use o MDT; para análise de visada e comunicações use o MDS.',
+    a: 'O MDT (Modelo Digital do Terreno) representa somente o chão — sem vegetação nem edificações. O MDS (Modelo Digital de Superfície) inclui tudo o que está sobre o terreno, como árvores e prédios. Para cálculo de trafegabilidade use o MDT; para análise de visada e comunicações use o MDS.',
   },
 ]
 
@@ -828,6 +831,53 @@ export function Ajuda() {
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
           {PRODUTOS.map((p) => (
             <ProdutoCard key={p.sigla} produto={p} />
+          ))}
+        </div>
+      </section>
+
+      {/* ── 1b. MATERIAIS DE IMPRESSÃO ──────────────────────────────── */}
+      <section className="bg-zinc-900 border border-white/10 rounded-2xl p-6">
+        <SectionTitle icon={<FileText className="h-4 w-4" />} title="Materiais de impressão" />
+        <p className="text-xs text-zinc-500 mb-4">
+          Ao solicitar impressão de Carta Topográfica ou Carta Ortoimagem, escolha o tipo de material conforme a finalidade operacional.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {[
+            {
+              nome: 'Canvas',
+              icon: '🖼',
+              desc: 'Tecido sintético resistente, impermeável e durável. Ideal para uso prolongado em campo, suporta dobramento repetido e umidade. Recomendado para operações de longa duração.',
+              destaque: 'Alta durabilidade · Impermeável',
+            },
+            {
+              nome: 'Sulfite',
+              icon: '📄',
+              desc: 'Papel comum (75–90 g/m²). Opção econômica para uso interno, briefings e documentação temporária. Não resiste à umidade. Adequado para ambientes controlados.',
+              destaque: 'Econômico · Uso interno',
+            },
+            {
+              nome: 'Glossy',
+              icon: '✨',
+              desc: 'Papel fotográfico brilhante de alta resolução. Oferece reprodução fiel de cores e detalhes, ideal para apresentações, exposições e arquivos de alta qualidade visual.',
+              destaque: 'Alta resolução · Visual premium',
+            },
+            {
+              nome: 'Tyvek',
+              icon: '🏕',
+              desc: 'Material sintético extremamente resistente (polietileno de alta densidade). À prova d\'água, rasgo e dobramento intenso. Indicado para operações em ambientes adversos — selva, campo úmido, embarque.',
+              destaque: 'Prova d\'água · Máxima resistência',
+            },
+          ].map((m) => (
+            <div key={m.nome} className="bg-zinc-800/50 border border-white/5 rounded-xl p-4 flex gap-3">
+              <span className="text-2xl shrink-0">{m.icon}</span>
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-sm font-bold text-zinc-100">{m.nome}</span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-medium">{m.destaque}</span>
+                </div>
+                <p className="text-xs text-zinc-500 leading-relaxed">{m.desc}</p>
+              </div>
+            </div>
           ))}
         </div>
       </section>

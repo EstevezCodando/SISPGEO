@@ -4,6 +4,7 @@
 
 import { create } from "zustand";
 import type { Usuario } from "../types/user";
+import { SUPERVISOR_PROFILES, CONSOLIDADOR_PROFILES } from "../types/user";
 
 interface AuthState {
   user: Usuario | null;
@@ -32,10 +33,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ user: null, token: null });
   },
 
-  // Gestores intermediários: Supervisor e Consolidador
   isGestor: () => {
     const p = get().user?.perfil;
-    return !!(p && ["SUPERVISOR", "CONSOLIDADOR"].includes(p));
+    return !!(p && (SUPERVISOR_PROFILES.has(p) || CONSOLIDADOR_PROFILES.has(p)));
   },
 
   isDSG: () => get().user?.perfil === "GESTOR_CARTOGRAFICO",

@@ -1,6 +1,7 @@
 ﻿import { Link } from 'react-router-dom'
 import { PlusSquare, FileText, ClipboardCheck, MapPin, BarChart2, HelpCircle } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
+import { formatNomeComPosto } from '../data/postos'
 
 export function Dashboard() {
   const { user, isGestor, isDSG, isCGEO } = useAuthStore()
@@ -60,10 +61,10 @@ export function Dashboard() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold text-zinc-100 tracking-tight">
-          Bem-vindo, {user?.nome?.split(' ')[0]}
+          {formatNomeComPosto(user?.nome ?? '', user?.posto_graduacao, user?.nome_de_guerra)}
         </h1>
-        <p className="text-zinc-500 text-sm mt-1">
-          {user?.om} — O que deseja fazer hoje?
+        <p className="text-zinc-400 text-sm mt-1">
+          {user?.om}
         </p>
       </div>
 

@@ -7,18 +7,34 @@ import { usersApi } from '../../api/users'
 import type { Transferencia } from '../../api/users'
 import { LoadingSpinner } from '../../components/shared/LoadingSpinner'
 import type { Usuario, Perfil } from '../../types/user'
+import { PERFIL_LABELS } from '../../types/user'
+import { formatNomeComPosto } from '../../data/postos'
 
-const PERFIS: Perfil[] = [
-  'SOLICITANTE', 'SUPERVISOR', 'CONSOLIDADOR', 'GESTOR_CARTOGRAFICO', 'ANALISTA_CGEO',
+// Perfis agrupados para o dropdown de atribuição
+const PERFIL_GROUPS: { label: string; perfis: Perfil[] }[] = [
+  {
+    label: 'Solicitante',
+    perfis: ['SOLICITANTE'],
+  },
+  {
+    label: 'Supervisores Regionais (COTER)',
+    perfis: [
+      'SUPERVISOR_CMP', 'SUPERVISOR_CML', 'SUPERVISOR_CMS', 'SUPERVISOR_CMO',
+      'SUPERVISOR_CMAO', 'SUPERVISOR_CMA', 'SUPERVISOR_CMNE', 'SUPERVISOR_CMSE',
+    ],
+  },
+  {
+    label: 'Consolidadores por Órgão',
+    perfis: [
+      'CONSOLIDADOR_COTER', 'CONSOLIDADOR_DSG', 'CONSOLIDADOR_DEC',
+      'CONSOLIDADOR_COLOG', 'CONSOLIDADOR_DECEX',
+    ],
+  },
+  {
+    label: 'DSG / CGEO',
+    perfis: ['GESTOR_CARTOGRAFICO', 'ANALISTA_CGEO'],
+  },
 ]
-
-const PERFIL_LABELS: Record<Perfil, string> = {
-  SOLICITANTE:         'Solicitante (OMDS)',
-  SUPERVISOR:          'Supervisor (C. Mil. A)',
-  CONSOLIDADOR:        'Consolidador (COTER/COLOG)',
-  GESTOR_CARTOGRAFICO: 'Gestor Cartográfico (DSG)',
-  ANALISTA_CGEO:       'Analista CGEO',
-}
 
 // ─── Modal de histórico de transferências ─────────────────────────────────────
 function HistoricoModal({ user, onClose }: { user: Usuario; onClose: () => void }) {
@@ -249,7 +265,7 @@ export function GerenciarUsuarios() {
           <tbody className="divide-y divide-white/5">
             {users.map((u) => (
               <tr key={u.id} className="hover:bg-white/5 transition-colors">
-                <td className="px-4 py-3 font-medium text-zinc-200">{u.nome}</td>
+                <td className="px-4 py-3 font-medium text-zinc-200">{formatNomeComPosto(u.nome, u.posto_graduacao, u.nome_de_guerra)}</td>
                 <td className="px-4 py-3 text-zinc-400">{u.email}</td>
                 <td className="px-4 py-3 text-zinc-400">{u.om}</td>
                 <td className="px-4 py-3">
@@ -258,10 +274,14 @@ export function GerenciarUsuarios() {
                     onChange={(e) => handleProfileChange(u, e.target.value as Perfil)}
                     className="bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-xs text-zinc-100 focus:outline-none focus:ring-1 focus:ring-emerald-500"
                   >
-                    {PERFIS.map((p) => (
-                      <option key={p} value={p} className="bg-zinc-800">
-                        {PERFIL_LABELS[p]}
-                      </option>
+                    {PERFIL_GROUPS.map((group) => (
+                      <optgroup key={group.label} label={group.label}>
+                        {group.perfis.map((p) => (
+                          <option key={p} value={p} className="bg-zinc-800">
+                            {PERFIL_LABELS[p]}
+                          </option>
+                        ))}
+                      </optgroup>
                     ))}
                   </select>
                 </td>

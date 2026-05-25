@@ -1,4 +1,4 @@
-/** Postos e graduações do Exército Brasileiro */
+/** Postos e graduações do Exército Brasileiro — 3º Sgt a Gen Ex */
 export interface PostoGraduacao {
   id: number
   nome: string
@@ -6,11 +6,6 @@ export interface PostoGraduacao {
 }
 
 export const POSTOS: PostoGraduacao[] = [
-  { id:  1, nome: 'Civil',                   abrev: 'Civ'     },
-  { id:  2, nome: 'Mão de Obra Temporária',  abrev: 'MOT'     },
-  { id:  3, nome: 'Soldado EV',              abrev: 'Sd EV'   },
-  { id:  4, nome: 'Soldado EP',              abrev: 'Sd EP'   },
-  { id:  5, nome: 'Cabo',                    abrev: 'Cb'      },
   { id:  6, nome: 'Terceiro Sargento',       abrev: '3º Sgt'  },
   { id:  7, nome: 'Segundo Sargento',        abrev: '2º Sgt'  },
   { id:  8, nome: 'Primeiro Sargento',       abrev: '1º Sgt'  },
@@ -33,11 +28,16 @@ export const POSTO_ABREV: Record<string, string> = Object.fromEntries(
 )
 
 /**
- * Formata nome com posto/graduação abreviado na frente.
- * Ex.: formatNomeComPosto("Gustavo Silva", "Capitão") → "Cap Gustavo Silva"
+ * Formata referência ao usuário: "Abrev. Posto + Nome de Guerra" (ou nome completo como fallback).
+ * Ex.: formatNomeComPosto("Gustavo Silva", "Capitão", "Silva") → "Cap Silva"
  */
-export function formatNomeComPosto(nome: string, posto: string | null | undefined): string {
-  if (!posto) return nome
+export function formatNomeComPosto(
+  nome: string,
+  posto: string | null | undefined,
+  nomeDeGuerra?: string | null,
+): string {
+  const displayName = nomeDeGuerra?.trim() || nome
+  if (!posto) return displayName
   const abrev = POSTO_ABREV[posto]
-  return abrev ? `${abrev} ${nome}` : nome
+  return abrev ? `${abrev} ${displayName}` : displayName
 }

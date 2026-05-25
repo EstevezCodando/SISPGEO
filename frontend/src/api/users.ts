@@ -22,6 +22,7 @@ export const usersApi = {
     om?: string
     regiao_militar?: string
     posto_graduacao?: string
+    nome_de_guerra?: string
   }) => api.put<Usuario>('/users/me', data),
   changePassword: (senha_atual: string, nova_senha: string) =>
     api.put('/users/me/password', { senha_atual, nova_senha }),

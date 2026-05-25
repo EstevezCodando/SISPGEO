@@ -4,7 +4,6 @@ import toast from 'react-hot-toast'
 import { authApi } from '../api/auth'
 import { usersApi } from '../api/users'
 import { useAuthStore } from '../store/authStore'
-import { trackEvent } from '../firebase'
 
 export function Login() {
   const [email, setEmail] = useState('')
@@ -21,8 +20,7 @@ export function Login() {
       setToken(res.data.access_token)
       const me = await usersApi.getMe()
       setUser(me.data)
-      trackEvent('login', { method: 'email', perfil: me.data.perfil })
-      toast.success('Login realizado com sucesso!')
+toast.success('Login realizado com sucesso!')
       navigate('/')
     } catch (err: unknown) {
       const e = err as { response?: { data?: { detail?: string } } }
@@ -45,7 +43,7 @@ export function Login() {
               <img src="/dsg.png" alt="DSG" className="h-14 w-auto" />
             </div>
             <h1 className="text-2xl font-semibold text-zinc-100 tracking-tight">SisPGeo</h1>
-            <p className="text-zinc-500 text-sm mt-1">Sistema de Pedidos de Geoinformação — DSG/EB</p>
+            <p className="text-zinc-500 text-sm mt-1">Sistema de Pedidos de Geoinformação – DSG/EB</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">

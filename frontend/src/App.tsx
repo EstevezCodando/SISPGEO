@@ -30,9 +30,13 @@ import { Login } from "./pages/Login";
 import { MeusDados } from "./pages/MeusDados";
 import { RedefinirSenha } from "./pages/RedefinirSenha";
 import { MeusPedidos } from "./pages/MeusPedidos";
+import { AtivarConta } from "./pages/AtivarConta";
 import { Register } from "./pages/Register";
 import { SolicitarProdutos } from "./pages/SolicitarProdutos";
 import { useAuthStore } from "./store/authStore";
+import { SUPERVISOR_PROFILES, CONSOLIDADOR_PROFILES } from "./types/user";
+
+const GESTOR_PROFILES = new Set([...SUPERVISOR_PROFILES, ...CONSOLIDADOR_PROFILES]);
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { token, user, setUser } = useAuthStore();
@@ -52,14 +56,21 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function RequireProfile({ profiles, children }: { profiles: Set<string>; children: React.ReactNode }) {
+  const { user } = useAuthStore();
+  if (user && !profiles.has(user.perfil)) return <Navigate to="/" replace />;
+  return <>{children}</>;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
-      <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
+      <Toaster position="top-right" toastOptions={{ duration: 4000 }} containerStyle={{ zIndex: 99999 }} />
       <Routes>
         {/* Public */}
         <Route path="/login" element={<Login />} />
         <Route path="/cadastro" element={<Register />} />
+        <Route path="/ativar/:token" element={<AtivarConta />} />
         <Route path="/esqueci-senha" element={<EsqueciSenha />} />
         <Route path="/redefinir-senha/:token" element={<RedefinirSenha />} />
 
@@ -75,8 +86,8 @@ export default function App() {
           <Route path="/solicitar-produtos" element={<SolicitarProdutos />} />
           <Route path="/meus-pedidos" element={<MeusPedidos />} />
           <Route path="/meus-dados" element={<MeusDados />} />
-          <Route path="/gestor/pedidos" element={<GestorDashboard />} />
-          <Route path="/gestor/homologados" element={<PedidosHomologados />} />
+          <Route path="/gestor/pedidos" element={<RequireProfile profiles={GESTOR_PROFILES}><GestorDashboard /></RequireProfile>} />
+          <Route path="/gestor/homologados" element={<RequireProfile profiles={GESTOR_PROFILES}><PedidosHomologados /></RequireProfile>} />
           <Route path="/dsg/pedidos" element={<DSGDashboard />} />
           <Route path="/dsg/janelas" element={<JanelasPedidos />} />
           <Route path="/dsg/relatorios" element={<Relatorios />} />

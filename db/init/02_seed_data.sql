@@ -1,3 +1,0 @@
--- Seed data é criado pelo backend via script create_admin.py
--- Execute após o sistema subir:
---   docker exec coter_backend python create_admin.py

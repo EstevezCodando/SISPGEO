@@ -7,6 +7,7 @@ PASSWORD_PATTERN = re.compile(r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$
 
 class RegisterRequest(BaseModel):
     nome: str
+    nome_de_guerra: str | None = None
     email: str
     telefone: str
     telefone_ritex: str | None = None   # NNN-NNNN (Ritex)
