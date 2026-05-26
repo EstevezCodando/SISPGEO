@@ -143,8 +143,6 @@ export function Login() {
   const { setToken, setUser } = useAuthStore()
   const navigate = useNavigate()
 
-  const clearError = () => setError(null)
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -206,7 +204,7 @@ export function Login() {
               <input
                 type="email"
                 value={email}
-                onChange={(e) => { setEmail(e.target.value); clearError() }}
+                onChange={(e) => setEmail(e.target.value)}
                 placeholder="nome@eb.mil.br"
                 required
                 autoComplete="username"
@@ -220,7 +218,7 @@ export function Login() {
                 <input
                   type={mostrarSenha ? 'text' : 'password'}
                   value={senha}
-                  onChange={(e) => { setSenha(e.target.value); clearError() }}
+                  onChange={(e) => setSenha(e.target.value)}
                   required
                   autoComplete="current-password"
                   className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2.5 pr-10 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
