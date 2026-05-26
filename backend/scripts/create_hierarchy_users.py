@@ -496,10 +496,12 @@ def activate_and_set_profile(
     else:
         ok("Já estava ativo")
 
-    # Define perfil, orgao_vinculante e cgeo_id
+    # Define perfil, orgao_vinculante, regiao_militar e cgeo_id
     profile_payload: dict[str, Any] = {"perfil": u["perfil"]}
     if u.get("orgao_vinculante"):
         profile_payload["orgao_vinculante"] = u["orgao_vinculante"]
+    if u.get("regiao_militar"):
+        profile_payload["regiao_militar"] = u["regiao_militar"]
     if u.get("cgeo_id"):
         profile_payload["cgeo_id"] = u["cgeo_id"]
 

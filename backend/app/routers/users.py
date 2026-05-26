@@ -163,6 +163,8 @@ async def update_profile(
     user.perfil = body.perfil
     user.orgao_vinculante = body.orgao_vinculante
     user.cgeo_id = body.cgeo_id
+    if body.regiao_militar is not None:
+        user.regiao_militar = body.regiao_militar
     await db.commit()
     return {"message": "Perfil atualizado"}
 
