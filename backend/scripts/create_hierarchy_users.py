@@ -2,15 +2,43 @@
 """
 create_hierarchy_users.py
 =========================
-Cria um usuário para cada nível hierárquico do fluxo SISGEO,
-todos pertencentes ao Comando Militar do Planalto (CMP) / COTER.
+Cria usuários de teste para TODOS os fluxos hierárquicos do SisPGeo,
+cobrindo todos os Comandos Militares de Área e todos os órgãos consolidadores.
 
-Fluxo coberto:
-  SOLICITANTE (22º B I / CMP)
-      → SUPERVISOR (C. Mil. A Planalto / CMP)
-          → CONSOLIDADOR (COTER)
-              → GESTOR_CARTOGRAFICO (DSG) ← admin@eb.mil.br, já criado
-                  → ANALISTA_CGEO (1º CGeo)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  FLUXO COTER (8 Comandos Militares de Área):
+    SOLICITANTE (OM)
+      → SUPERVISOR_CML / SUPERVISOR_CMSE / … (C Mil A)
+        → CONSOLIDADOR_COTER
+          → GESTOR_CARTOGRAFICO (admin)
+            → ANALISTA_CGEO
+
+  FLUXO DEC:
+    SOLICITANTE (OM) → CONSOLIDADOR_DEC → GESTOR_CARTOGRAFICO
+
+  FLUXO COLOG:
+    SOLICITANTE (OM) → CONSOLIDADOR_COLOG → GESTOR_CARTOGRAFICO
+
+  FLUXO DECEx:
+    SOLICITANTE (OM) → CONSOLIDADOR_DECEX → GESTOR_CARTOGRAFICO
+
+  FLUXO DSG (direto):
+    SOLICITANTE (OM) → CONSOLIDADOR_DSG → GESTOR_CARTOGRAFICO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+REGRA DE SENHA
+  Senha = primeiro caractere do local-part maiúsculo + restante + "@1234"
+  Satisfaz todos os critérios: uppercase, lowercase, dígito e especial.
+
+  Exemplos:
+    subordinado_dec@eb.mil.br  →  Subordinado_dec@1234
+    colog@eb.mil.br            →  Colog@1234
+    dec@eb.mil.br              →  Dec@1234
+    supervisor.cml@eb.mil.br   →  Supervisor.cml@1234
+
+IDEMPOTÊNCIA
+  O script verifica a existência prévia de cada usuário pelo e-mail.
+  Usuários já cadastrados têm perfil e status atualizados sem duplicação.
 
 Uso:
     # Contra o container local (padrão)
@@ -19,8 +47,11 @@ Uso:
     # Contra outra instância
     python scripts/create_hierarchy_users.py --base-url http://meuservidor:8000/api/v1
 
-    # Só mostrar o que faria, sem criar
+    # Apenas exibir o que seria criado, sem executar
     python scripts/create_hierarchy_users.py --dry-run
+
+    # Pular usuários já existentes (não atualizar perfil/status)
+    python scripts/create_hierarchy_users.py --skip-existing
 """
 
 import argparse
@@ -57,123 +88,338 @@ def _read_admin_senha_from_env() -> str | None:
                 return val
     return None
 
-# Hierarquia completa — Planalto (CMP) / COTER
-HIERARQUIA = [
-    # ── 1. Solicitante OMDS ──────────────────────────────────────────────────
-    # Praça/oficial de uma OM que cria os pedidos de produtos geoespaciais.
-    {
-        "nome":              "Gustavo Silva",
-        "nome_de_guerra":    "Silva",
-        "email":             "gustavo@eb.mil.br",
-        "senha":             "Gustavo@1234",
-        "telefone":          "(61) 99900-0001",
-        "om":                "22º B I",
-        "secao_om":          "S3 - Operações",
-        "regiao_militar":    "CMP",
-        "orgao_vinculante":  "COTER",
-        "perfil":            "SOLICITANTE",
-        "cgeo_id":           None,
-        "descricao":         "Solicitante OMDS — cria pedidos de produtos geoespaciais (22º B I / CMP)",
-    },
-    # ── 2. Solicitante auxiliar (mesma OM) ───────────────────────────────────
-    {
-        "nome":              "João Ferreira",
-        "nome_de_guerra":    "Ferreira",
-        "email":             "joao@eb.mil.br",
-        "senha":             "Joao@1234",
-        "telefone":          "(61) 99900-0002",
-        "om":                "22º B I",
-        "secao_om":          "S3 - Operações",
-        "regiao_militar":    "CMP",
-        "orgao_vinculante":  "COTER",
-        "perfil":            "SOLICITANTE",
-        "cgeo_id":           None,
-        "descricao":         "Solicitante OMDS auxiliar — testes de herança de pedidos",
-    },
-    # ── 3. Supervisor C. Mil. A (CMP) ────────────────────────────────────────
-    # Revisa e consolida pedidos de todas as OMs do CMP.
-    {
-        "nome":              "Paulo Supervisor",
-        "nome_de_guerra":    "Paulo",
-        "email":             "supervisor.cmilA@eb.mil.br",
-        "senha":             "Supervisor@1234",
-        "telefone":          "(61) 99900-0010",
-        "om":                "CMDO C M P",
-        "secao_om":          "Seção de Geoinformação",
-        "regiao_militar":    "CMP",
-        "orgao_vinculante":  "COTER",
-        "perfil":            "SUPERVISOR",
-        "cgeo_id":           None,
-        "descricao":         "Supervisor C. Mil. A — Planalto (CMP), encaminha ao COTER",
-    },
-    # ── 4. Consolidador COTER ────────────────────────────────────────────────
-    # Agrupa pedidos de todos os CMilA vinculados ao COTER e envia à DSG.
-    {
-        "nome":              "Carlos Consolidador",
-        "nome_de_guerra":    "Carlos",
-        "email":             "consolidador.coter@eb.mil.br",
-        "senha":             "Consolidador@1234",
-        "telefone":          "(61) 99900-0020",
-        "om":                "COTER",
-        "secao_om":          "Seção de Geoinformação e Cartografia",
-        "regiao_militar":    "CMP",
-        "orgao_vinculante":  "COTER",
-        "perfil":            "CONSOLIDADOR",
-        "cgeo_id":           None,
-        "descricao":         "Consolidador COTER — agrega pedidos de todos os CMilA/COTER e envia à DSG",
-    },
-    # ── 5. Analista CGEO ─────────────────────────────────────────────────────
-    # Analisa viabilidade e entrega produtos no BDGEx.
-    {
-        "nome":              "Ricardo Analista CGEO",
-        "nome_de_guerra":    "Ricardo",
-        "email":             "analista.cgeo@eb.mil.br",
-        "senha":             "AnalistaCGEO@1234",
-        "telefone":          "(61) 99900-0030",
-        "om":                "1º C GEO",
-        "secao_om":          "Seção de Produção Cartográfica",
-        "regiao_militar":    "CMP",
-        "orgao_vinculante":  None,
-        "perfil":            "ANALISTA_CGEO",
-        "cgeo_id":           1,
-        "descricao":         "Analista CGEO — analisa viabilidade e disponibiliza produtos no BDGEx",
-    },
+
+def _make_senha(email: str) -> str:
+    """Gera senha a partir do local-part do e-mail.
+
+    Regra: primeiro caractere maiúsculo + restante + '@1234'
+    Satisfaz todos os requisitos de complexidade do SisPGeo:
+      ✓ Mínimo 8 caracteres
+      ✓ Letra maiúscula
+      ✓ Letra minúscula
+      ✓ Dígito
+      ✓ Caractere especial (@)
+    """
+    local = email.split("@")[0]
+    return local[0].upper() + local[1:] + "@1234"
+
+
+def _u(
+    nome: str,
+    guerra: str,
+    email: str,
+    tel: str,
+    om: str,
+    secao: str,
+    regiao: str | None,
+    orgao: str | None,
+    perfil: str,
+    grupo: str,
+    descricao: str,
+    *,
+    cgeo_id: int | None = None,
+) -> dict:
+    """Constrói um registro de usuário de forma compacta."""
+    return {
+        "nome":             nome,
+        "nome_de_guerra":   guerra,
+        "email":            email,
+        "senha":            _make_senha(email),
+        "telefone":         tel,
+        "om":               om,
+        "secao_om":         secao,
+        "regiao_militar":   regiao,
+        "orgao_vinculante": orgao,
+        "perfil":           perfil,
+        "cgeo_id":          cgeo_id,
+        "grupo":            grupo,
+        "descricao":        descricao,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Catálogo completo de usuários de teste
+# ---------------------------------------------------------------------------
+
+HIERARQUIA: list[dict] = [
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # CGEO — Analista executor (atribuído pelo Gestor Cartográfico / DSG)
+    # ══════════════════════════════════════════════════════════════════════════
+    _u(
+        "Ricardo Analista CGeo", "Ricardo",
+        "analista.cgeo@eb.mil.br", "(92) 99900-0001",
+        "1º CGeo", "Seção de Produção Cartográfica",
+        None, None, "ANALISTA_CGEO", "CGEO",
+        "Analista CGEO — analisa viabilidade e disponibiliza produtos no BDGEx",
+        cgeo_id=1,
+    ),
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # FLUXO COTER
+    # SOLICITANTE → SUPERVISOR_CML/CMSE/… (C Mil A) → CONSOLIDADOR_COTER → DSG
+    # ══════════════════════════════════════════════════════════════════════════
+
+    # ── Consolidador COTER ────────────────────────────────────────────────────
+    _u(
+        "Carlos Consolidador COTER", "Carlos",
+        "consolidador.coter@eb.mil.br", "(61) 99900-0010",
+        "COTER", "Seção de Geoinformação e Cartografia",
+        None, "COTER", "CONSOLIDADOR_COTER", "COTER",
+        "Consolidador COTER — consolida pedidos de todos os C Mil A e envia à DSG",
+    ),
+
+    # ── Supervisores — um por Comando Militar de Área ─────────────────────────
+    _u(
+        "Otávio Supervisor Leste", "Otávio",
+        "supervisor.cml@eb.mil.br", "(21) 99900-0011",
+        "CMDO C M LESTE", "SSGeoInt",
+        "CML", "COTER", "SUPERVISOR_CML", "COTER",
+        "Supervisor CML (Rio de Janeiro) — revisa pedidos das OM do C Mil Leste",
+    ),
+    _u(
+        "Beatriz Supervisor Sudeste", "Beatriz",
+        "supervisor.cmse@eb.mil.br", "(11) 99900-0012",
+        "CMDO C M SUDESTE", "SSGeoInt",
+        "CMSE", "COTER", "SUPERVISOR_CMSE", "COTER",
+        "Supervisor CMSE (São Paulo) — revisa pedidos das OM do C Mil Sudeste",
+    ),
+    _u(
+        "Diego Supervisor Sul", "Diego",
+        "supervisor.cms@eb.mil.br", "(51) 99900-0013",
+        "CMDO C M SUL", "SSGeoInt",
+        "CMS", "COTER", "SUPERVISOR_CMS", "COTER",
+        "Supervisor CMS (Porto Alegre) — revisa pedidos das OM do C Mil Sul",
+    ),
+    _u(
+        "Paulo Supervisor Planalto", "Paulo",
+        "supervisor.cmp@eb.mil.br", "(61) 99900-0014",
+        "CMDO C M PLANALTO", "SSGeoInt",
+        "CMP", "COTER", "SUPERVISOR_CMP", "COTER",
+        "Supervisor CMP (Brasília) — revisa pedidos das OM do C Mil Planalto",
+    ),
+    _u(
+        "Fernando Supervisor Oeste", "Fernando",
+        "supervisor.cmo@eb.mil.br", "(67) 99900-0015",
+        "CMDO C M OESTE", "SSGeoInt",
+        "CMO", "COTER", "SUPERVISOR_CMO", "COTER",
+        "Supervisor CMO (Campo Grande) — revisa pedidos das OM do C Mil Oeste",
+    ),
+    _u(
+        "Miriam Supervisor Amaz Ocidental", "Miriam",
+        "supervisor.cmao@eb.mil.br", "(95) 99900-0016",
+        "CMDO C M AMAZ OCID", "SSGeoInt",
+        "CMAO", "COTER", "SUPERVISOR_CMAO", "COTER",
+        "Supervisor CMAO (Boa Vista) — revisa pedidos das OM do C Mil Amaz. Ocidental",
+    ),
+    _u(
+        "Rafael Supervisor Amazônia", "Rafael",
+        "supervisor.cma@eb.mil.br", "(92) 99900-0017",
+        "CMDO C M AMAZÔNIA", "SSGeoInt",
+        "CMA", "COTER", "SUPERVISOR_CMA", "COTER",
+        "Supervisor CMA (Manaus) — revisa pedidos das OM do C Mil Amazônia",
+    ),
+    _u(
+        "Cláudio Supervisor Nordeste", "Cláudio",
+        "supervisor.cmne@eb.mil.br", "(81) 99900-0018",
+        "CMDO C M NORDESTE", "SSGeoInt",
+        "CMNE", "COTER", "SUPERVISOR_CMNE", "COTER",
+        "Supervisor CMNE (Recife) — revisa pedidos das OM do C Mil Nordeste",
+    ),
+
+    # ── Solicitantes COTER — um por Comando Militar de Área ───────────────────
+    # Fluxo: SOLICITANTE → SUPERVISOR_CML/… → CONSOLIDADOR_COTER → DSG → CGEO
+    _u(
+        "Ana Lima", "Ana",
+        "subordinado_coter_leste@eb.mil.br", "(21) 99901-0001",
+        "1ª Bda Inf Mtz", "S3 - Operações",
+        "CML", "COTER", "SOLICITANTE", "COTER",
+        "Solicitante CML — pedido: OM → CML (supervisor) → COTER → DSG → CGEO",
+    ),
+    _u(
+        "Bruno Souza", "Bruno",
+        "subordinado_coter_sudeste@eb.mil.br", "(11) 99901-0002",
+        "2ª Bda Inf Mtz", "S3 - Operações",
+        "CMSE", "COTER", "SOLICITANTE", "COTER",
+        "Solicitante CMSE — pedido: OM → CMSE (supervisor) → COTER → DSG → CGEO",
+    ),
+    _u(
+        "Carla Santos", "Carla",
+        "subordinado_coter_sul@eb.mil.br", "(51) 99901-0003",
+        "3ª Bda Cav Mec", "S3 - Operações",
+        "CMS", "COTER", "SOLICITANTE", "COTER",
+        "Solicitante CMS — pedido: OM → CMS (supervisor) → COTER → DSG → CGEO",
+    ),
+    _u(
+        "Daniel Costa", "Daniel",
+        "subordinado_coter_planalto@eb.mil.br", "(61) 99901-0004",
+        "11ª Bda Inf L Amv", "S3 - Operações",
+        "CMP", "COTER", "SOLICITANTE", "COTER",
+        "Solicitante CMP — pedido: OM → CMP (supervisor) → COTER → DSG → CGEO",
+    ),
+    _u(
+        "Eduardo Gomes", "Eduardo",
+        "subordinado_coter_oeste@eb.mil.br", "(67) 99901-0005",
+        "18ª Bda Inf Fron", "S3 - Operações",
+        "CMO", "COTER", "SOLICITANTE", "COTER",
+        "Solicitante CMO — pedido: OM → CMO (supervisor) → COTER → DSG → CGEO",
+    ),
+    _u(
+        "Fátima Alves", "Fátima",
+        "subordinado_coter_amazonia_oc@eb.mil.br", "(95) 99901-0006",
+        "8ª Bda Inf Sl", "S3 - Operações",
+        "CMAO", "COTER", "SOLICITANTE", "COTER",
+        "Solicitante CMAO — pedido: OM → CMAO (supervisor) → COTER → DSG → CGEO",
+    ),
+    _u(
+        "Henrique Matos", "Henrique",
+        "subordinado_coter_amazonia@eb.mil.br", "(92) 99901-0007",
+        "16ª Bda Inf Sl", "S3 - Operações",
+        "CMA", "COTER", "SOLICITANTE", "COTER",
+        "Solicitante CMA — pedido: OM → CMA (supervisor) → COTER → DSG → CGEO",
+    ),
+    _u(
+        "Isabel Rocha", "Isabel",
+        "subordinado_coter_nordeste@eb.mil.br", "(81) 99901-0008",
+        "72ª Bda Inf Mtz", "S3 - Operações",
+        "CMNE", "COTER", "SOLICITANTE", "COTER",
+        "Solicitante CMNE — pedido: OM → CMNE (supervisor) → COTER → DSG → CGEO",
+    ),
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # FLUXO DEC
+    # SOLICITANTE (OM) → CONSOLIDADOR_DEC → GESTOR_CARTOGRAFICO
+    # Nota: não há Supervisor CMilA intermediário neste fluxo.
+    # ══════════════════════════════════════════════════════════════════════════
+    _u(
+        "Luís Consolidador DEC", "Luís",
+        "dec@eb.mil.br", "(61) 99902-0001",
+        "DEC", "Seção de Geoinformação",
+        None, "DEC", "CONSOLIDADOR_DEC", "DEC",
+        "Consolidador DEC — recebe pedidos diretos das OM subordinadas ao DEC e envia à DSG",
+    ),
+    _u(
+        "Natália Solicitante DEC", "Natália",
+        "subordinado_dec@eb.mil.br", "(61) 99902-0002",
+        "Centro de Instrução de Infantaria", "S3 - Operações",
+        None, "DEC", "SOLICITANTE", "DEC",
+        "Solicitante DEC — pedido: OM → CONSOLIDADOR_DEC → DSG → CGEO (sem C Mil A)",
+    ),
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # FLUXO COLOG
+    # SOLICITANTE (OM) → CONSOLIDADOR_COLOG → GESTOR_CARTOGRAFICO
+    # Nota: não há Supervisor CMilA intermediário neste fluxo.
+    # ══════════════════════════════════════════════════════════════════════════
+    _u(
+        "Osvaldo Consolidador COLOG", "Osvaldo",
+        "colog@eb.mil.br", "(61) 99903-0001",
+        "COLOG", "Seção de Geoinformação",
+        None, "COLOG", "CONSOLIDADOR_COLOG", "COLOG",
+        "Consolidador COLOG — recebe pedidos diretos das OM subordinadas ao COLOG e envia à DSG",
+    ),
+    _u(
+        "Quintino Solicitante COLOG", "Quintino",
+        "subordinado_colog@eb.mil.br", "(61) 99903-0002",
+        "1ª Região Logística", "S4 - Logística",
+        None, "COLOG", "SOLICITANTE", "COLOG",
+        "Solicitante COLOG — pedido: OM → CONSOLIDADOR_COLOG → DSG → CGEO (sem C Mil A)",
+    ),
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # FLUXO DECEx
+    # SOLICITANTE (OM) → CONSOLIDADOR_DECEX → GESTOR_CARTOGRAFICO
+    # Nota: não há Supervisor CMilA intermediário neste fluxo.
+    # ══════════════════════════════════════════════════════════════════════════
+    _u(
+        "Roberto Consolidador DECEx", "Roberto",
+        "consolidador.decex@eb.mil.br", "(61) 99904-0001",
+        "DECEx", "Seção de Geoinformação",
+        None, "DECEx", "CONSOLIDADOR_DECEX", "DECEx",
+        "Consolidador DECEx — recebe pedidos diretos das OM subordinadas ao DECEx e envia à DSG",
+    ),
+    _u(
+        "Tiago Solicitante DECEx", "Tiago",
+        "subordinado_decex@eb.mil.br", "(61) 99904-0002",
+        "ESPCEX", "Seção de Instrução",
+        None, "DECEx", "SOLICITANTE", "DECEx",
+        "Solicitante DECEx — pedido: OM → CONSOLIDADOR_DECEX → DSG → CGEO (sem C Mil A)",
+    ),
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # FLUXO DSG (direto)
+    # SOLICITANTE (OM) → CONSOLIDADOR_DSG → GESTOR_CARTOGRAFICO (admin)
+    # Nota: fluxo mais curto — sem supervisor nem consolidador intermediário.
+    # ══════════════════════════════════════════════════════════════════════════
+    _u(
+        "Ulises Consolidador DSG", "Ulises",
+        "dsg@eb.mil.br", "(21) 99905-0001",
+        "DSG", "Seção de Geoinformação",
+        None, "DSG", "CONSOLIDADOR_DSG", "DSG",
+        "Consolidador DSG — recebe pedidos de OM diretamente subordinadas à DSG",
+    ),
+    _u(
+        "Vera Solicitante DSG", "Vera",
+        "subordinado_dsg@eb.mil.br", "(21) 99905-0002",
+        "1º CTEx", "S3 - Operações",
+        None, "DSG", "SOLICITANTE", "DSG",
+        "Solicitante DSG — pedido: OM → CONSOLIDADOR_DSG → Gestor Cartográfico",
+    ),
 ]
 
 # ---------------------------------------------------------------------------
 # Labels legíveis para impressão
 # ---------------------------------------------------------------------------
 
-PERFIL_LABEL = {
+PERFIL_LABEL: dict[str, str] = {
     "SOLICITANTE":         "Solicitante OMDS",
-    "SUPERVISOR":          "Supervisor C. Mil. A",
-    "CONSOLIDADOR":        "Consolidador (COTER/COLOG)",
+    # Supervisores específicos por CMilA
+    "SUPERVISOR_CML":      "Supervisor CML (Leste)",
+    "SUPERVISOR_CMSE":     "Supervisor CMSE (Sudeste)",
+    "SUPERVISOR_CMS":      "Supervisor CMS (Sul)",
+    "SUPERVISOR_CMP":      "Supervisor CMP (Planalto)",
+    "SUPERVISOR_CMO":      "Supervisor CMO (Oeste)",
+    "SUPERVISOR_CMAO":     "Supervisor CMAO (Amaz. Ocid.)",
+    "SUPERVISOR_CMA":      "Supervisor CMA (Amazônia)",
+    "SUPERVISOR_CMNE":     "Supervisor CMNE (Nordeste)",
+    # Consolidadores por órgão
+    "CONSOLIDADOR_COTER":  "Consolidador COTER",
+    "CONSOLIDADOR_DSG":    "Consolidador DSG",
+    "CONSOLIDADOR_DEC":    "Consolidador DEC",
+    "CONSOLIDADOR_COLOG":  "Consolidador COLOG",
+    "CONSOLIDADOR_DECEX":  "Consolidador DECEx",
+    # Outros
     "GESTOR_CARTOGRAFICO": "Gestor Cartográfico (DSG)",
     "ANALISTA_CGEO":       "Analista CGEO",
 }
 
-SEP = "─" * 65
+GRUPO_HEADER: dict[str, str] = {
+    "CGEO":  "CGEO — Executor",
+    "COTER": "COTER — SOLICITANTE → C Mil A (Supervisor) → CONSOLIDADOR_COTER → DSG",
+    "DEC":   "DEC   — SOLICITANTE → CONSOLIDADOR_DEC → DSG  (sem C Mil A)",
+    "COLOG": "COLOG — SOLICITANTE → CONSOLIDADOR_COLOG → DSG (sem C Mil A)",
+    "DECEx": "DECEx — SOLICITANTE → CONSOLIDADOR_DECEX → DSG (sem C Mil A)",
+    "DSG":   "DSG   — SOLICITANTE → CONSOLIDADOR_DSG → Gestor Cartográfico",
+}
+
+SEP  = "─" * 72
+SEP2 = "═" * 72
 
 
-def ok(msg: str) -> None:
-    print(f"  \033[32m✓\033[0m {msg}")
+def ok(msg: str)   -> None: print(f"  \033[32m✓\033[0m {msg}")
+def err(msg: str)  -> None: print(f"  \033[31m✗\033[0m {msg}", file=sys.stderr)
+def info(msg: str) -> None: print(f"  \033[34m→\033[0m {msg}")
+def warn(msg: str) -> None: print(f"  \033[33m⚠\033[0m {msg}")
 
 
-def err(msg: str) -> None:
-    print(f"  \033[31m✗\033[0m {msg}", file=sys.stderr)
-
-
-def info(msg: str) -> None:
-    print(f"  \033[34m→\033[0m {msg}")
-
-
-def print_card(u: dict, idx: int) -> None:
-    total = len(HIERARQUIA)
+def print_card(u: dict, idx: int, total: int) -> None:
     print(f"\n{SEP}")
-    print(f"  [{idx+1}/{total}] {PERFIL_LABEL.get(u['perfil'], u['perfil'])}")
+    print(f"  [{idx+1}/{total}] {PERFIL_LABEL.get(u['perfil'], u['perfil'])}"
+          + f"  |  Grupo: {u['grupo']}")
     print(f"       {u['nome']} <{u['email']}>")
-    print(f"       OM: {u['om']}  |  CMilA: {u['regiao_militar'] or '—'}"
-          + (f"  |  Vínculo: {u['orgao_vinculante']}" if u['orgao_vinculante'] else ""))
+    print(f"       OM: {u['om']}  |  Região: {u['regiao_militar'] or '—'}"
+          + (f"  |  Vínculo: {u['orgao_vinculante']}" if u["orgao_vinculante"] else ""))
+    print(f"       Senha: {u['senha']}")
     print(f"       {u['descricao']}")
     print(SEP)
 
@@ -194,7 +440,7 @@ def admin_login(client: httpx.Client, senha: str) -> str:
 
 
 def get_all_users(client: httpx.Client, token: str) -> dict[str, dict]:
-    """Retorna mapa email → usuário para verificar existência."""
+    """Retorna mapa email → usuário para verificar existência e status."""
     headers = {"Authorization": f"Bearer {token}"}
     r = client.get("/users/", headers=headers)
     if r.status_code != 200:
@@ -203,8 +449,8 @@ def get_all_users(client: httpx.Client, token: str) -> dict[str, dict]:
 
 
 def register_user(client: httpx.Client, u: dict) -> tuple[bool, str]:
-    """Registra o usuário. Retorna (sucesso, mensagem)."""
-    payload = {
+    """Registra o usuário via /auth/register. Retorna (sucesso, mensagem)."""
+    payload: dict[str, Any] = {
         "nome":             u["nome"],
         "email":            u["email"],
         "senha":            u["senha"],
@@ -216,33 +462,38 @@ def register_user(client: httpx.Client, u: dict) -> tuple[bool, str]:
     }
     if u.get("nome_de_guerra"):
         payload["nome_de_guerra"] = u["nome_de_guerra"]
+
     r = client.post("/auth/register", json=payload)
     if r.status_code == 201:
         return True, "Cadastro realizado"
     if r.status_code == 400 and "já cadastrado" in r.text:
-        return False, "E-mail já cadastrado — será atualizado"
+        return False, "E-mail já cadastrado — perfil será atualizado"
     return False, f"Erro {r.status_code}: {r.text}"
 
 
 def activate_and_set_profile(
-    client: httpx.Client, token: str, user_id: int, u: dict
+    client: httpx.Client,
+    token: str,
+    user_id: int,
+    u: dict,
+    is_active: bool,
 ) -> None:
-    """Ativa o usuário e define perfil + orgao_vinculante + cgeo_id."""
+    """Ativa o usuário (se necessário) e define perfil + orgao_vinculante + cgeo_id.
+
+    Ao ativar via PUT /users/{id}/activate, o backend também marca
+    email_confirmado=True, dispensando confirmação por e-mail.
+    """
     headers = {"Authorization": f"Bearer {token}"}
 
-    # Verifica se já está ativo
-    r = client.get("/users/", headers=headers)
-    users_map = {usr["id"]: usr for usr in r.json()} if r.status_code == 200 else {}
-    current = users_map.get(user_id, {})
-
-    if not current.get("ativo", True):
-        r2 = client.put(f"/users/{user_id}/activate", headers=headers)
-        if r2.status_code == 200:
-            ok("Usuário ativado")
+    # Ativa apenas se ainda não estiver ativo (toggle é destrutivo)
+    if not is_active:
+        r = client.put(f"/users/{user_id}/activate", headers=headers)
+        if r.status_code == 200:
+            ok("Ativado (ativo=True, email_confirmado=True)")
         else:
-            err(f"Falha ao ativar: {r2.status_code}")
+            err(f"Falha ao ativar: {r.status_code} — {r.text}")
     else:
-        ok("Usuário já estava ativo")
+        ok("Já estava ativo")
 
     # Define perfil, orgao_vinculante e cgeo_id
     profile_payload: dict[str, Any] = {"perfil": u["perfil"]}
@@ -251,14 +502,14 @@ def activate_and_set_profile(
     if u.get("cgeo_id"):
         profile_payload["cgeo_id"] = u["cgeo_id"]
 
-    r3 = client.put(f"/users/{user_id}/profile", json=profile_payload, headers=headers)
-    if r3.status_code == 200:
-        label = PERFIL_LABEL.get(u["perfil"], u["perfil"])
-        vinculo = f"  vínculo={u['orgao_vinculante']}" if u.get("orgao_vinculante") else ""
-        cgeo = f"  cgeo_id={u['cgeo_id']}" if u.get("cgeo_id") else ""
-        ok(f"Perfil definido: {label}{vinculo}{cgeo}")
+    r2 = client.put(f"/users/{user_id}/profile", json=profile_payload, headers=headers)
+    if r2.status_code == 200:
+        label  = PERFIL_LABEL.get(u["perfil"], u["perfil"])
+        vinc   = f"  vínculo={u['orgao_vinculante']}" if u.get("orgao_vinculante") else ""
+        cgeo   = f"  cgeo_id={u['cgeo_id']}"          if u.get("cgeo_id")          else ""
+        ok(f"Perfil: {label}{vinc}{cgeo}")
     else:
-        err(f"Falha ao definir perfil: {r3.status_code} — {r3.text}")
+        err(f"Falha ao definir perfil: {r2.status_code} — {r2.text}")
 
 
 # ---------------------------------------------------------------------------
@@ -266,11 +517,16 @@ def activate_and_set_profile(
 # ---------------------------------------------------------------------------
 
 def run(base_url: str, dry_run: bool, skip_existing: bool, admin_senha: str | None) -> None:
-    print(f"\n\033[1mSISGEO — Criação da Hierarquia CMP / COTER\033[0m")
-    print(f"Backend: {base_url}")
-    print(f"Fluxo: SOLICITANTE → SUPERVISOR (CMP) → CONSOLIDADOR (COTER) → DSG")
+    total = len(HIERARQUIA)
+
+    print(f"\n{SEP2}")
+    print(f"\033[1m  SisPGeo — Criação de Usuários de Hierarquia Completa\033[0m")
+    print(f"  {total} usuários · 5 fluxos · 8 Comandos Militares de Área")
+    print(f"  Backend: {base_url}")
+    print(SEP2)
+
     if dry_run:
-        print("\033[33m[DRY-RUN] Nenhuma alteração será realizada.\033[0m")
+        warn("[DRY-RUN] Nenhuma alteração será realizada.\n")
 
     # Resolver senha do admin: argumento > .env > prompt interativo
     if not admin_senha:
@@ -287,85 +543,100 @@ def run(base_url: str, dry_run: bool, skip_existing: bool, admin_senha: str | No
                 print("\033[31mSenha não pode ser vazia.\033[0m")
                 sys.exit(1)
 
-    with httpx.Client(base_url=base_url, timeout=15) as client:
-        # Verifica saúde do backend — retry por até 60 s (startup demora mais
-        # agora por causa da carga inicial do GeoJSON no Postgres)
-        _MAX_WAIT = 60
+    with httpx.Client(base_url=base_url, timeout=20) as client:
+        # Aguarda o backend inicializar (até 90 s)
+        _MAX_WAIT = 90
         _waited   = 0
         while True:
             try:
                 h = client.get("/health")
-                ok(f"Backend respondendo — versão {h.json().get('version', '?')}")
+                ok(f"Backend respondendo — versão {h.json().get('version', '?')}\n")
                 break
-            except Exception as e:
+            except Exception as exc:
                 if _waited >= _MAX_WAIT:
-                    print(f"\033[31mBackend inacessível em {base_url} após {_MAX_WAIT}s: {e}\033[0m")
+                    print(f"\033[31mBackend inacessível em {base_url} após {_MAX_WAIT}s: {exc}\033[0m")
                     sys.exit(1)
                 print(f"\033[33mAguardando backend… ({_waited}s / {_MAX_WAIT}s)\033[0m", end="\r")
                 time.sleep(3)
                 _waited += 3
 
         if dry_run:
-            print(f"\n\033[1mUsuários que seriam criados ({len(HIERARQUIA)}):\033[0m")
+            current_grupo = ""
             for i, u in enumerate(HIERARQUIA):
-                print_card(u, i)
-                info(f"Senha: {u['senha']}")
+                if u["grupo"] != current_grupo:
+                    current_grupo = u["grupo"]
+                    print(f"\n\033[1m  {GRUPO_HEADER.get(current_grupo, current_grupo)}\033[0m")
+                print_card(u, i, total)
+            print(f"\n  {total} usuários seriam criados/atualizados.")
             return
 
-        token = admin_login(client, admin_senha)
-        existing_users = get_all_users(client, token)
-
+        token        = admin_login(client, admin_senha)
+        existing     = get_all_users(client, token)
         results: list[dict] = []
 
         for i, u in enumerate(HIERARQUIA):
-            print_card(u, i)
-            already_exists = u["email"] in existing_users
+            print_card(u, i, total)
+
+            already_exists = u["email"] in existing
 
             if already_exists and skip_existing:
                 info("Pulando (já existe e --skip-existing ativo)")
-                user_id = existing_users[u["email"]]["id"]
+                results.append({**u, "id": existing[u["email"]]["id"], "action": "skip"})
+                continue
+
+            if already_exists:
+                info("Usuário já cadastrado — atualizando perfil e status")
+                user_id   = existing[u["email"]]["id"]
+                is_active = existing[u["email"]].get("ativo", False)
             else:
-                if already_exists:
-                    info("Usuário já existe — atualizando perfil e status")
-                    user_id = existing_users[u["email"]]["id"]
+                registered, msg = register_user(client, u)
+                if registered:
+                    ok(msg)
                 else:
-                    registered, msg = register_user(client, u)
-                    if registered:
-                        ok(msg)
-                        time.sleep(0.5)
-                        existing_users = get_all_users(client, token)
-                        if u["email"] not in existing_users:
-                            err("Usuário não encontrado após cadastro")
-                            continue
-                        user_id = existing_users[u["email"]]["id"]
-                    else:
-                        err(msg)
-                        existing_users = get_all_users(client, token)
-                        if u["email"] not in existing_users:
-                            continue
-                        user_id = existing_users[u["email"]]["id"]
+                    info(msg)   # "já cadastrado" é info, não erro
 
-                activate_and_set_profile(client, token, user_id, u)
+                # Aguarda propagação e re-carrega mapa
+                time.sleep(0.4)
+                existing = get_all_users(client, token)
 
-            results.append({**u, "id": user_id})
+                if u["email"] not in existing:
+                    err("Usuário não encontrado após cadastro — pulando")
+                    continue
+
+                user_id   = existing[u["email"]]["id"]
+                is_active = existing[u["email"]].get("ativo", False)
+
+            activate_and_set_profile(client, token, user_id, u, is_active)
+            results.append({**u, "id": user_id, "action": "ok"})
 
         # ── Resumo final ─────────────────────────────────────────────────────
-        print(f"\n{SEP}")
-        print("\033[1m  RESUMO — Credenciais de acesso\033[0m")
-        print(SEP)
-        hdr_perfil = "Perfil"
-        hdr_email  = "E-mail"
-        hdr_senha  = "Senha"
-        print(f"  {hdr_perfil:<28} {hdr_email:<36} {hdr_senha}")
-        print(f"  {'-'*28} {'-'*36} {'-'*20}")
-        for r in results:
-            label = PERFIL_LABEL.get(r["perfil"], r["perfil"])
-            print(f"  {label:<28} {r['email']:<36} {r['senha']}")
+        print(f"\n{SEP2}")
+        print(f"\033[1m  RESUMO — Credenciais de acesso ({len(results)} usuários)\033[0m")
+        print(f"  Regra de senha: <local-part[0].upper()><local-part[1:]>@1234")
+        print(f"  Exemplo: subordinado_dec@eb.mil.br → Subordinado_dec@1234")
+        print(SEP2)
 
-        # Lembrar do admin
-        print(f"  {'Gestor Cartográfico (DSG)':<28} {'admin@eb.mil.br':<36} (senha definida no .env)")
-        print(SEP)
-        print(f"\n  \033[32m✓ {len(results)} usuários processados.\033[0m")
+        current_grupo = ""
+        for r in results:
+            if r["grupo"] != current_grupo:
+                current_grupo = r["grupo"]
+                print(f"\n  \033[1m{GRUPO_HEADER.get(current_grupo, current_grupo)}\033[0m")
+                print(f"  {'Perfil':<32} {'E-mail':<42} {'Senha'}")
+                print(f"  {'-'*32} {'-'*42} {'-'*24}")
+
+            label  = PERFIL_LABEL.get(r["perfil"], r["perfil"])
+            status = "" if r.get("action") != "skip" else " [pulado]"
+            print(f"  {label:<32} {r['email']:<42} {r['senha']}{status}")
+
+        # Lembrar do admin (Gestor Cartográfico)
+        print(f"\n  \033[1mAdmin / Gestor Cartográfico (DSG)\033[0m")
+        print(f"  {'Gestor Cartográfico (DSG)':<32} {'admin@eb.mil.br':<42} (senha em ADMIN_PASSWORD no .env)")
+
+        print(f"\n{SEP2}")
+        processados = sum(1 for r in results if r.get("action") != "skip")
+        print(f"  \033[32m✓ {processados} usuários criados/atualizados"
+              + (f", {len(results)-processados} pulados" if len(results) > processados else "")
+              + f".\033[0m")
         print(f"  Acesse: {base_url.replace('/api/v1', '')}/\n")
 
 
@@ -375,7 +646,10 @@ def run(base_url: str, dry_run: bool, skip_existing: bool, admin_senha: str | No
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Cria usuários de cada nível hierárquico do SISGEO (CMP / COTER)."
+        description=(
+            "Cria usuários de teste para todos os fluxos hierárquicos do SisPGeo "
+            "(COTER, DEC, COLOG, DECEx, DSG)."
+        )
     )
     parser.add_argument(
         "--base-url",
@@ -390,11 +664,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--skip-existing",
         action="store_true",
-        help="Pula usuários já cadastrados em vez de atualizar.",
+        help="Pula usuários já cadastrados em vez de atualizar perfil/status.",
     )
     parser.add_argument(
         "--admin-senha",
         default=None,
+        metavar="SENHA",
         help="Senha do admin (padrão: lida do .env ou solicitada interativamente).",
     )
     args = parser.parse_args()
