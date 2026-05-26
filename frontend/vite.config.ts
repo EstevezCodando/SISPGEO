@@ -1,5 +1,5 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import react from "@vitejs/plugin-react";
+import { defineConfig } from "vite";
 
 export default defineConfig({
   plugins: [react()],
@@ -8,11 +8,11 @@ export default defineConfig({
       output: {
         manualChunks: {
           // React core — presente em todas as páginas
-          'vendor-react':   ['react', 'react-dom', 'react-router-dom'],
+          "vendor-react": ["react", "react-dom", "react-router-dom"],
           // Leaflet — só carregado em páginas com mapa (~180 KB)
-          'vendor-leaflet': ['leaflet', 'react-leaflet'],
+          "vendor-leaflet": ["leaflet", "react-leaflet"],
           // UI utilitários
-          'vendor-ui':      ['lucide-react', 'date-fns', 'zustand'],
+          "vendor-ui": ["lucide-react", "date-fns", "zustand"],
         },
       },
     },
@@ -20,10 +20,10 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      '/api': {
-        target: 'http://localhost:8000',
+      "/api": {
+        target: "http://localhost:8000",
         changeOrigin: true,
       },
     },
   },
-})
+});

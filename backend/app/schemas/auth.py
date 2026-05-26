@@ -53,6 +53,10 @@ class TokenResponse(BaseModel):
     token_type: str = "bearer"
 
 
+class ResendActivationRequest(BaseModel):
+    email: str
+
+
 class ForgotPasswordRequest(BaseModel):
     email: str
 

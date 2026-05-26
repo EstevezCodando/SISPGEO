@@ -17,7 +17,6 @@ const STATUS_RESPONSAVEL: Record<string, string> = {
   RASCUNHO:                'Solicitante (rascunho)',
   AGUARDANDO_SUPERVISOR:   'Supervisor CMilA (COTER)',
   AGUARDANDO_CONSOLIDADOR: 'Consolidador do órgão vinculante',
-  DEVOLVIDO:               'Solicitante (em revisão)',
   AGUARDANDO_CARTOGRAFICO: 'Gestor Cartográfico — DSG',
   ATRIBUIDO_CGEO:          'CGEO (em análise)',
   APROVADO:                'CGEO (em atendimento)',

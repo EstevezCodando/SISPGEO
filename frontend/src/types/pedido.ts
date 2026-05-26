@@ -2,7 +2,6 @@ export type StatusPedido =
   | 'RASCUNHO'
   | 'AGUARDANDO_SUPERVISOR'
   | 'AGUARDANDO_CONSOLIDADOR'
-  | 'DEVOLVIDO'
   | 'AGUARDANDO_CARTOGRAFICO'
   | 'ATRIBUIDO_CGEO'
   | 'APROVADO'
@@ -45,7 +44,6 @@ export const STATUS_LABELS: Record<StatusPedido, string> = {
   RASCUNHO: 'Rascunho',
   AGUARDANDO_SUPERVISOR: 'Não enviado',
   AGUARDANDO_CONSOLIDADOR: 'Não enviado',
-  DEVOLVIDO: 'Devolvido para Revisão',
   AGUARDANDO_CARTOGRAFICO: 'Aguardando DSG',
   ATRIBUIDO_CGEO: 'Em Análise CGEO',
   APROVADO: 'Em Atendimento',
@@ -58,7 +56,6 @@ export const STATUS_COLORS: Record<StatusPedido, string> = {
   RASCUNHO: 'bg-zinc-700/50 text-zinc-300 border border-zinc-600/30',
   AGUARDANDO_SUPERVISOR: 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20',
   AGUARDANDO_CONSOLIDADOR: 'bg-orange-500/10 text-orange-400 border border-orange-500/20',
-  DEVOLVIDO: 'bg-amber-600/10 text-amber-300 border border-amber-600/20',
   AGUARDANDO_CARTOGRAFICO: 'bg-blue-500/10 text-blue-400 border border-blue-500/20',
   ATRIBUIDO_CGEO: 'bg-purple-500/10 text-purple-400 border border-purple-500/20',
   APROVADO: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20',
@@ -79,8 +76,6 @@ export function getStatusSolicitante(status: StatusPedido): StatusSolicitante {
   switch (status) {
     case 'RASCUNHO':
       return { label: 'Não enviado', cls: 'bg-zinc-700/40 text-zinc-400 border border-zinc-600/30' }
-    case 'DEVOLVIDO':
-      return { label: 'Devolvido', cls: 'bg-amber-500/10 text-amber-400 border border-amber-500/20' }
     case 'AGUARDANDO_SUPERVISOR':
     case 'AGUARDANDO_CONSOLIDADOR':
     case 'AGUARDANDO_CARTOGRAFICO':

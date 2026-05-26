@@ -163,6 +163,8 @@ async def update_profile(
     user.perfil = body.perfil
     user.orgao_vinculante = body.orgao_vinculante
     user.cgeo_id = body.cgeo_id
+    if body.regiao_militar is not None:
+        user.regiao_militar = body.regiao_militar
     await db.commit()
     return {"message": "Perfil atualizado"}
 
@@ -177,7 +179,7 @@ async def transferir_pedidos(
     """Transfere todos os pedidos ativos do usuário ``user_id`` para outro da mesma OM.
 
     Somente o próprio usuário ou um GESTOR_CARTOGRAFICO podem disparar a transferência.
-    Os pedidos nos estados RASCUNHO e DEVOLVIDO serão reatribuídos.
+    Os pedidos no estado RASCUNHO serão reatribuídos.
     O novo responsável recebe notificação in-app e e-mail.
     """
     if current_user.id != user_id and current_user.perfil != PerfilEnum.GESTOR_CARTOGRAFICO:
@@ -207,6 +209,13 @@ async def toggle_activate(
 
     foi_inativo = not user.ativo
     user.ativo = not user.ativo
+
+    # Ativação administrativa equivale à confirmação por e-mail:
+    # garante que o usuário não seja barrado na tela de login por
+    # "E-mail não confirmado" mesmo sem ter clicado no link de ativação.
+    if user.ativo:
+        user.email_confirmado = True
+
     await db.commit()
 
     if foi_inativo and user.ativo:

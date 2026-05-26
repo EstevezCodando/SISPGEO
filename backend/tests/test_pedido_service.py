@@ -83,12 +83,6 @@ class TestReviewPedido:
         )
         assert result.status == StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR
 
-    async def test_editar_retorna_para_devolvido(self, mock_db, pedido_submetido_brigada, gestor_brigada):
-        result = await pedido_service.review_pedido(
-            mock_db, pedido_submetido_brigada, gestor_brigada, "editar", None
-        )
-        assert result.status == StatusPedidoEnum.DEVOLVIDO
-
     async def test_reprovar_cancela_e_envia_email(self, mock_db, pedido_submetido_brigada, gestor_brigada):
         fake_usuario = MagicMock()
         fake_usuario.nome = "Solicitante"

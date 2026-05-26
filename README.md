@@ -239,7 +239,6 @@ RASCUNHO
   → ATRIBUIDO_CGEO          (atribuído pela DSG)
   → APROVADO                (viabilidade confirmada pelo CGEO)
   → PRODUZIDO               (entregue no BDGEx)
-  → DEVOLVIDO               (retornado para ajustes)
   → CANCELADO               (reprovado definitivamente)
 ```
 
@@ -247,8 +246,8 @@ RASCUNHO
 
 | Perfil | Ações disponíveis |
 |---|---|
-| SOLICITANTE | Criar, editar (RASCUNHO/DEVOLVIDO), submeter, cancelar, reordenar |
-| SUPERVISOR | Aprovar, devolver, reprovar, consolidar em lote |
+| SOLICITANTE | Criar, editar (RASCUNHO), submeter, cancelar, reordenar |
+| SUPERVISOR | Aprovar, reprovar, consolidar em lote |
 | CONSOLIDADOR | Consolidar em lote para a DSG |
 | GESTOR_CARTOGRAFICO | Atribuir ao CGEO, dar pronto, exportar, administrar |
 | ANALISTA_CGEO | Aprovar, reprovar, dar pronto com link BDGEx |
@@ -295,10 +294,10 @@ Autenticação: `Authorization: Bearer <JWT>` (exceto endpoints públicos de aut
 | `GET` | `/pedidos/` | Autenticado | Listar pedidos do perfil |
 | `GET` | `/pedidos/pending` | Autenticado | Pedidos aguardando ação |
 | `GET` | `/pedidos/{id}` | Dono ou gestor | Detalhe de um pedido |
-| `PUT` | `/pedidos/{id}` | Dono (RASCUNHO/DEVOLVIDO) | Editar pedido |
+| `PUT` | `/pedidos/{id}` | Dono (RASCUNHO) | Editar pedido |
 | `DELETE` | `/pedidos/{id}` | Dono | Cancelar pedido |
 | `POST` | `/pedidos/{id}/submit` | Dono | Submeter ao próximo nível |
-| `PUT` | `/pedidos/{id}/review` | SUPERVISOR, CONSOLIDADOR | Aprovar / devolver / reprovar |
+| `PUT` | `/pedidos/{id}/review` | SUPERVISOR, CONSOLIDADOR | Aprovar / reprovar |
 | `POST` | `/pedidos/consolidate` | SUPERVISOR, CONSOLIDADOR | Consolidar em lote |
 | `PUT` | `/pedidos/reorder` | SOLICITANTE, SUPERVISOR, CONSOLIDADOR | Reordenar prioridade |
 | `PUT` | `/pedidos/{id}/items/reorder` | Autenticado | Reordenar itens do pedido |
@@ -309,7 +308,6 @@ Autenticação: `Authorization: Bearer <JWT>` (exceto endpoints públicos de aut
 | Ação | Resultado |
 |---|---|
 | `aprovar` | Avança ao próximo status |
-| `editar` / `devolver` | Retorna ao solicitante (`DEVOLVIDO`) |
 | `reprovar` | Encerra como `CANCELADO` (motivo obrigatório) |
 
 ### 7.4 Pedidos — Gestão DSG
@@ -375,7 +373,7 @@ Autenticação: `Authorization: Bearer <JWT>` (exceto endpoints públicos de aut
 | Pedido consolidado pelo Supervisor | ✅ | ✅ | CONSOLIDADOR do órgão |
 | Pedido consolidado pelo Consolidador | ✅ | ✅ | GESTOR_CARTOGRAFICO (global) |
 | Pedido atribuído ao CGEO | ✅ | ✅ | ANALISTA_CGEO |
-| Pedido devolvido | ✅ | ✅ | Solicitante |
+
 | Pedido reprovado / cancelado | ✅ | ✅ | Solicitante |
 | CGEO aprova pedido | ✅ | — | GESTOR_CARTOGRAFICO |
 | Dar o Pronto | ✅ | ✅ | Solicitante + SUPERVISOR + CONSOLIDADOR |

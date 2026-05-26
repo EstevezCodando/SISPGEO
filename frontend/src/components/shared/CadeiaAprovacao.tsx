@@ -4,7 +4,6 @@ const STATUS_ORDER = [
   'RASCUNHO',
   'AGUARDANDO_SUPERVISOR',
   'AGUARDANDO_CONSOLIDADOR',
-  'DEVOLVIDO',
   'AGUARDANDO_CARTOGRAFICO',
   'ATRIBUIDO_CGEO',
   'APROVADO',
@@ -44,7 +43,6 @@ export function CadeiaAprovacao({ cadeia, status }: Props) {
   // Determina o índice da etapa "ativa" na cadeia baseado no status atual
   const etapaAtualIdx = (() => {
     if (status === 'RASCUNHO') return 0
-    if (status === 'DEVOLVIDO') return 0
     if (status === 'AGUARDANDO_SUPERVISOR') return 1
     if (status === 'AGUARDANDO_CONSOLIDADOR') return cadeia.findIndex(e => e.toLowerCase().includes('consolidador'))
     if (status === 'AGUARDANDO_CARTOGRAFICO') return cadeia.findIndex(e => e.toLowerCase().includes('gestor'))

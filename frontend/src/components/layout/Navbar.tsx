@@ -13,14 +13,6 @@ export function Navbar() {
     navigate('/login')
   }
 
-  const PERFIL_LABELS: Record<string, string> = {
-    SOLICITANTE:         'OMDS',
-    SUPERVISOR:          'C. Mil. A',
-    CONSOLIDADOR:        'COTER',
-    GESTOR_CARTOGRAFICO: 'DSG',
-    ANALISTA_CGEO:       'CGEO',
-  }
-
   return (
     <nav className="relative z-50 bg-zinc-900/80 backdrop-blur-md border-b border-white/10 shrink-0">
       <div className="max-w-screen-2xl mx-auto px-4 h-14 flex items-center justify-between">
@@ -34,7 +26,7 @@ export function Navbar() {
           <div className="flex items-center gap-3">
             <div className="hidden md:flex flex-col items-end text-xs leading-tight">
               <span className="font-medium text-zinc-200">{formatNomeComPosto(user.nome, user.posto_graduacao, user.nome_de_guerra)}</span>
-              <span className="text-zinc-500">{PERFIL_LABELS[user.perfil] ?? user.perfil}</span>
+              <span className="text-zinc-500 truncate max-w-[180px]" title={user.om}>{user.om}</span>
             </div>
             <div className="flex items-center gap-1">
               <NotificationBell />

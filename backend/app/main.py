@@ -105,7 +105,7 @@ async def _run_migrations():
         )""",
         # Seed da configuração inicial (não sobrescreve se já existir)
         "INSERT INTO config_entrega (id, data_base) VALUES (1, '2026-11-18') ON CONFLICT (id) DO NOTHING",
-        # 2026-05: impressão física do pedido — quantidade de cópias e tipo de material (nível pedido — legado)
+        # 2026-05: impressão do pedido — quantidade de cópias e tipo de material (nível pedido — legado)
         "ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS impressao_solicitada BOOLEAN DEFAULT FALSE",
         "ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS impressao_quantidade SMALLINT",
         "ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS impressao_tipo_material VARCHAR(20)",
@@ -114,6 +114,8 @@ async def _run_migrations():
         "ALTER TABLE itens_pedido ADD COLUMN IF NOT EXISTS impressao_tipo_material VARCHAR(20)",
         # 2026-05: finalidade da geoinformação (dropdown) separado da informação complementar (textarea)
         "ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS finalidade_geo VARCHAR(100)",
+        # 2026-05: timestamp do último envio de e-mail de ativação (controle de cooldown 30 min)
+        "ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS activation_email_sent_at TIMESTAMPTZ",
     ]
     for stmt in migrations:
         try:

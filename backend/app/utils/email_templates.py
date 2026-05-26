@@ -1,5 +1,11 @@
 from app.config import settings
 
+# ── Prazos de expiração ───────────────────────────────────────────────────────
+# Devem coincidir com as constantes homônimas em app/services/auth_service.py.
+# Centralizar aqui evita importação circular (auth_service importa este módulo).
+_RESET_TOKEN_HOURS: int = 1    # RESET_TOKEN_EXPIRY_HOURS
+_CONFIRM_TOKEN_HOURS: int = 24  # EMAIL_CONFIRM_TOKEN_EXPIRY_HOURS
+
 # ── Paleta Militar Oliva ──────────────────────────────────────────────────────
 # Fundo geral:   #eae8de  (pergaminho/areia)
 # Cabeçalho:     #3a4c22  (verde oliva escuro — uniforme)
@@ -8,6 +14,10 @@ from app.config import settings
 # Rodapé:        #d6d2c4  (areia clara)
 # Borda tabela:  #b0aa90
 # ─────────────────────────────────────────────────────────────────────────────
+
+# Estilo padrão para parágrafos de corpo — alinhamento justificado
+_P = "margin:0 0 16px 0;color:#5a5a48;font-size:13px;line-height:1.7;text-align:justify"
+_P_SMALL = "margin:0;color:#a0a090;font-size:11px;font-style:italic;text-align:justify"
 
 
 def _base(title: str, body: str) -> str:
@@ -113,20 +123,21 @@ def _divider() -> str:
     )
 
 
-# ── Ativação de conta (email de confirmação) ──────────────────────────────────
+# ── Ativação de conta (e-mail de confirmação) ─────────────────────────────────
 
 def ativacao_conta(nome: str, token: str) -> tuple[str, str]:
     """Enviado imediatamente após o cadastro — contém link de ativação único."""
     link = f"{settings.FRONTEND_URL}/ativar/{token}"
     link_ajuda = f"{settings.FRONTEND_URL}/ajuda"
+    validade_h = _CONFIRM_TOKEN_HOURS
     subject = "SisPGeo — Ative sua conta de acesso"
     body = f"""
 <h2 style="margin:0 0 4px 0;color:#3a4c22;font-size:18px;font-weight:700;
            letter-spacing:0.3px">Prezado(a) {nome},</h2>
-<p style="margin:0 0 20px 0;color:#5a5a48;font-size:13px;
-          line-height:1.7;border-bottom:1px solid #e0ddd0;padding-bottom:16px">
+<p style="{_P};border-bottom:1px solid #e0ddd0;padding-bottom:16px">
   Seu cadastro no <strong>SisPGeo</strong> foi registrado com sucesso.
-  Clique no botão abaixo para ativar sua conta. O link é válido por <strong>24 horas</strong>.
+  Clique no botão abaixo para ativar sua conta. O link é válido por
+  <strong>{validade_h} hora{'s' if validade_h != 1 else ''}</strong>.
 </p>
 
 {_btn(link, "▶ Ativar Minha Conta")}
@@ -134,7 +145,7 @@ def ativacao_conta(nome: str, token: str) -> tuple[str, str]:
 <table cellpadding="0" cellspacing="0"
        style="width:100%;border-collapse:collapse;margin-bottom:24px;
               border:1px solid #c8c4b0">
-  {_info_row("Validade do link", '<strong>24 horas</strong> a partir deste envio')}
+  {_info_row("Validade do link", f'<strong>{validade_h} hora{"s" if validade_h != 1 else ""}</strong> a partir deste envio')}
   {_info_row("Status", '<span style="color:#8b6914;font-weight:700">● Aguardando ativação de e-mail</span>')}
 </table>
 
@@ -145,7 +156,7 @@ def ativacao_conta(nome: str, token: str) -> tuple[str, str]:
             text-transform:uppercase;letter-spacing:0.8px">
     Sobre o SisPGeo
   </p>
-  <p style="margin:0 0 10px 0;color:#4a5a38;font-size:13px;line-height:1.7">
+  <p style="{_P};margin-bottom:10px">
     O SisPGeo é o sistema oficial da <strong>Diretoria de Serviço Geográfico</strong>
     para solicitação de produtos de geoinformação do Exército Brasileiro.
     Por meio do sistema você pode solicitar:
@@ -161,7 +172,7 @@ def ativacao_conta(nome: str, token: str) -> tuple[str, str]:
     </tr>
     <tr>
       <td style="padding:3px 0;color:#4a5a38;font-size:12px;vertical-align:top">
-        ▸ Impressão de Cartas (CT e COI)
+        ▸ Impressão de Cartas
       </td>
       <td style="padding:3px 0;color:#4a5a38;font-size:12px;vertical-align:top">
         ▸ Ortoimagens e MDT/MDS
@@ -183,7 +194,7 @@ def ativacao_conta(nome: str, token: str) -> tuple[str, str]:
             padding:12px 16px;border-radius:0 3px 3px 0;margin-bottom:20px">
   <p style="margin:0 0 4px 0;color:#3a4c22;font-size:12px;font-weight:700;
             text-transform:uppercase;letter-spacing:0.5px">Dúvidas?</p>
-  <p style="margin:0;color:#4a5a38;font-size:13px;line-height:1.6">
+  <p style="margin:0;color:#4a5a38;font-size:13px;line-height:1.6;text-align:justify">
     Acesse o painel de ajuda do sistema para conhecer os tipos de produtos,
     fluxo de solicitação e perguntas frequentes:<br>
     <a href="{link_ajuda}" style="color:#3a6020;font-weight:700">{link_ajuda}</a>
@@ -198,7 +209,7 @@ def ativacao_conta(nome: str, token: str) -> tuple[str, str]:
   <a href="{link}" style="color:#3a6020;font-size:11px;font-family:monospace">{link}</a>
 </p>
 
-<p style="margin:0;color:#a0a090;font-size:11px;font-style:italic">
+<p style="{_P_SMALL}">
   Se você não realizou este cadastro, desconsidere esta mensagem.
   Nenhuma ação é necessária.
 </p>
@@ -206,7 +217,7 @@ def ativacao_conta(nome: str, token: str) -> tuple[str, str]:
     return subject, _base(subject, body)
 
 
-# ── Cadastro recebido (informativo — não envia mais, substituído por ativacao_conta) ──
+# ── Cadastro recebido (informativo — legado) ──────────────────────────────────
 
 def cadastro_recebido(nome: str, email: str) -> tuple[str, str]:
     """Legado — mantido para compatibilidade. Usar ativacao_conta() no novo fluxo."""
@@ -214,7 +225,7 @@ def cadastro_recebido(nome: str, email: str) -> tuple[str, str]:
     body = f"""
 <h2 style="margin:0 0 6px 0;color:#3a4c22;font-size:18px;font-weight:700">
   Cadastro recebido, {nome}.</h2>
-<p style="margin:0 0 20px 0;color:#5a5a48;font-size:13px;line-height:1.7">
+<p style="{_P}">
   Seu pedido de acesso ao <strong>SisPGeo</strong> foi registrado.
   Um administrador irá analisar e ativar sua conta em até <strong>2 dias úteis</strong>.
 </p>
@@ -228,7 +239,7 @@ def cadastro_recebido(nome: str, email: str) -> tuple[str, str]:
 
 {_btn(f"{settings.FRONTEND_URL}/login", "Acessar o SisPGeo")}
 
-<p style="margin:16px 0 0 0;color:#a0a090;font-size:11px;font-style:italic">
+<p style="{_P_SMALL}">
   Caso não tenha realizado este cadastro, desconsidere esta mensagem.
 </p>
 """
@@ -242,8 +253,7 @@ def conta_ativada(nome: str, email: str) -> tuple[str, str]:
     body = f"""
 <h2 style="margin:0 0 6px 0;color:#3a4c22;font-size:18px;font-weight:700">
   Acesso autorizado, {nome}.</h2>
-<p style="margin:0 0 20px 0;color:#5a5a48;font-size:13px;line-height:1.7;
-          border-bottom:1px solid #e0ddd0;padding-bottom:16px">
+<p style="{_P};border-bottom:1px solid #e0ddd0;padding-bottom:16px">
   Sua conta no <strong>SisPGeo</strong> foi
   <strong style="color:#3a7030">aprovada e ativada</strong> pelo administrador do sistema.
   Você já pode realizar login e solicitar produtos de geoinformação.
@@ -260,7 +270,7 @@ def conta_ativada(nome: str, email: str) -> tuple[str, str]:
             padding:14px 16px;border-radius:0 3px 3px 0;margin-bottom:24px">
   <p style="margin:0 0 6px 0;color:#2a4010;font-size:12px;font-weight:700;
             text-transform:uppercase;letter-spacing:0.5px">Missão disponível</p>
-  <p style="margin:0;color:#3a5020;font-size:13px;line-height:1.6">
+  <p style="margin:0;color:#3a5020;font-size:13px;line-height:1.6;text-align:justify">
     Você pode agora submeter pedidos de produtos cartográficos, acompanhar
     o status das solicitações e consultar o histórico da sua OM.
   </p>
@@ -268,7 +278,7 @@ def conta_ativada(nome: str, email: str) -> tuple[str, str]:
 
 {_btn(f"{settings.FRONTEND_URL}/login", "▶ Acessar o SisPGeo")}
 
-<p style="margin:16px 0 0 0;color:#a0a090;font-size:11px;font-style:italic">
+<p style="{_P_SMALL}">
   Em caso de dúvidas, entre em contato com o administrador do sistema.
 </p>
 """
@@ -279,14 +289,14 @@ def conta_ativada(nome: str, email: str) -> tuple[str, str]:
 
 def reset_senha(nome: str, token: str) -> tuple[str, str]:
     link = f"{settings.FRONTEND_URL}/redefinir-senha/{token}"
+    validade_h = _RESET_TOKEN_HOURS
     subject = "SisPGeo — Redefinição de senha solicitada"
     body = f"""
 <h2 style="margin:0 0 6px 0;color:#3a4c22;font-size:18px;font-weight:700">
   Redefinição de senha — {nome}.</h2>
-<p style="margin:0 0 20px 0;color:#5a5a48;font-size:13px;line-height:1.7;
-          border-bottom:1px solid #e0ddd0;padding-bottom:16px">
-  Recebemos uma solicitação de <strong>redefinição de senha</strong> para esta conta.
-  Clique no botão abaixo para definir uma nova senha de acesso.
+<p style="{_P};border-bottom:1px solid #e0ddd0;padding-bottom:16px">
+  Recebemos uma solicitação de <strong>redefinição de senha</strong> para esta conta no
+  <strong>SisPGeo</strong>. Clique no botão abaixo para definir uma nova senha de acesso.
 </p>
 
 {_btn(link, "▶ Redefinir Minha Senha", color="#6b4020")}
@@ -295,8 +305,9 @@ def reset_senha(nome: str, token: str) -> tuple[str, str]:
             padding:14px 16px;border-radius:0 3px 3px 0;margin-bottom:20px">
   <p style="margin:0 0 6px 0;color:#4a3c10;font-size:12px;font-weight:700;
             text-transform:uppercase;letter-spacing:0.5px">⚠ Atenção</p>
-  <p style="margin:0;color:#5a4c1a;font-size:13px;line-height:1.6">
-    Este link é de <strong>uso único</strong> e expira em <strong>1 hora</strong>.
+  <p style="margin:0;color:#5a4c1a;font-size:13px;line-height:1.6;text-align:justify">
+    Este link é de <strong>uso único</strong> e expira em
+    <strong>{validade_h} hora{'s' if validade_h != 1 else ''}</strong>.
     Após expirar, será necessário solicitar um novo link.
   </p>
 </div>
@@ -309,7 +320,7 @@ def reset_senha(nome: str, token: str) -> tuple[str, str]:
   <a href="{link}" style="color:#3a6020;font-size:11px;font-family:monospace">{link}</a>
 </p>
 
-<p style="margin:0;color:#a0a090;font-size:11px;font-style:italic">
+<p style="{_P_SMALL}">
   Se você não solicitou a redefinição, desconsidere esta mensagem.
   Sua senha permanece inalterada.
 </p>
@@ -331,8 +342,8 @@ def pedido_submetido(nome: str, pedido_id: int, operacao: str) -> tuple[str, str
     body = f"""
 <h2 style="margin:0 0 12px 0;color:#3a4c22;font-size:18px;font-weight:700">
   Pedido #{pedido_id} registrado.</h2>
-<p style="margin:0 0 16px 0;color:#5a5a48;font-size:13px;line-height:1.7">
-  {nome}, seu pedido <strong>#{pedido_id}</strong> da operação
+<p style="{_P}">
+  {nome}, seu pedido <strong>#{pedido_id}</strong> referente a
   <strong>{operacao}</strong> foi submetido e aguarda análise do Gestor Demandante.
 </p>
 {_btn(f"{settings.FRONTEND_URL}/meus-pedidos", "▶ Acompanhar Pedido")}
@@ -345,7 +356,7 @@ def pedido_aprovado(nome: str, pedido_id: int) -> tuple[str, str]:
     body = f"""
 <h2 style="margin:0 0 12px 0;color:#3a4c22;font-size:18px;font-weight:700">
   Pedido #{pedido_id} aprovado.</h2>
-<p style="margin:0 0 16px 0;color:#5a5a48;font-size:13px;line-height:1.7">
+<p style="{_P}">
   {nome}, seu pedido <strong>#{pedido_id}</strong> foi
   <strong style="color:#3a7030">aprovado pelo DSG</strong> e está em produção.
 </p>
@@ -359,7 +370,7 @@ def pedido_reprovado(nome: str, pedido_id: int, motivo: str) -> tuple[str, str]:
     body = f"""
 <h2 style="margin:0 0 12px 0;color:#3a4c22;font-size:18px;font-weight:700">
   Pedido #{pedido_id} — não aprovado.</h2>
-<p style="margin:0 0 16px 0;color:#5a5a48;font-size:13px;line-height:1.7">
+<p style="{_P}">
   {nome}, seu pedido <strong>#{pedido_id}</strong>
   <strong style="color:#8b2020">não foi aprovado</strong>.
 </p>
@@ -367,9 +378,9 @@ def pedido_reprovado(nome: str, pedido_id: int, motivo: str) -> tuple[str, str]:
             padding:14px 16px;border-radius:0 3px 3px 0;margin-bottom:20px">
   <p style="margin:0 0 4px 0;color:#5a1010;font-size:12px;font-weight:700;
             text-transform:uppercase;letter-spacing:0.5px">Motivo</p>
-  <p style="margin:0;color:#6b2020;font-size:13px">{motivo}</p>
+  <p style="margin:0;color:#6b2020;font-size:13px;text-align:justify">{motivo}</p>
 </div>
-<p style="margin:0 0 16px 0;color:#5a5a48;font-size:13px">
+<p style="{_P}">
   Em caso de dúvidas, entre em contato com o Gestor Demandante.
 </p>
 {_btn(f"{settings.FRONTEND_URL}/meus-pedidos", "▶ Ver Meus Pedidos")}
@@ -387,7 +398,7 @@ def pedido_produzido(nome: str, pedido_id: int, link_bdgex: str | None) -> tuple
     body = f"""
 <h2 style="margin:0 0 12px 0;color:#3a4c22;font-size:18px;font-weight:700">
   Pedido #{pedido_id} — produção concluída.</h2>
-<p style="margin:0 0 16px 0;color:#5a5a48;font-size:13px;line-height:1.7">
+<p style="{_P}">
   {nome}, seu pedido <strong>#{pedido_id}</strong> foi
   <strong style="color:#3a7030">concluído</strong> e os dados estão disponíveis no BDGEx.
 </p>
@@ -402,7 +413,7 @@ def pedido_transferido(nome_novo: str, nome_anterior: str, count: int) -> tuple[
     body = f"""
 <h2 style="margin:0 0 12px 0;color:#3a4c22;font-size:18px;font-weight:700">
   Transferência de pedidos.</h2>
-<p style="margin:0 0 16px 0;color:#5a5a48;font-size:13px;line-height:1.7">
+<p style="{_P}">
   {nome_novo}, o usuário <strong>{nome_anterior}</strong> transferiu
   <strong>{count} pedido(s)</strong> para sua responsabilidade.
 </p>
@@ -416,7 +427,7 @@ def notificar_gestor(nome_gestor: str, nome_usuario: str, pedido_id: int, om: st
     body = f"""
 <h2 style="margin:0 0 12px 0;color:#3a4c22;font-size:18px;font-weight:700">
   Novo pedido aguardando revisão.</h2>
-<p style="margin:0 0 16px 0;color:#5a5a48;font-size:13px;line-height:1.7">
+<p style="{_P}">
   {nome_gestor}, o usuário <strong>{nome_usuario}</strong> da OM <strong>{om}</strong>
   submeteu o pedido <strong>#{pedido_id}</strong> para análise.
 </p>

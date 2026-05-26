@@ -75,7 +75,7 @@ const API_GROUPS: ApiGroup[] = [
         response: { id: 1, status: 'RASCUNHO', usuario_id: 1, itens: [] },
       },
       {
-        method: 'PUT', path: '/api/v1/pedidos/{pedido_id}', description: 'Edita metadados de pedido em rascunho ou devolvido pelo gestor.', auth: true,
+        method: 'PUT', path: '/api/v1/pedidos/{pedido_id}', description: 'Edita metadados de pedido em rascunho.', auth: true,
         body: { operacao_id: 'int', data_entrega: 'YYYY-MM-DD', finalidade: 'string' },
         response: { id: 1, status: 'RASCUNHO' },
       },
@@ -84,8 +84,8 @@ const API_GROUPS: ApiGroup[] = [
         response: { id: 1, status: 'AGUARDANDO_SUPERVISOR' },
       },
       {
-        method: 'PUT', path: '/api/v1/pedidos/{pedido_id}/review', description: 'Revisa um pedido individualmente (aprovar, devolver para revisão ou reprovar).', auth: true, profiles: ['SUPERVISOR', 'CONSOLIDADOR'],
-        body: { acao: '"aprovar" | "editar" | "reprovar"', motivo: 'string (obrigatório ao reprovar)', observacoes: 'string' },
+        method: 'PUT', path: '/api/v1/pedidos/{pedido_id}/review', description: 'Revisa um pedido individualmente (aprovar ou reprovar).', auth: true, profiles: ['SUPERVISOR', 'CONSOLIDADOR'],
+        body: { acao: '"aprovar" | "reprovar"', motivo: 'string (obrigatório ao reprovar)', observacoes: 'string' },
         response: { id: 1, status: 'AGUARDANDO_CONSOLIDADOR' },
       },
       {
@@ -113,7 +113,7 @@ const API_GROUPS: ApiGroup[] = [
         response: { detail: 'Notificação enviada ao gestor.' },
       },
       {
-        method: 'DELETE', path: '/api/v1/pedidos/{pedido_id}', description: 'Cancela e remove pedido em rascunho ou devolvido pelo gestor.', auth: true,
+        method: 'DELETE', path: '/api/v1/pedidos/{pedido_id}', description: 'Cancela e remove pedido em rascunho.', auth: true,
         response: { message: 'Pedido cancelado.' },
       },
     ],
@@ -263,7 +263,7 @@ const API_GROUPS: ApiGroup[] = [
 const ENUMS = [
   { name: 'OrgaoVinculanteEnum', values: ['COTER', 'DECEx', 'COLOG', 'DEC'] },
   { name: 'PerfilEnum', values: ['SOLICITANTE', 'SUPERVISOR', 'CONSOLIDADOR', 'GESTOR_CARTOGRAFICO', 'ANALISTA_CGEO'] },
-  { name: 'StatusPedidoEnum', values: ['RASCUNHO', 'AGUARDANDO_SUPERVISOR', 'AGUARDANDO_CONSOLIDADOR', 'DEVOLVIDO', 'AGUARDANDO_CARTOGRAFICO', 'ATRIBUIDO_CGEO', 'APROVADO', 'REPROVADO', 'CANCELADO', 'PRODUZIDO'] },
+  { name: 'StatusPedidoEnum', values: ['RASCUNHO', 'AGUARDANDO_SUPERVISOR', 'AGUARDANDO_CONSOLIDADOR', 'AGUARDANDO_CARTOGRAFICO', 'ATRIBUIDO_CGEO', 'APROVADO', 'REPROVADO', 'CANCELADO', 'PRODUZIDO'] },
   { name: 'TipoProdutoEnum', values: ['CARTA_TOPOGRAFICA', 'CARTA_ORTOIMAGEM', 'ORTOIMAGEM', 'MDT', 'MDS', 'CDGV', 'IMPRESSAO'] },
   { name: 'EscalaEnum', values: ['1:25.000', '1:50.000', '1:100.000', '1:250.000'] },
   { name: 'TipoJanelaEnum', values: ['SOLICITANTE', 'CONSOLIDADOR', 'GESTOR_CARTOGRAFICO', 'ANALISTA_CGEO', 'GESTOR_CARTOGRAFICO_FINAL'] },

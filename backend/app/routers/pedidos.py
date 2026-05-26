@@ -558,7 +558,7 @@ async def exportar_relatorio(
                     "disponivel_bdgex":   item.disponivel_bdgex,
                     "data_producao_bdgex": item.data_producao_bdgex.isoformat() if item.data_producao_bdgex else None,
                     "idade_anos":         _idade,
-                    # ── Impressão física ────────────────────────────────────
+                    # ── Impressão ────────────────────────────────────
                     "impressao_solicitada":  p.impressao_solicitada,
                     "impressao_quantidade":  item.impressao_quantidade,
                     "impressao_material":    item.impressao_tipo_material,
@@ -568,21 +568,33 @@ async def exportar_relatorio(
 
     # ── LEIA-ME ───────────────────────────────────────────────────────────────
     _perfil_labels = {
-        "SOLICITANTE":         "Solicitante (OMDS)",
-        "SUPERVISOR":          "Supervisor (C Mil. A)",
-        "CONSOLIDADOR":        "Consolidador (COTER)",
-        "GESTOR_CARTOGRAFICO": "Gestor Cartográfico (DSG)",
+        "SOLICITANTE":           "Solicitante (OMDS)",
+        "SUPERVISOR":            "Supervisor (C Mil. A)",
+        "CONSOLIDADOR_COTER":    "Consolidador (COTER)",
+        "CONSOLIDADOR_DSG":      "Consolidador (DSG)",
+        "CONSOLIDADOR_DEC":      "Consolidador (DEC)",
+        "CONSOLIDADOR_COLOG":    "Consolidador (COLOG)",
+        "CONSOLIDADOR_DECEX":    "Consolidador (DECEx)",
+        "GESTOR_CARTOGRAFICO":   "Gestor Cartográfico (DSG)",
     }
     _cmila_labels: dict[str, str] = {
         "CMA":   "CMA — Comando Militar da Amazônia",
-        "CMAO":  "CMAO — Comando Militar da Amazônia Ocidental",
+        "CMAO":  "CMAO — Comando Militar da Amazônia Oriental",
         "CML":   "CML — Comando Militar do Leste",
         "CMP":   "CMP — Comando Militar do Planalto",
         "CMO":   "CMO — Comando Militar do Oeste",
         "CMS":   "CMS — Comando Militar do Sul",
         "CMNE":  "CMNE — Comando Militar do Nordeste",
-        "CMNOR": "CMNOR — Comando Militar do Nordeste",
+        "CMNOR": "CMNOR — Comando Militar do Norte",
         "CMSE":  "CMSE — Comando Militar do Sudeste",
+    }
+    # Labels dos órgãos intermediários usados nas cadeias
+    _ov_labels: dict[str, str] = {
+        "DSG":   "DSG  (Diretoria de Serviço Geográfico)",
+        "COTER": "COTER  (Seção de Geoinformação e Cartografia)",
+        "DEC":   "DEC  (Departamento de Engenharia e Construção)",
+        "COLOG": "COLOG  (Comando Logístico)",
+        "DECEx": "DECEx  (Depto. de Educação e Cultura do Exército)",
     }
     perfil_label  = _perfil_labels.get(current_user.perfil.value, current_user.perfil.value)
     cmila_code    = (current_user.regiao_militar or "").strip()
@@ -595,36 +607,88 @@ async def exportar_relatorio(
 
     cmila_short = cmila_code if cmila_code else "C Mil. A"
     om_display  = current_user.om or "OMDS"
+    ov_value    = current_user.orgao_vinculante.value if current_user.orgao_vinculante else ""
 
-    # Cadeia de comando específica ao perfil do signatário
+    # ── Cadeia de comando — específica ao perfil e órgão vinculante ──────────
     if current_user.perfil == PerfilEnum.SOLICITANTE:
-        _cadeia_titulo = f"Cadeia prevista — {om_display} subordinada ao COTER:"
-        _cadeia_diagrama = (
-            f"  {om_display}\n"
-            f"    └─► {cmila_short}  (Supervisor de Geoinformação)\n"
-            f"          └─► COTER  (Seção de Geoinformação e Cartografia)\n"
-            f"                └─► DSG  (Diretoria de Serviço Geográfico)"
-        )
+        if ov_value == "DSG":
+            _cadeia_titulo = f"Cadeia prevista — {om_display} subordinada à DSG:"
+            _cadeia_diagrama = (
+                f"  {om_display}\n"
+                f"    └─► DSG  (Diretoria de Serviço Geográfico)"
+            )
+        elif ov_value == "COTER":
+            _cadeia_titulo = f"Cadeia prevista — {om_display} subordinada ao COTER:"
+            _cadeia_diagrama = (
+                f"  {om_display}\n"
+                f"    └─► {cmila_short}  (Supervisor de Geoinformação)\n"
+                f"          └─► COTER  (Seção de Geoinformação e Cartografia)\n"
+                f"                └─► DSG  (Diretoria de Serviço Geográfico)"
+            )
+        elif ov_value in _ov_labels:
+            _ov_disp = _ov_labels[ov_value]
+            _cadeia_titulo = f"Cadeia prevista — {om_display} subordinada ao {ov_value}:"
+            _cadeia_diagrama = (
+                f"  {om_display}\n"
+                f"    └─► {_ov_disp}\n"
+                f"          └─► DSG  (Diretoria de Serviço Geográfico)"
+            )
+        else:
+            _cadeia_titulo = f"Cadeia prevista — {om_display}:"
+            _cadeia_diagrama = (
+                f"  {om_display}\n"
+                f"    └─► DSG  (Diretoria de Serviço Geográfico)"
+            )
+
     elif current_user.perfil in SUPERVISOR_PROFILES:
         _cmila_display = cmila_label if cmila_label != "—" else cmila_short
-        _cadeia_titulo = f"Cadeia prevista — {_cmila_display} ao COTER:"
-        _cadeia_diagrama = (
-            f"  {_cmila_display}\n"
-            f"    └─► COTER  (Seção de Geoinformação e Cartografia)\n"
-            f"          └─► DSG  (Diretoria de Serviço Geográfico)"
-        )
-    else:  # CONSOLIDADOR
-        _cadeia_titulo = "Cadeia prevista — COTER ao DSG:"
-        _cadeia_diagrama = (
-            "  COTER  (Seção de Geoinformação e Cartografia)\n"
-            "    └─► DSG  (Diretoria de Serviço Geográfico)"
-        )
+        if ov_value == "COTER":
+            _cadeia_titulo = f"Cadeia prevista — {_cmila_display} ao COTER:"
+            _cadeia_diagrama = (
+                f"  {_cmila_display}\n"
+                f"    └─► COTER  (Seção de Geoinformação e Cartografia)\n"
+                f"          └─► DSG  (Diretoria de Serviço Geográfico)"
+            )
+        else:
+            _cadeia_titulo = f"Cadeia prevista — {_cmila_display} à DSG:"
+            _cadeia_diagrama = (
+                f"  {_cmila_display}\n"
+                f"    └─► DSG  (Diretoria de Serviço Geográfico)"
+            )
+
+    else:  # CONSOLIDADOR_*  (COTER, DSG, DEC, COLOG, DECEx)
+        if current_user.perfil == PerfilEnum.CONSOLIDADOR_COTER:
+            _cadeia_titulo = "Cadeia prevista — COTER ao DSG:"
+            _cadeia_diagrama = (
+                "  COTER  (Seção de Geoinformação e Cartografia)\n"
+                "    └─► DSG  (Diretoria de Serviço Geográfico)"
+            )
+        elif current_user.perfil == PerfilEnum.CONSOLIDADOR_DEC:
+            _cadeia_titulo = "Cadeia prevista — DEC ao DSG:"
+            _cadeia_diagrama = (
+                "  DEC  (Departamento de Engenharia e Construção)\n"
+                "    └─► DSG  (Diretoria de Serviço Geográfico)"
+            )
+        elif current_user.perfil == PerfilEnum.CONSOLIDADOR_COLOG:
+            _cadeia_titulo = "Cadeia prevista — COLOG ao DSG:"
+            _cadeia_diagrama = (
+                "  COLOG  (Comando Logístico)\n"
+                "    └─► DSG  (Diretoria de Serviço Geográfico)"
+            )
+        elif current_user.perfil == PerfilEnum.CONSOLIDADOR_DECEX:
+            _cadeia_titulo = "Cadeia prevista — DECEx ao DSG:"
+            _cadeia_diagrama = (
+                "  DECEx  (Depto. de Educação e Cultura do Exército)\n"
+                "    └─► DSG  (Diretoria de Serviço Geográfico)"
+            )
+        else:  # CONSOLIDADOR_DSG ou GESTOR_CARTOGRAFICO
+            _cadeia_titulo = "Órgão responsável pelo processamento:"
+            _cadeia_diagrama = "  DSG  (Diretoria de Serviço Geográfico)"
 
     readme = f"""\
 LEIA-ME — SisPGeo: Sistema de Pedidos de Geoinformação
 =======================================================
 Diretoria de Serviço Geográfico (DSG) / Exército Brasileiro
-COTER — Comando de Operações Terrestres
 
 Gerado por : {current_user.nome}
 Perfil     : {perfil_label}
@@ -797,7 +861,7 @@ async def _build_admin_zip(
                     "disponivel_bdgex":    item.disponivel_bdgex,
                     "data_producao_bdgex": item.data_producao_bdgex.isoformat() if item.data_producao_bdgex else None,
                     "idade_anos":          (date.today() - item.data_producao_bdgex).days // 365 if item.data_producao_bdgex else None,
-                    # ── Impressão física ────────────────────────────────────
+                    # ── Impressão ───────────────────────────────────
                     "impressao_solicitada": p.impressao_solicitada,
                     "impressao_quantidade": item.impressao_quantidade,
                     "impressao_material":   item.impressao_tipo_material,
@@ -1033,7 +1097,7 @@ async def delete_item(
 ):
     """Remove um item (célula) de um pedido.
 
-    - Dono do pedido: pode remover se status RASCUNHO ou DEVOLVIDO.
+    - Dono do pedido: pode remover se status RASCUNHO.
     - Supervisor: pode remover itens de pedidos AGUARDANDO_SUPERVISOR na sua regiao_militar.
     - Consolidador: pode remover itens de pedidos AGUARDANDO_CONSOLIDADOR no seu orgao_vinculante.
     O pedido deve ter ao menos 1 item restante.
@@ -1057,7 +1121,7 @@ async def delete_item(
     if not (is_owner or is_supervisor or is_consolidador):
         raise HTTPException(status_code=403, detail="Acesso negado")
 
-    if is_owner and pedido.status not in (StatusPedidoEnum.RASCUNHO, StatusPedidoEnum.DEVOLVIDO):
+    if is_owner and pedido.status != StatusPedidoEnum.RASCUNHO:
         raise HTTPException(status_code=400, detail="Pedido não pode ser editado neste status")
 
     if (is_supervisor or is_consolidador):
@@ -1153,6 +1217,10 @@ async def enviar_lote(
     Usado ao final da janela de solicitações — manual (auto_submitted=False)
     ou automático pelo front-end quando a janela encerra (auto_submitted=True).
     Idempotente: se não houver RASCUNHO retorna lista vazia sem erro.
+
+    O roteamento segue a mesma lógica de submit_pedido:
+      - orgao_vinculante == COTER  → AGUARDANDO_SUPERVISOR (pelo C Mil A do usuário)
+      - orgao_vinculante == DEC/COLOG/DECEx/DSG → AGUARDANDO_CONSOLIDADOR
     """
     result = await db.execute(
         select(Pedido)
@@ -1160,21 +1228,25 @@ async def enviar_lote(
         .where(Pedido.status == StatusPedidoEnum.RASCUNHO)
         .order_by(Pedido.prioridade)
     )
-    pedidos = result.scalars().all()
+    pedidos = list(result.scalars().all())
 
     if not pedidos:
         return []
 
+    submitted = []
     for pedido in pedidos:
-        pedido.status = StatusPedidoEnum.AGUARDANDO_SUPERVISOR
-        pedido.submetido_gestor_em = datetime.now(timezone.utc)
-        pedido.auto_submitted = body.auto_submitted
+        # Marca auto_submitted antes de submeter para que o flag fique gravado
+        if body.auto_submitted:
+            pedido.auto_submitted = True
+            await db.flush()
+        try:
+            p = await pedido_service.submit_pedido(db, pedido, current_user)
+            submitted.append(p)
+        except HTTPException:
+            # Pedido já sem itens, já submetido ou outro erro de validação — ignora
+            pass
 
-    await db.commit()
-    for pedido in pedidos:
-        await db.refresh(pedido)
-
-    return await _enrich(db, list(pedidos))
+    return await _enrich(db, submitted)
 
 
 @router.post("/{pedido_id}/submit", response_model=PedidoOut)
@@ -1450,18 +1522,20 @@ async def update_pedido(
     db: AsyncSession = Depends(get_db),
     current_user: Usuario = Depends(get_current_user),
 ):
-    """Usuário edita metadados do pedido (somente RASCUNHO ou DEVOLVIDO)."""
+    """Usuário edita metadados do pedido (somente RASCUNHO)."""
     pedido = await db.get(Pedido, pedido_id)
     if not pedido:
         raise HTTPException(status_code=404, detail="Pedido não encontrado")
     if pedido.usuario_id != current_user.id:
         raise HTTPException(status_code=403, detail="Acesso negado")
-    editable = {StatusPedidoEnum.RASCUNHO, StatusPedidoEnum.DEVOLVIDO}
+    editable = {StatusPedidoEnum.RASCUNHO}
     if pedido.status not in editable:
         raise HTTPException(status_code=400, detail="Pedido não pode ser editado neste estágio")
 
     if body.data_entrega is not None:
         pedido.data_entrega = body.data_entrega
+    if body.finalidade_geo is not None:
+        pedido.finalidade_geo = body.finalidade_geo
     if body.finalidade is not None:
         pedido.finalidade = body.finalidade
     if body.operacao_id is not None:

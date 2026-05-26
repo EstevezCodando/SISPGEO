@@ -52,6 +52,9 @@ MAX_RESET_TOKENS_PER_DAY: int = 3
 PASSWORD_EXPIRY_DAYS: int = 365
 """Prazo de expiração da senha (em dias)."""
 
+RESEND_ACTIVATION_COOLDOWN_MINUTES: int = 30
+"""Intervalo mínimo entre reenvios do link de ativação (em minutos)."""
+
 
 # ---------------------------------------------------------------------------
 # Funções do serviço
@@ -357,3 +360,61 @@ async def reset_password(db: AsyncSession, token: str, nova_senha: str) -> None:
     await db.commit()
 
     logger.info("reset_password OK → user_id=%d", user.id)
+
+
+async def resend_activation_email(db: AsyncSession, email: str) -> None:
+    """Reenvia o e-mail de ativação para um usuário com e-mail não confirmado.
+
+    Aplica cooldown de ``RESEND_ACTIVATION_COOLDOWN_MINUTES`` entre reenvios.
+    Por segurança, a resposta é sempre genérica (não revela se o e-mail existe).
+
+    Args:
+        db:    Sessão assíncrona do banco de dados.
+        email: E-mail do usuário que solicita o reenvio.
+
+    Raises:
+        HTTPException 429: Cooldown de 30 minutos ainda não expirou.
+    """
+    logger.info("resend_activation_email → email=%s", email)
+
+    user = await db.scalar(select(Usuario).where(Usuario.email == email))
+    if not user or user.email_confirmado:
+        # Silencioso: não revela se o e-mail existe ou já está confirmado
+        logger.debug("resend_activation_email: noop → email=%s", email)
+        return
+
+    now = datetime.now(timezone.utc)
+
+    # Verificar cooldown
+    if user.activation_email_sent_at:
+        sent_at = user.activation_email_sent_at
+        if sent_at.tzinfo is None:
+            sent_at = sent_at.replace(tzinfo=timezone.utc)
+        elapsed_minutes = (now - sent_at).total_seconds() / 60
+        if elapsed_minutes < RESEND_ACTIVATION_COOLDOWN_MINUTES:
+            remaining = int(RESEND_ACTIVATION_COOLDOWN_MINUTES - elapsed_minutes) + 1
+            logger.warning(
+                "resend_activation_email: cooldown ativo → email=%s  restam=%dmin",
+                email, remaining,
+            )
+            raise HTTPException(
+                status_code=429,
+                detail=f"Aguarde {remaining} minuto(s) antes de reenviar o link de ativação.",
+            )
+
+    # Gerar novo token de ativação
+    token_str = generate_token()
+    db.add(TokenSenha(
+        usuario_id=user.id,
+        token=token_str,
+        expira_em=now + timedelta(hours=EMAIL_CONFIRM_TOKEN_EXPIRY_HOURS),
+    ))
+    user.activation_email_sent_at = now
+    await db.commit()
+
+    try:
+        subject, html = ativacao_conta(user.nome, token_str)
+        await send_email(user.email, subject, html)
+        logger.info("resend_activation_email OK → user_id=%d  email=%s", user.id, email)
+    except Exception as exc:
+        logger.warning("resend_activation_email: falha ao enviar e-mail → %s", exc)

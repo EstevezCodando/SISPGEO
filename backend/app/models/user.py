@@ -37,6 +37,7 @@ class Usuario(Base):
     pedidos_transferidos_em: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     tentativas_login: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     bloqueado_ate: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    activation_email_sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     criado_em: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )

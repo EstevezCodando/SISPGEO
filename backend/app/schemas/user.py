@@ -50,6 +50,7 @@ class UpdateProfileRequest(BaseModel):
     perfil: PerfilEnum
     orgao_vinculante: OrgaoVinculanteEnum | None = None
     cgeo_id: int | None = None
+    regiao_militar: str | None = None
 
 
 class NotificacaoOut(BaseModel):
