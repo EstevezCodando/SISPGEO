@@ -1362,7 +1362,7 @@ export function MeusPedidos() {
       <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="text-xl font-semibold text-zinc-100 tracking-tight">
-            Resumo dos pedidos
+            Meus Pedidos
           </h1>
         </div>
         <div className="flex items-center gap-2">
@@ -1408,217 +1408,233 @@ export function MeusPedidos() {
       </div>
 
       {/* ── Banner janela de solicitações ── */}
-      {minhaJanela && (() => {
-        // Acesso irrestrito (DSG/CGEO) — sem restrição de janela, oculta banner
-        if (janelaAtiva && !dataFimJanela && minhaJanela.configurada) return null;
+      {minhaJanela &&
+        (() => {
+          // Acesso irrestrito (DSG/CGEO) — sem restrição de janela, oculta banner
+          if (janelaAtiva && !dataFimJanela && minhaJanela.configurada)
+            return null;
 
-        const semJanela = !minhaJanela.configurada;
-        const corDias =
-          diasRestantes <= 7
-            ? "text-red-400"
-            : diasRestantes <= 30
-              ? "text-amber-400"
-              : "text-emerald-400";
-        const corBarra =
-          diasRestantes <= 7
-            ? "bg-red-500"
-            : diasRestantes <= 30
-              ? "bg-amber-500"
-              : "bg-emerald-500";
+          const semJanela = !minhaJanela.configurada;
+          const corDias =
+            diasRestantes <= 7
+              ? "text-red-400"
+              : diasRestantes <= 30
+                ? "text-amber-400"
+                : "text-emerald-400";
+          const corBarra =
+            diasRestantes <= 7
+              ? "bg-red-500"
+              : diasRestantes <= 30
+                ? "bg-amber-500"
+                : "bg-emerald-500";
 
-        return (
-          <div
-            className={`rounded-2xl border mb-6 overflow-hidden ${
-              janelaFechada
-                ? "bg-zinc-800/50 border-zinc-700"
-                : semJanela
-                  ? "bg-zinc-800/40 border-zinc-700/60"
-                  : urgente
-                    ? "bg-red-500/10 border-red-500/30"
-                    : janelaAtiva
-                      ? "bg-emerald-500/[0.06] border-emerald-500/20"
-                      : "bg-blue-500/[0.06] border-blue-500/20"
-            }`}
-          >
-            <div className="p-5 space-y-4">
-
-              {/* ── Linha 1: status chip + contagem regressiva ── */}
-              <div className="flex items-center gap-3 flex-wrap">
-                {janelaFechada ? (
-                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-zinc-700/60 text-zinc-400 border border-zinc-600">
-                    <Lock className="h-3 w-3" /> Período encerrado
-                  </span>
-                ) : semJanela ? (
-                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-zinc-700/60 text-zinc-500 border border-zinc-600">
-                    <AlertCircle className="h-3 w-3" /> Não configurada
-                  </span>
-                ) : janelaAtiva ? (
-                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-                    <CheckCircle2 className="h-3 w-3" /> Janela aberta
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-500/15 text-blue-400 border border-blue-500/30">
-                    <CalendarClock className="h-3 w-3" /> Aguardando abertura
-                  </span>
-                )}
-
-                {/* Contagem regressiva — só quando aberta e com data */}
-                {janelaAtiva && dataFim && (
-                  <span className={`ml-auto text-sm font-bold ${corDias}`}>
-                    {diasRestantes <= 0
-                      ? "Encerra hoje!"
-                      : `${diasRestantes} dia${diasRestantes !== 1 ? "s" : ""} restante${diasRestantes !== 1 ? "s" : ""}`}
-                  </span>
-                )}
-              </div>
-
-              {/* ── Linha 2: data principal ── */}
-              <div>
-                <p
-                  className={`text-base font-bold leading-snug ${
-                    janelaFechada
-                      ? "text-zinc-400"
-                      : semJanela
-                        ? "text-zinc-500"
-                        : urgente
-                          ? "text-red-200"
-                          : janelaAtiva
-                            ? "text-zinc-100"
-                            : "text-blue-200"
-                  }`}
-                >
-                  {janelaFechada
-                    ? `Encerrado em ${dataFim ? format(dataFim, "dd 'de' MMMM 'de' yyyy", { locale: ptBR }) : "—"}`
-                    : semJanela
-                      ? "Nenhuma janela configurada para este período"
-                      : janelaAtiva && dataFim
-                        ? `Prazo final: ${format(dataFim, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}`
-                        : dataInicioJanela
-                          ? `Abre em ${format(dataInicioJanela, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}`
-                          : "Janela de solicitações"}
-                </p>
-                <p className="text-xs text-zinc-500 mt-1 leading-relaxed">
-                  {janelaFechada
-                    ? "Novos pedidos, edições e cancelamentos estão bloqueados. Os pedidos já enviados continuam em análise."
-                    : semJanela
-                      ? "Nenhum período de solicitações foi definido para o seu perfil. Aguarde a abertura do próximo período ou entre em contato com seu supervisor."
+          return (
+            <div
+              className={`rounded-2xl border mb-6 overflow-hidden ${
+                janelaFechada
+                  ? "bg-zinc-800/50 border-zinc-700"
+                  : semJanela
+                    ? "bg-zinc-800/40 border-zinc-700/60"
+                    : urgente
+                      ? "bg-red-500/10 border-red-500/30"
                       : janelaAtiva
-                        ? "A janela de solicitações é o período durante o qual sua OM pode encaminhar pedidos de produtos cartográficos ao DSG. Fora deste período, novos pedidos não podem ser criados ou enviados."
-                        : "O próximo período de solicitações ainda não foi aberto. Assim que a janela for ativada, você poderá criar e enviar pedidos de produtos cartográficos."}
-                </p>
-              </div>
+                        ? "bg-emerald-500/[0.06] border-emerald-500/20"
+                        : "bg-blue-500/[0.06] border-blue-500/20"
+              }`}
+            >
+              <div className="p-5 space-y-4">
+                {/* ── Linha 1: status chip + contagem regressiva ── */}
+                <div className="flex items-center gap-3 flex-wrap">
+                  {janelaFechada ? (
+                    <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-zinc-700/60 text-zinc-400 border border-zinc-600">
+                      <Lock className="h-3 w-3" /> Período encerrado
+                    </span>
+                  ) : semJanela ? (
+                    <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-zinc-700/60 text-zinc-500 border border-zinc-600">
+                      <AlertCircle className="h-3 w-3" /> Não configurada
+                    </span>
+                  ) : janelaAtiva ? (
+                    <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                      <CheckCircle2 className="h-3 w-3" /> Janela aberta
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-500/15 text-blue-400 border border-blue-500/30">
+                      <CalendarClock className="h-3 w-3" /> Aguardando abertura
+                    </span>
+                  )}
 
-              {/* ── Legenda de status — só quando janela aberta ── */}
-              {janelaAtiva && (
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="bg-zinc-800/50 border border-zinc-700/50 rounded-xl p-3">
-                    <div className="flex items-center gap-1.5 mb-1.5">
-                      <span className="h-2 w-2 rounded-full bg-amber-400 shrink-0" />
-                      <span className="text-xs font-semibold text-zinc-300">Rascunho</span>
-                    </div>
-                    <p className="text-[11px] text-zinc-500 leading-relaxed">
-                      Pedido criado mas ainda não enviado à cadeia de comando.
-                      Pode ser editado ou cancelado livremente até o fim do período.
-                    </p>
-                  </div>
-                  <div className="bg-zinc-800/50 border border-zinc-700/50 rounded-xl p-3">
-                    <div className="flex items-center gap-1.5 mb-1.5">
-                      <span className="h-2 w-2 rounded-full bg-emerald-400 shrink-0" />
-                      <span className="text-xs font-semibold text-zinc-300">Enviado</span>
-                    </div>
-                    <p className="text-[11px] text-zinc-500 leading-relaxed">
-                      Pedido submetido e em análise na cadeia de comando.
-                      Não pode ser alterado após o envio. Acompanhe o status nesta tela.
-                    </p>
-                  </div>
+                  {/* Contagem regressiva — só quando aberta e com data */}
+                  {janelaAtiva && dataFim && (
+                    <span className={`ml-auto text-sm font-bold ${corDias}`}>
+                      {diasRestantes <= 0
+                        ? "Encerra hoje!"
+                        : `${diasRestantes} dia${diasRestantes !== 1 ? "s" : ""} restante${diasRestantes !== 1 ? "s" : ""}`}
+                    </span>
+                  )}
                 </div>
-              )}
 
-              {/* ── Avisos de estado atual ── */}
-
-              {/* Janela aberta + rascunhos pendentes */}
-              {janelaAtiva && rascunhos.length > 0 && (
-                <div
-                  className={`flex items-start gap-2.5 rounded-xl p-3 ${
-                    urgente
-                      ? "bg-red-500/10 border border-red-500/20"
-                      : "bg-amber-500/8 border border-amber-500/20"
-                  }`}
-                >
-                  <AlertTriangle
-                    className={`h-3.5 w-3.5 shrink-0 mt-0.5 ${urgente ? "text-red-400" : "text-amber-400"}`}
-                  />
+                {/* ── Linha 2: data principal ── */}
+                <div>
                   <p
-                    className={`text-xs leading-relaxed ${urgente ? "text-red-300" : "text-amber-200/80"}`}
+                    className={`text-base font-bold leading-snug ${
+                      janelaFechada
+                        ? "text-zinc-400"
+                        : semJanela
+                          ? "text-zinc-500"
+                          : urgente
+                            ? "text-red-200"
+                            : janelaAtiva
+                              ? "text-zinc-100"
+                              : "text-blue-200"
+                    }`}
                   >
-                    Você tem{" "}
-                    <strong className={urgente ? "text-red-200" : "text-amber-200"}>
-                      {rascunhos.length} pedido{rascunhos.length !== 1 ? "s" : ""} em rascunho
-                    </strong>
-                    {urgente
-                      ? " — o prazo está se encerrando. Revise e envie seus pedidos o quanto antes, ou serão enviados automaticamente ao fim do período."
-                      : ". Pedidos em rascunho serão enviados automaticamente ao encerrar o prazo. Você pode editá-los livremente até lá."}
+                    {janelaFechada
+                      ? `Encerrado em ${dataFim ? format(dataFim, "dd 'de' MMMM 'de' yyyy", { locale: ptBR }) : "—"}`
+                      : semJanela
+                        ? "Nenhuma janela configurada para este período"
+                        : janelaAtiva && dataFim
+                          ? `Prazo final: ${format(dataFim, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}`
+                          : dataInicioJanela
+                            ? `Abre em ${format(dataInicioJanela, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}`
+                            : "Janela de solicitações"}
+                  </p>
+                  <p className="text-xs text-zinc-500 mt-1 leading-relaxed">
+                    {janelaFechada
+                      ? "Novos pedidos, edições e cancelamentos estão bloqueados. Os pedidos já enviados continuam em análise."
+                      : semJanela
+                        ? "Nenhum período de solicitações foi definido para o seu perfil. Aguarde a abertura do próximo período ou entre em contato com seu supervisor."
+                        : janelaAtiva
+                          ? "A janela de solicitações é o período durante o qual sua OM pode encaminhar pedidos de Geoinformação. Novos pedidos não podem ser criados ou enviados fora desta janela."
+                          : "O próximo período de solicitações ainda não foi aberto. Assim que a janela for ativada, você poderá criar e enviar pedidos de produtos cartográficos."}
                   </p>
                 </div>
-              )}
 
-              {/* Janela aberta + todos já enviados */}
-              {janelaAtiva && todosEnviados && (
-                <div className="flex items-start gap-2.5 bg-emerald-500/8 border border-emerald-500/20 rounded-xl p-3">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-xs font-semibold text-emerald-300 mb-0.5">
-                      Todos os pedidos foram enviados
-                    </p>
-                    <p className="text-[11px] text-emerald-300/70 leading-relaxed">
-                      Caso necessite alterar algum pedido, entre em contato com a{" "}
-                      <strong>SSGeoInt do seu Cmd Mil A enquadrante</strong> ou
-                      o órgão ao qual está subordinado.
-                    </p>
+                {/* ── Legenda de status — só quando janela aberta ── */}
+                {janelaAtiva && (
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="bg-zinc-800/50 border border-zinc-700/50 rounded-xl p-3">
+                      <div className="flex items-center gap-1.5 mb-1.5">
+                        <span className="h-2 w-2 rounded-full bg-amber-400 shrink-0" />
+                        <span className="text-xs font-semibold text-zinc-300">
+                          Rascunho
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-zinc-500 leading-relaxed">
+                        Pedido criado, mas ainda não enviado ao escalão superior.
+                        Pode ser editado ou cancelado livremente até o fim do
+                        período.
+                      </p>
+                    </div>
+                    <div className="bg-zinc-800/50 border border-zinc-700/50 rounded-xl p-3">
+                      <div className="flex items-center gap-1.5 mb-1.5">
+                        <span className="h-2 w-2 rounded-full bg-emerald-400 shrink-0" />
+                        <span className="text-xs font-semibold text-zinc-300">
+                          Enviado
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-zinc-500 leading-relaxed">
+                        Pedido submetido para análise da cadeia de comando. Não
+                        pode ser alterado após o envio. Acompanhe o status nesta
+                        tela.
+                      </p>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* Janela fechada + rascunhos ainda pendentes */}
-              {janelaFechada && rascunhos.length > 0 && (
-                <p className="text-xs text-zinc-500">
-                  Você ainda tem{" "}
-                  <strong className="text-zinc-300">
-                    {rascunhos.length} pedido{rascunhos.length !== 1 ? "s" : ""} em rascunho
-                  </strong>{" "}
-                  — use o botão{" "}
-                  <strong className="text-emerald-400">Enviar Pedidos</strong>{" "}
-                  acima para encaminhá-lo{rascunhos.length !== 1 ? "s" : ""}.
-                </p>
-              )}
+                {/* ── Avisos de estado atual ── */}
 
-            </div>
-
-            {/* Barra de progresso temporal */}
-            {janelaAtiva && dataFim && dataInicioJanela &&
-              (() => {
-                const total = dataFim.getTime() - dataInicioJanela.getTime();
-                const elapsed = now.getTime() - dataInicioJanela.getTime();
-                const pct = Math.min(100, Math.max(0, (elapsed / total) * 100));
-                return (
-                  <div className="h-1 bg-black/20">
-                    <div
-                      className={`h-full transition-all ${corBarra}`}
-                      style={{ width: `${pct}%` }}
+                {/* Janela aberta + rascunhos pendentes */}
+                {janelaAtiva && rascunhos.length > 0 && (
+                  <div
+                    className={`flex items-start gap-2.5 rounded-xl p-3 ${
+                      urgente
+                        ? "bg-red-500/10 border border-red-500/20"
+                        : "bg-amber-500/8 border border-amber-500/20"
+                    }`}
+                  >
+                    <AlertTriangle
+                      className={`h-3.5 w-3.5 shrink-0 mt-0.5 ${urgente ? "text-red-400" : "text-amber-400"}`}
                     />
+                    <p
+                      className={`text-xs leading-relaxed ${urgente ? "text-red-300" : "text-amber-200/80"}`}
+                    >
+                      Você tem{" "}
+                      <strong
+                        className={urgente ? "text-red-200" : "text-amber-200"}
+                      >
+                        {rascunhos.length} pedido
+                        {rascunhos.length !== 1 ? "s" : ""} em rascunho
+                      </strong>
+                      {urgente
+                        ? " — o prazo está se encerrando. Revise e envie seus pedidos o quanto antes, ou serão enviados automaticamente ao fim do período."
+                        : ". Pedidos em rascunho serão enviados automaticamente ao encerrar o prazo. Você pode editá-los livremente até lá."}
+                    </p>
                   </div>
-                );
-              })()}
-          </div>
-        );
-      })()}
+                )}
+
+                {/* Janela aberta + todos já enviados */}
+                {janelaAtiva && todosEnviados && (
+                  <div className="flex items-start gap-2.5 bg-emerald-500/8 border border-emerald-500/20 rounded-xl p-3">
+                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-xs font-semibold text-emerald-300 mb-0.5">
+                        Todos os pedidos foram enviados
+                      </p>
+                      <p className="text-[11px] text-emerald-300/70 leading-relaxed">
+                        Caso necessite alterar algum pedido, entre em contato
+                        com a{" "}
+                        <strong>SSGeoInt do seu Cmd Mil A enquadrante</strong>{" "}
+                        ou o órgão ao qual está subordinado.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Janela fechada + rascunhos ainda pendentes */}
+                {janelaFechada && rascunhos.length > 0 && (
+                  <p className="text-xs text-zinc-500">
+                    Você ainda tem{" "}
+                    <strong className="text-zinc-300">
+                      {rascunhos.length} pedido
+                      {rascunhos.length !== 1 ? "s" : ""} em rascunho
+                    </strong>{" "}
+                    — use o botão{" "}
+                    <strong className="text-emerald-400">Enviar Pedidos</strong>{" "}
+                    acima para encaminhá-lo{rascunhos.length !== 1 ? "s" : ""}.
+                  </p>
+                )}
+              </div>
+
+              {/* Barra de progresso temporal */}
+              {janelaAtiva &&
+                dataFim &&
+                dataInicioJanela &&
+                (() => {
+                  const total = dataFim.getTime() - dataInicioJanela.getTime();
+                  const elapsed = now.getTime() - dataInicioJanela.getTime();
+                  const pct = Math.min(
+                    100,
+                    Math.max(0, (elapsed / total) * 100),
+                  );
+                  return (
+                    <div className="h-1 bg-black/20">
+                      <div
+                        className={`h-full transition-all ${corBarra}`}
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  );
+                })()}
+            </div>
+          );
+        })()}
 
       {/* ── Dica de reordenação + cabeçalho das colunas ── */}
       {canReorderPedidos && pedidos.length > 0 && (
         <div className="mb-2">
           <p className="text-xs text-emerald-500 font-semibold flex items-center gap-1.5 mb-2">
             <GripVertical className="h-3.5 w-3.5" />
-            Arraste para ordenar por prioridade
+            Arraste o pedido para reordenar sua prioridade
           </p>
           <div className="flex items-center gap-3 px-3 pb-1.5 border-b border-zinc-800 text-[10px] font-semibold text-zinc-600 uppercase tracking-wider">
             <span className="w-[42px] shrink-0">Prioridade</span>

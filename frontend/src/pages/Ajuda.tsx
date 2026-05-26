@@ -1276,11 +1276,10 @@ export function Ajuda() {
       <section className="bg-zinc-900 border border-white/10 rounded-2xl p-6">
         <SectionTitle
           icon={<BookOpen className="h-4 w-4" />}
-          title="Produtos disponíveis"
+          title="Produtos Disponíveis"
         />
         <p className="text-xs text-zinc-500 mb-4">
-          Clique em qualquer produto para visualizar a imagem ampliada e os
-          detalhes completos.
+          Clique no produto para visualizar a imagem ampliada e os respectivos detalhes.
         </p>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
           {PRODUTOS.map((p) => (
@@ -1293,7 +1292,7 @@ export function Ajuda() {
       <section className="bg-zinc-900 border border-white/10 rounded-2xl p-6">
         <SectionTitle
           icon={<FileText className="h-4 w-4" />}
-          title="Materiais de impressão"
+          title="Materiais de Impressão"
         />
         <p className="text-xs text-zinc-500 mb-4">
           Ao solicitar impressão de Carta Topográfica ou Carta Ortoimagem,
@@ -1353,18 +1352,17 @@ export function Ajuda() {
       <section className="bg-zinc-900 border border-white/10 rounded-2xl p-6">
         <SectionTitle
           icon={<ZoomIn className="h-4 w-4" />}
-          title="Escalas cartográficas"
+          title="Escalas de Representação"
         />
 
         <p className="text-sm text-zinc-400 leading-relaxed mb-5">
-          A escala indica a relação entre a distância no mapa e a distância real
-          no terreno.
+          A escala indica a relação entre a distância medida no produto e a
+          distância real medida no terreno. Escolha a escala de representação
+          conforme o nível de planejamento e área de interesse, lembrando que:{" "}
           <span className="text-zinc-200">
-            {" "}
-            Menor denominador = maior detalhe = menor área por folha.
-          </span>{" "}
-          Escolha a escala conforme o nível de planejamento e a área de
-          interesse.
+            menor denominador = menor área representada = maior detalhamento das
+            informações.
+          </span>
         </p>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -1386,17 +1384,16 @@ export function Ajuda() {
       <section className="bg-zinc-900 border border-white/10 rounded-2xl p-6">
         <SectionTitle
           icon={<FileText className="h-4 w-4" />}
-          title="Fluxo hierárquico do pedido"
+          title="Fluxo Hierárquico do Pedido"
         />
         <p className="text-xs text-zinc-500 mb-5">
-          O caminho do pedido depende da subordinação da OM. Há dois fluxos
-          distintos conforme o órgão vinculante.
+          O caminho do pedido depende da subordinação da OM do solicitante.
         </p>
 
         {/* Fluxo COTER */}
         <div className="mb-5">
           <p className="text-xs font-semibold text-yellow-400 uppercase tracking-wide mb-2">
-            Subordinados ao COTER
+            Solicitante subordinado ao Órgão de Direção Operacional (COTER)
           </p>
           <div className="flex flex-wrap gap-2 items-center">
             {FLUXO_COTER.map((s, i) => (
@@ -1418,7 +1415,7 @@ export function Ajuda() {
         {/* Fluxo outros órgãos */}
         <div>
           <p className="text-xs font-semibold text-orange-400 uppercase tracking-wide mb-2">
-            Subordinados a DEC / COLOG / DECEx
+            Solicitante subordinado a Órgão de Direção Setorial (DECEX, DEC e COLOG)
           </p>
           <div className="flex flex-wrap gap-2 items-center">
             {FLUXO_OUTROS.map((s, i) => (
@@ -1556,7 +1553,8 @@ export function Ajuda() {
           </p>
           <p className="text-xs text-zinc-500 mt-1 leading-relaxed">
             Entre em contato com a equipe técnica da DSG pelo e-mail
-            institucional. Mantenha seus dados atualizados em{" "}
+            institucional ou no telefone (61) 3415-5237 ou 860-5237(RITEX)
+            Mantenha seus dados atualizados em{" "}
             <span className="text-emerald-400">"Meus Dados"</span> para receber
             notificações corretamente.
           </p>

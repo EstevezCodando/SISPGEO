@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
 import { CheckCircle2, Eye, EyeOff, Mail, XCircle } from "lucide-react";
+import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { Link, useNavigate } from "react-router-dom";
 import { authApi } from "../api/auth";
@@ -14,29 +14,36 @@ const CMILITAR = Object.entries(OMS_DATA).map(([code, { label }]) => ({
 
 const SUBORDINACOES = [
   { value: "COTER", label: "COTER - Comando de Operações Terrestres" },
-  { value: "DSG",   label: "DSG - Diretoria de Serviço Geográfico" },
-  { value: "DEC",   label: "DEC - Departamento de Engenharia e Construção" },
+  { value: "DEC", label: "DEC - Departamento de Engenharia e Construção" },
   { value: "COLOG", label: "COLOG - Comando Logístico" },
-  { value: "DECEx", label: "DECEx - Departamento de Educação e Cultura do Exército" },
+  {
+    value: "DECEx",
+    label: "DECEx - Departamento de Educação e Cultura do Exército",
+  },
+  { value: "DSG", label: "DSG - Diretoria de Serviço Geográfico" },
 ];
 
 // ── Validação de senha (mesmas regras do backend) ─────────────────────────────
 
 function validarSenha(senha: string): string | null {
-  if (senha.length < 8)               return "Mínimo 8 caracteres";
-  if (!/[A-Z]/.test(senha))           return "Pelo menos uma letra maiúscula";
-  if (!/[a-z]/.test(senha))           return "Pelo menos uma letra minúscula";
-  if (!/[0-9]/.test(senha))           return "Pelo menos um número";
-  if (!/[^A-Za-z0-9]/.test(senha))   return "Pelo menos um caractere especial";
+  if (senha.length < 8) return "Mínimo 8 caracteres";
+  if (!/[A-Z]/.test(senha)) return "Pelo menos uma letra maiúscula";
+  if (!/[a-z]/.test(senha)) return "Pelo menos uma letra minúscula";
+  if (!/[0-9]/.test(senha)) return "Pelo menos um número";
+  if (!/[^A-Za-z0-9]/.test(senha)) return "Pelo menos um caractere especial";
   return null;
 }
 
 function RequisitosItem({ ok, texto }: { ok: boolean; texto: string }) {
   return (
-    <li className={`flex items-center gap-1.5 text-xs transition-colors ${ok ? "text-emerald-400" : "text-zinc-500"}`}>
-      {ok
-        ? <CheckCircle2 className="h-3.5 w-3.5 flex-shrink-0" />
-        : <XCircle className="h-3.5 w-3.5 flex-shrink-0" />}
+    <li
+      className={`flex items-center gap-1.5 text-xs transition-colors ${ok ? "text-emerald-400" : "text-zinc-500"}`}
+    >
+      {ok ? (
+        <CheckCircle2 className="h-3.5 w-3.5 flex-shrink-0" />
+      ) : (
+        <XCircle className="h-3.5 w-3.5 flex-shrink-0" />
+      )}
       {texto}
     </li>
   );
@@ -94,7 +101,8 @@ export function Register() {
     if (d.length === 0) return "";
     if (d.length <= 2) return `(${d}`;
     if (d.length <= 6) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
-    if (d.length <= 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
+    if (d.length <= 10)
+      return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
     return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
   };
 
@@ -109,28 +117,50 @@ export function Register() {
   // Senha
   const erroSenha = form.senha ? validarSenha(form.senha) : null;
   const senhaOk = form.senha.length > 0 && erroSenha === null;
-  const confirmacaoOk = form.senha === form.confirmar_senha && form.confirmar_senha.length > 0;
+  const confirmacaoOk =
+    form.senha === form.confirmar_senha && form.confirmar_senha.length > 0;
 
   useEffect(() => {
-    if (!form.regiao_militar) { setCustomOMs([]); return; }
-    omsApi.listar(form.regiao_militar)
-      .then(r => setCustomOMs(r.data))
+    if (!form.regiao_militar) {
+      setCustomOMs([]);
+      return;
+    }
+    omsApi
+      .listar(form.regiao_militar)
+      .then((r) => setCustomOMs(r.data))
       .catch(() => setCustomOMs([]));
   }, [form.regiao_militar]);
 
-  const staticOMs = form.regiao_militar ? (OMS_DATA[form.regiao_militar]?.oms ?? []) : [];
+  const staticOMs = form.regiao_militar
+    ? (OMS_DATA[form.regiao_militar]?.oms ?? [])
+    : [];
   const availableOMs = [...new Set([...staticOMs, ...customOMs])].sort((a, b) =>
-    a.localeCompare(b, "pt-BR", { sensitivity: "base" })
+    a.localeCompare(b, "pt-BR", { sensitivity: "base" }),
   );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const erroSenhaAtual = validarSenha(form.senha);
-    if (erroSenhaAtual) { toast.error(erroSenhaAtual); return; }
-    if (form.senha !== form.confirmar_senha) { toast.error("As senhas não coincidem"); return; }
-    if (!form.email.endsWith("@eb.mil.br")) { toast.error("Somente emails @eb.mil.br são aceitos"); return; }
-    if (!form.om.trim()) { toast.error("Informe a Organização Militar"); return; }
-    if (!phoneValid) { toast.error("Informe um telefone válido com DDD – ex: (61) 99999-9999"); return; }
+    if (erroSenhaAtual) {
+      toast.error(erroSenhaAtual);
+      return;
+    }
+    if (form.senha !== form.confirmar_senha) {
+      toast.error("As senhas não coincidem");
+      return;
+    }
+    if (!form.email.endsWith("@eb.mil.br")) {
+      toast.error("Somente emails @eb.mil.br são aceitos");
+      return;
+    }
+    if (!form.om.trim()) {
+      toast.error("Informe a Organização Militar");
+      return;
+    }
+    if (!phoneValid) {
+      toast.error("Informe um telefone válido com DDD – ex: (61) 99999-9999");
+      return;
+    }
 
     const ritex =
       form.ritex_prefix.length === 3 && form.ritex_number.length === 4
@@ -140,7 +170,9 @@ export function Register() {
     setLoading(true);
     try {
       if (omCustom && form.om.trim() && form.regiao_militar) {
-        await omsApi.criar(form.regiao_militar, form.om.trim()).catch(() => {/* silent */});
+        await omsApi.criar(form.regiao_militar, form.om.trim()).catch(() => {
+          /* silent */
+        });
       }
       await authApi.register({
         nome: form.nome,
@@ -158,7 +190,9 @@ export function Register() {
       setRegistered(form.email);
     } catch (err: any) {
       const msg = err.response?.data?.detail ?? "Erro no cadastro";
-      toast.error(Array.isArray(msg) ? (msg[0]?.msg ?? String(msg)) : String(msg));
+      toast.error(
+        Array.isArray(msg) ? (msg[0]?.msg ?? String(msg)) : String(msg),
+      );
     } finally {
       setLoading(false);
     }
@@ -171,10 +205,13 @@ export function Register() {
         <div className="absolute top-[-200px] left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-emerald-500/10 blur-[140px] rounded-full pointer-events-none" />
         <div className="relative z-10 w-full max-w-md">
           <div className="bg-zinc-900 border border-white/10 rounded-2xl shadow-2xl p-8">
-
             {/* Logo */}
             <div className="flex justify-center mb-6">
-              <img src="/dsg.png" alt="DSG" className="h-12 w-auto opacity-80" />
+              <img
+                src="/dsg.png"
+                alt="DSG"
+                className="h-12 w-auto opacity-80"
+              />
             </div>
 
             {/* Ícone de sucesso */}
@@ -189,7 +226,8 @@ export function Register() {
               Cadastro realizado com sucesso!
             </h2>
             <p className="text-zinc-400 text-sm text-center leading-relaxed mb-5">
-              Um link de ativação foi enviado para o endereço abaixo. Siga as instruções para concluir o acesso ao sistema.
+              Um link de ativação foi enviado para o endereço abaixo. Siga as
+              instruções para concluir o acesso ao sistema.
             </p>
 
             {/* E-mail em destaque */}
@@ -207,24 +245,40 @@ export function Register() {
               </p>
               <ol className="space-y-2.5">
                 <li className="flex gap-3 text-sm text-zinc-400">
-                  <span className="text-emerald-500 font-bold text-xs mt-0.5 shrink-0">01</span>
-                  <span>Acesse a caixa de entrada do seu e-mail institucional</span>
+                  <span className="text-emerald-500 font-bold text-xs mt-0.5 shrink-0">
+                    01
+                  </span>
+                  <span>
+                    Acesse a caixa de entrada do seu e-mail institucional
+                  </span>
                 </li>
                 <li className="flex gap-3 text-sm text-zinc-400">
-                  <span className="text-emerald-500 font-bold text-xs mt-0.5 shrink-0">02</span>
-                  <span>Abra a mensagem enviada pelo <strong className="text-zinc-300">SisPGeo</strong> e clique em <strong className="text-zinc-300">Ativar Minha Conta</strong></span>
+                  <span className="text-emerald-500 font-bold text-xs mt-0.5 shrink-0">
+                    02
+                  </span>
+                  <span>
+                    Abra a mensagem enviada pelo{" "}
+                    <strong className="text-zinc-300">SisPGeo</strong> e clique
+                    em{" "}
+                    <strong className="text-zinc-300">
+                      Ativar Minha Conta
+                    </strong>
+                  </span>
                 </li>
                 <li className="flex gap-3 text-sm text-zinc-400">
-                  <span className="text-emerald-500 font-bold text-xs mt-0.5 shrink-0">03</span>
+                  <span className="text-emerald-500 font-bold text-xs mt-0.5 shrink-0">
+                    03
+                  </span>
                   <span>Retorne ao sistema e realize seu primeiro acesso</span>
                 </li>
               </ol>
             </div>
 
             {/* Nota de expiração */}
-            <p className="text-center text-xs text-zinc-600 mb-6">
-              O link de ativação é válido por <span className="text-zinc-500">24 horas</span>.
-              Caso não encontre o e-mail, verifique a pasta de spam.
+            <p className="text-center text-xs text-zinc-400 mb-6">
+              O link de ativação é válido por{" "}
+              <span className="text-zinc-300">24 horas</span>. Caso não encontre
+              o e-mail, verifique a pasta de spam.
             </p>
 
             <button
@@ -251,13 +305,12 @@ export function Register() {
               <img src="/dsg.png" alt="DSG" className="h-12 w-auto" />
             </div>
             <h1 className="text-xl font-semibold text-zinc-100 tracking-tight">
-              Cadastro de novo usuário
+              Cadastro de Novo Usuário
             </h1>
             <p className="text-zinc-500 text-sm">SisPGeo – DSG/EB</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-3">
-
+          <form onSubmit={handleSubmit} className="space-y-3" noValidate>
             {/* Posto / Graduação */}
             <div>
               <label className="block text-sm font-medium text-zinc-300 mb-1.5">
@@ -269,7 +322,9 @@ export function Register() {
                 required
                 className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2.5 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
               >
-                <option value="" className="bg-zinc-800">Selecione o posto / graduação</option>
+                <option value="" className="bg-zinc-800">
+                  Selecione o posto / graduação
+                </option>
                 {POSTOS.map((p) => (
                   <option key={p.id} value={p.nome} className="bg-zinc-800">
                     {p.abrev} – {p.nome}
@@ -324,8 +379,8 @@ export function Register() {
                     phoneTouched && !phoneValid
                       ? "border border-red-500 focus:ring-red-500 focus:border-red-500"
                       : phoneTouched && phoneValid
-                      ? "border border-emerald-500 focus:ring-emerald-500 focus:border-emerald-500"
-                      : "border border-zinc-700 focus:ring-emerald-500 focus:border-emerald-500",
+                        ? "border border-emerald-500 focus:ring-emerald-500 focus:border-emerald-500"
+                        : "border border-zinc-700 focus:ring-emerald-500 focus:border-emerald-500",
                   ].join(" ")}
                 />
                 {phoneTouched && phoneValid && (
@@ -336,7 +391,8 @@ export function Register() {
               </div>
               {phoneTouched && !phoneValid && (
                 <p className="mt-1 text-xs text-red-400">
-                  Número incompleto – informe DDD + número (fixo: 8 dígitos, celular: 9 dígitos)
+                  Número incompleto – informe DDD + número (fixo: 8 dígitos,
+                  celular: 9 dígitos)
                 </p>
               )}
             </div>
@@ -345,7 +401,9 @@ export function Register() {
             <div>
               <label className="block text-sm font-medium text-zinc-300 mb-1.5">
                 Telefone Funcional (Ritex)
-                <span className="text-zinc-500 text-xs font-normal ml-1">– opcional</span>
+                <span className="text-zinc-500 text-xs font-normal ml-1">
+                  – opcional
+                </span>
               </label>
               <div className="flex items-center gap-2">
                 <input
@@ -357,7 +415,9 @@ export function Register() {
                   maxLength={3}
                   className="w-20 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 text-center tracking-widest focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
                 />
-                <span className="text-zinc-500 font-semibold select-none">-</span>
+                <span className="text-zinc-500 font-semibold select-none">
+                  -
+                </span>
                 <input
                   type="text"
                   inputMode="numeric"
@@ -369,7 +429,8 @@ export function Register() {
                 />
                 {(form.ritex_prefix || form.ritex_number) && (
                   <span className="text-xs text-zinc-500 ml-1">
-                    {form.ritex_prefix.padEnd(3, "_")}-{form.ritex_number.padEnd(4, "_")}
+                    {form.ritex_prefix.padEnd(3, "_")}-
+                    {form.ritex_number.padEnd(4, "_")}
                   </span>
                 )}
               </div>
@@ -378,7 +439,8 @@ export function Register() {
             {/* Comando Militar Enquadrante */}
             <div>
               <label className="block text-sm font-medium text-zinc-300 mb-1.5">
-                Comando Militar de Área Enquadrante <span className="text-red-400">*</span>
+                Comando Militar de Área Enquadrante{" "}
+                <span className="text-red-400">*</span>
               </label>
               <select
                 value={form.regiao_militar}
@@ -386,7 +448,9 @@ export function Register() {
                 required
                 className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2.5 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
               >
-                <option value="" className="bg-zinc-800">Escolha o C Mil A Enquadrante</option>
+                <option value="" className="bg-zinc-800">
+                  Escolha o C Mil A Enquadrante
+                </option>
                 {CMILITAR.map(({ code, label }) => (
                   <option key={code} value={code} className="bg-zinc-800">
                     {code} – {label}
@@ -406,14 +470,17 @@ export function Register() {
                     type="text"
                     value={form.om}
                     onChange={set("om")}
-                    placeholder="Digite o nome completo da OM"
+                    placeholder="Digite a sigla da OM"
                     required
                     autoFocus
                     className="flex-1 bg-zinc-800 border border-emerald-500/40 rounded-lg px-3 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
                   />
                   <button
                     type="button"
-                    onClick={() => { setOmCustom(false); setForm((f) => ({ ...f, om: "" })); }}
+                    onClick={() => {
+                      setOmCustom(false);
+                      setForm((f) => ({ ...f, om: "" }));
+                    }}
                     className="px-3 py-2 text-xs text-zinc-400 hover:text-zinc-200 border border-zinc-700 rounded-lg transition-colors"
                   >
                     ← Lista
@@ -442,7 +509,10 @@ export function Register() {
                   {form.regiao_militar && (
                     <button
                       type="button"
-                      onClick={() => { setOmCustom(true); setForm((f) => ({ ...f, om: "" })); }}
+                      onClick={() => {
+                        setOmCustom(true);
+                        setForm((f) => ({ ...f, om: "" }));
+                      }}
                       className="mt-1.5 text-[11px] text-emerald-500 hover:text-emerald-400 transition-colors"
                     >
                       + Minha OM não está na lista
@@ -472,7 +542,9 @@ export function Register() {
                 required
                 className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2.5 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
               >
-                <option value="" className="bg-zinc-800">Escolha a subordinação</option>
+                <option value="" className="bg-zinc-800">
+                  Escolha a subordinação
+                </option>
                 {SUBORDINACOES.map(({ value, label }) => (
                   <option key={value} value={value} className="bg-zinc-800">
                     {label}
@@ -495,11 +567,12 @@ export function Register() {
                   placeholder="Crie uma senha segura"
                   className={`w-full bg-zinc-800 rounded-lg px-3 py-2.5 pr-10 text-sm text-zinc-100
                     placeholder:text-zinc-500 focus:outline-none focus:ring-1 transition-colors
-                    ${form.senha.length > 0
-                      ? senhaOk
-                        ? "border border-emerald-500/60 focus:ring-emerald-500 focus:border-emerald-500"
-                        : "border border-red-500/60 focus:ring-red-500/50 focus:border-red-500/50"
-                      : "border border-zinc-700 focus:ring-emerald-500 focus:border-emerald-500"
+                    ${
+                      form.senha.length > 0
+                        ? senhaOk
+                          ? "border border-emerald-500/60 focus:ring-emerald-500 focus:border-emerald-500"
+                          : "border border-red-500/60 focus:ring-red-500/50 focus:border-red-500/50"
+                        : "border border-zinc-700 focus:ring-emerald-500 focus:border-emerald-500"
                     }`}
                 />
                 <button
@@ -509,18 +582,37 @@ export function Register() {
                   tabIndex={-1}
                   aria-label={showSenha ? "Ocultar senha" : "Mostrar senha"}
                 >
-                  {showSenha ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {showSenha ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
                 </button>
               </div>
 
               {/* Requisitos dinâmicos — aparecem quando o usuário começa a digitar */}
               {form.senha.length > 0 && (
                 <ul className="mt-2 space-y-1 pl-0.5">
-                  <RequisitosItem ok={form.senha.length >= 8}              texto="Mínimo 8 caracteres" />
-                  <RequisitosItem ok={/[A-Z]/.test(form.senha)}            texto="Uma letra maiúscula" />
-                  <RequisitosItem ok={/[a-z]/.test(form.senha)}            texto="Uma letra minúscula" />
-                  <RequisitosItem ok={/[0-9]/.test(form.senha)}            texto="Um número" />
-                  <RequisitosItem ok={/[^A-Za-z0-9]/.test(form.senha)}     texto="Um caractere especial (!@#$...)" />
+                  <RequisitosItem
+                    ok={form.senha.length >= 8}
+                    texto="Mínimo 8 caracteres"
+                  />
+                  <RequisitosItem
+                    ok={/[A-Z]/.test(form.senha)}
+                    texto="Uma letra maiúscula"
+                  />
+                  <RequisitosItem
+                    ok={/[a-z]/.test(form.senha)}
+                    texto="Uma letra minúscula"
+                  />
+                  <RequisitosItem
+                    ok={/[0-9]/.test(form.senha)}
+                    texto="Um número"
+                  />
+                  <RequisitosItem
+                    ok={/[^A-Za-z0-9]/.test(form.senha)}
+                    texto="Um caractere especial (!@#$...)"
+                  />
                 </ul>
               )}
             </div>
@@ -539,11 +631,12 @@ export function Register() {
                   placeholder="Repita a senha"
                   className={`w-full bg-zinc-800 rounded-lg px-3 py-2.5 pr-10 text-sm text-zinc-100
                     placeholder:text-zinc-500 focus:outline-none focus:ring-1 transition-colors
-                    ${form.confirmar_senha.length > 0
-                      ? confirmacaoOk
-                        ? "border border-emerald-500/60 focus:ring-emerald-500 focus:border-emerald-500"
-                        : "border border-red-500/60 focus:ring-red-500/50 focus:border-red-500/50"
-                      : "border border-zinc-700 focus:ring-emerald-500 focus:border-emerald-500"
+                    ${
+                      form.confirmar_senha.length > 0
+                        ? confirmacaoOk
+                          ? "border border-emerald-500/60 focus:ring-emerald-500 focus:border-emerald-500"
+                          : "border border-red-500/60 focus:ring-red-500/50 focus:border-red-500/50"
+                        : "border border-zinc-700 focus:ring-emerald-500 focus:border-emerald-500"
                     }`}
                 />
                 <button
@@ -553,11 +646,17 @@ export function Register() {
                   tabIndex={-1}
                   aria-label={showConfirmar ? "Ocultar senha" : "Mostrar senha"}
                 >
-                  {showConfirmar ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {showConfirmar ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
                 </button>
               </div>
               {form.confirmar_senha.length > 0 && !confirmacaoOk && (
-                <p className="mt-1 text-xs text-red-400">As senhas não coincidem</p>
+                <p className="mt-1 text-xs text-red-400">
+                  As senhas não coincidem
+                </p>
               )}
               {confirmacaoOk && (
                 <p className="mt-1 text-xs text-emerald-400 flex items-center gap-1">
@@ -607,6 +706,9 @@ function Field({
   placeholder?: string;
   required?: boolean;
 }) {
+  const [touched, setTouched] = useState(false);
+  const isInvalid = required && touched && !value.trim();
+
   return (
     <div>
       <label className="block text-sm font-medium text-zinc-300 mb-1.5">
@@ -616,10 +718,19 @@ function Field({
         type={type}
         value={value}
         onChange={onChange}
+        onBlur={() => setTouched(true)}
         placeholder={placeholder}
-        required={required}
-        className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
+        className={[
+          "w-full bg-zinc-800 rounded-lg px-3 py-2.5 text-sm text-zinc-100",
+          "placeholder:text-zinc-500 focus:outline-none focus:ring-1 transition-colors",
+          isInvalid
+            ? "border border-red-500 focus:ring-red-500 focus:border-red-500"
+            : "border border-zinc-700 focus:ring-emerald-500 focus:border-emerald-500",
+        ].join(" ")}
       />
+      {isInvalid && (
+        <p className="mt-1 text-xs text-red-400">Campo obrigatório</p>
+      )}
     </div>
   );
 }
