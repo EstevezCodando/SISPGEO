@@ -450,15 +450,18 @@ function SortablePedidoRow_Base({
 
           {/* Produtos */}
           <div className="px-5 py-4">
-            <p className="text-xs font-medium text-zinc-500 mb-2 flex items-center gap-1.5">
-              <FileText className="h-3.5 w-3.5" />
-              Produtos do pedido ({localItems.length})
+            <div className="mb-2">
+              <p className="text-xs font-medium text-zinc-500 flex items-center gap-1.5">
+                <FileText className="h-3.5 w-3.5" />
+                Produtos do pedido ({localItems.length})
+              </p>
               {canReorder && (
-                <span className="ml-auto text-emerald-500 font-semibold tracking-wide text-[11px]">
+                <p className="text-[11px] text-emerald-500 font-semibold mt-1.5 flex items-center gap-1">
+                  <GripVertical className="h-3 w-3" />
                   Arraste para reordenar prioridade
-                </span>
+                </p>
               )}
-            </p>
+            </div>
 
             {canReorder ? (
               <DndContext
@@ -490,19 +493,43 @@ function SortablePedidoRow_Base({
                     key={item.id}
                     className="flex items-center gap-2.5 text-xs bg-zinc-800/60 border border-zinc-700/40 rounded-lg px-3 py-2"
                   >
-                    <span className="text-emerald-400 font-mono font-medium">
-                      {item.inom}
-                    </span>
                     {item.mi && (
-                      <span className="text-zinc-500">MI: {item.mi}</span>
+                      <span className="text-zinc-500 shrink-0">
+                        MI:{" "}
+                        <span className="text-zinc-300 font-mono">
+                          {item.mi}
+                        </span>
+                      </span>
                     )}
-                    <span className="text-zinc-400">
+                    <span className="text-zinc-500 shrink-0">
+                      INOM:{" "}
+                      <span className="text-emerald-400 font-mono font-medium">
+                        {item.inom}
+                      </span>
+                    </span>
+                    <span className="text-zinc-400 shrink-0">
                       {TIPO_PRODUTO_LABELS[item.tipo_produto]}
                     </span>
                     <span className="text-zinc-600">·</span>
-                    <span className="text-zinc-500">{item.escala}</span>
+                    <span className="text-zinc-500 shrink-0">
+                      {item.escala}
+                    </span>
+                    {item.impressao_quantidade &&
+                    item.impressao_tipo_material ? (
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Printer className="h-3 w-3 text-violet-400" />
+                        <span className="text-zinc-400">
+                          {item.impressao_quantidade}×{" "}
+                          {item.impressao_tipo_material}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-zinc-700 shrink-0 text-[11px]">
+                        Sem Impressão
+                      </span>
+                    )}
                     {item.disponivel_bdgex && (
-                      <span className="ml-auto text-emerald-500 font-medium">
+                      <span className="ml-auto text-emerald-500 font-medium shrink-0">
                         Disponível no BDGEx
                       </span>
                     )}
@@ -586,25 +613,36 @@ function SortableItemRow({
         <GripVertical className="h-3.5 w-3.5" />
       </button>
       <span className="text-zinc-600 w-4 text-center shrink-0">{rank}</span>
-      <span className="text-emerald-400 font-mono font-medium">
-        {item.inom}
+      {item.mi && (
+        <span className="text-zinc-500 shrink-0">
+          MI: <span className="text-zinc-300 font-mono">{item.mi}</span>
+        </span>
+      )}
+      <span className="text-zinc-500 shrink-0">
+        INOM:{" "}
+        <span className="text-emerald-400 font-mono font-medium">
+          {item.inom}
+        </span>
       </span>
-      {item.mi && <span className="text-zinc-500">MI: {item.mi}</span>}
-      <span className="text-zinc-400">
+      <span className="text-zinc-400 shrink-0">
         {TIPO_PRODUTO_LABELS[item.tipo_produto]}
       </span>
       <span className="text-zinc-600">·</span>
-      <span className="text-zinc-500">{item.escala}</span>
-      {item.impressao_quantidade && item.impressao_tipo_material && (
-        <div className="flex items-center gap-1 text-zinc-400">
+      <span className="text-zinc-500 shrink-0">{item.escala}</span>
+      {item.impressao_quantidade && item.impressao_tipo_material ? (
+        <div className="flex items-center gap-1 shrink-0">
           <Printer className="h-3 w-3 text-violet-400" />
-          <span>
-            {item.impressao_quantidade}x {item.impressao_tipo_material}
+          <span className="text-zinc-400">
+            {item.impressao_quantidade}× {item.impressao_tipo_material}
           </span>
         </div>
+      ) : (
+        <span className="text-zinc-700 shrink-0 text-[11px]">
+          Sem Impressão
+        </span>
       )}
       {item.disponivel_bdgex && (
-        <span className="text-emerald-500 font-medium">
+        <span className="text-emerald-500 font-medium shrink-0">
           Disponível no BDGEx
         </span>
       )}
@@ -1370,130 +1408,224 @@ export function MeusPedidos() {
       </div>
 
       {/* ── Banner janela de solicitações ── */}
-      {minhaJanela && (
-        <div
-          className={`rounded-2xl border mb-6 overflow-hidden ${
-            janelaFechada
-              ? "bg-zinc-800/50 border-zinc-700"
-              : urgente
-                ? "bg-red-500/10 border-red-500/30"
-                : janelaAtiva
-                  ? "bg-emerald-500/8 border-emerald-500/20"
-                  : "bg-blue-500/8 border-blue-500/20"
-          }`}
-        >
-          <div className="px-6 py-5 text-center">
-            <div className="flex justify-center mb-3">
-              {janelaFechada ? (
-                <Lock className="h-8 w-8 text-zinc-500" />
-              ) : urgente ? (
-                <AlertCircle className="h-8 w-8 text-red-400" />
-              ) : (
-                <CalendarClock
-                  className={`h-8 w-8 ${janelaAtiva ? "text-emerald-400" : "text-blue-400"}`}
-                />
-              )}
-            </div>
-            <p
-              className={`text-xl font-bold leading-snug ${
-                janelaFechada
-                  ? "text-zinc-400"
-                  : urgente
-                    ? "text-red-200"
-                    : janelaAtiva
-                      ? "text-zinc-100"
-                      : "text-blue-200"
-              }`}
-            >
-              {janelaFechada
-                ? `Período de solicitações encerrado${dataFim ? ` em ${format(dataFim, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}` : ""}`
-                : janelaAtiva && dataFim
-                  ? `Sua janela encerra em ${format(dataFim, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}`
-                  : dataInicioJanela
-                    ? `Próximo período abre em ${format(dataInicioJanela, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}`
-                    : "Janela de solicitações"}
-            </p>
+      {minhaJanela && (() => {
+        // Acesso irrestrito (DSG/CGEO) — sem restrição de janela, oculta banner
+        if (janelaAtiva && !dataFimJanela && minhaJanela.configurada) return null;
 
-            {/* Janela ABERTA — com rascunhos */}
-            {janelaAtiva && rascunhos.length > 0 && (
-              <>
+        const semJanela = !minhaJanela.configurada;
+        const corDias =
+          diasRestantes <= 7
+            ? "text-red-400"
+            : diasRestantes <= 30
+              ? "text-amber-400"
+              : "text-emerald-400";
+        const corBarra =
+          diasRestantes <= 7
+            ? "bg-red-500"
+            : diasRestantes <= 30
+              ? "bg-amber-500"
+              : "bg-emerald-500";
+
+        return (
+          <div
+            className={`rounded-2xl border mb-6 overflow-hidden ${
+              janelaFechada
+                ? "bg-zinc-800/50 border-zinc-700"
+                : semJanela
+                  ? "bg-zinc-800/40 border-zinc-700/60"
+                  : urgente
+                    ? "bg-red-500/10 border-red-500/30"
+                    : janelaAtiva
+                      ? "bg-emerald-500/[0.06] border-emerald-500/20"
+                      : "bg-blue-500/[0.06] border-blue-500/20"
+            }`}
+          >
+            <div className="p-5 space-y-4">
+
+              {/* ── Linha 1: status chip + contagem regressiva ── */}
+              <div className="flex items-center gap-3 flex-wrap">
+                {janelaFechada ? (
+                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-zinc-700/60 text-zinc-400 border border-zinc-600">
+                    <Lock className="h-3 w-3" /> Período encerrado
+                  </span>
+                ) : semJanela ? (
+                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-zinc-700/60 text-zinc-500 border border-zinc-600">
+                    <AlertCircle className="h-3 w-3" /> Não configurada
+                  </span>
+                ) : janelaAtiva ? (
+                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                    <CheckCircle2 className="h-3 w-3" /> Janela aberta
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-blue-500/15 text-blue-400 border border-blue-500/30">
+                    <CalendarClock className="h-3 w-3" /> Aguardando abertura
+                  </span>
+                )}
+
+                {/* Contagem regressiva — só quando aberta e com data */}
+                {janelaAtiva && dataFim && (
+                  <span className={`ml-auto text-sm font-bold ${corDias}`}>
+                    {diasRestantes <= 0
+                      ? "Encerra hoje!"
+                      : `${diasRestantes} dia${diasRestantes !== 1 ? "s" : ""} restante${diasRestantes !== 1 ? "s" : ""}`}
+                  </span>
+                )}
+              </div>
+
+              {/* ── Linha 2: data principal ── */}
+              <div>
                 <p
-                  className={`text-sm mt-2 font-semibold ${urgente ? "text-red-400" : "text-emerald-400"}`}
+                  className={`text-base font-bold leading-snug ${
+                    janelaFechada
+                      ? "text-zinc-400"
+                      : semJanela
+                        ? "text-zinc-500"
+                        : urgente
+                          ? "text-red-200"
+                          : janelaAtiva
+                            ? "text-zinc-100"
+                            : "text-blue-200"
+                  }`}
                 >
-                  {diasRestantes <= 0
-                    ? "Encerra hoje!"
-                    : `${diasRestantes} dia${diasRestantes !== 1 ? "s" : ""} restante${diasRestantes !== 1 ? "s" : ""}`}
+                  {janelaFechada
+                    ? `Encerrado em ${dataFim ? format(dataFim, "dd 'de' MMMM 'de' yyyy", { locale: ptBR }) : "—"}`
+                    : semJanela
+                      ? "Nenhuma janela configurada para este período"
+                      : janelaAtiva && dataFim
+                        ? `Prazo final: ${format(dataFim, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}`
+                        : dataInicioJanela
+                          ? `Abre em ${format(dataInicioJanela, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}`
+                          : "Janela de solicitações"}
                 </p>
                 <p className="text-xs text-zinc-500 mt-1 leading-relaxed">
-                  Pedidos em{" "}
-                  <span className="text-zinc-400 font-medium">rascunho</span>{" "}
-                  ainda não foram submetidos à cadeia de comando — você pode
-                  editá-los livremente até o fim do período. Quando o prazo
-                  encerrar, serão enviados automaticamente.
-                </p>
-              </>
-            )}
-
-            {/* Janela ABERTA — todos já submetidos manualmente */}
-            {janelaAtiva && todosEnviados && (
-              <div className="mt-3 mx-auto max-w-sm bg-amber-500/10 border border-amber-500/25 rounded-xl px-4 py-3 text-left">
-                <p className="text-xs font-semibold text-amber-300 mb-1">
-                  Pedidos já encaminhados
-                </p>
-                <p className="text-xs text-amber-200/70 leading-relaxed">
-                  Caso haja a necessidade de alteração do pedido, entre em
-                  contato com a{" "}
-                  <strong>SSGeoInt do seu Cmd Mil A enquadrante</strong> ou o
-                  órgão ao qual o Sr. está subordinado.
+                  {janelaFechada
+                    ? "Novos pedidos, edições e cancelamentos estão bloqueados. Os pedidos já enviados continuam em análise."
+                    : semJanela
+                      ? "Nenhum período de solicitações foi definido para o seu perfil. Aguarde a abertura do próximo período ou entre em contato com seu supervisor."
+                      : janelaAtiva
+                        ? "A janela de solicitações é o período durante o qual sua OM pode encaminhar pedidos de produtos cartográficos ao DSG. Fora deste período, novos pedidos não podem ser criados ou enviados."
+                        : "O próximo período de solicitações ainda não foi aberto. Assim que a janela for ativada, você poderá criar e enviar pedidos de produtos cartográficos."}
                 </p>
               </div>
-            )}
 
-            {/* Janela FECHADA — rascunhos pendentes (fallback para envio manual) */}
-            {janelaFechada && rascunhos.length > 0 && (
-              <p className="text-sm text-zinc-500 mt-2">
-                Você ainda tem {rascunhos.length} pedido
-                {rascunhos.length !== 1 ? "s" : ""} em rascunho — use o botão{" "}
-                <strong className="text-emerald-400">Enviar Pedidos</strong>{" "}
-                acima para encaminhá-lo{rascunhos.length !== 1 ? "s" : ""} ao
-                supervisor.
-              </p>
-            )}
-
-            {/* Janela FECHADA — todos enviados */}
-            {janelaFechada && rascunhos.length === 0 && (
-              <p className="text-sm text-zinc-500 mt-2">
-                Novos pedidos, edições e cancelamentos estão bloqueados.
-              </p>
-            )}
-          </div>
-
-          {/* Barra de progresso */}
-          {janelaAtiva &&
-            dataFim &&
-            dataInicioJanela &&
-            (() => {
-              const total = dataFim.getTime() - dataInicioJanela.getTime();
-              const elapsed = now.getTime() - dataInicioJanela.getTime();
-              const pct = Math.min(100, Math.max(0, (elapsed / total) * 100));
-              return (
-                <div className="h-1 bg-black/20">
-                  <div
-                    className={`h-full transition-all ${urgente ? "bg-red-500" : "bg-emerald-500"}`}
-                    style={{ width: `${pct}%` }}
-                  />
+              {/* ── Legenda de status — só quando janela aberta ── */}
+              {janelaAtiva && (
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="bg-zinc-800/50 border border-zinc-700/50 rounded-xl p-3">
+                    <div className="flex items-center gap-1.5 mb-1.5">
+                      <span className="h-2 w-2 rounded-full bg-amber-400 shrink-0" />
+                      <span className="text-xs font-semibold text-zinc-300">Rascunho</span>
+                    </div>
+                    <p className="text-[11px] text-zinc-500 leading-relaxed">
+                      Pedido criado mas ainda não enviado à cadeia de comando.
+                      Pode ser editado ou cancelado livremente até o fim do período.
+                    </p>
+                  </div>
+                  <div className="bg-zinc-800/50 border border-zinc-700/50 rounded-xl p-3">
+                    <div className="flex items-center gap-1.5 mb-1.5">
+                      <span className="h-2 w-2 rounded-full bg-emerald-400 shrink-0" />
+                      <span className="text-xs font-semibold text-zinc-300">Enviado</span>
+                    </div>
+                    <p className="text-[11px] text-zinc-500 leading-relaxed">
+                      Pedido submetido e em análise na cadeia de comando.
+                      Não pode ser alterado após o envio. Acompanhe o status nesta tela.
+                    </p>
+                  </div>
                 </div>
-              );
-            })()}
-        </div>
-      )}
+              )}
 
-      {/* ── Dica de reordenação — aparece abaixo do banner, perto da tabela ── */}
+              {/* ── Avisos de estado atual ── */}
+
+              {/* Janela aberta + rascunhos pendentes */}
+              {janelaAtiva && rascunhos.length > 0 && (
+                <div
+                  className={`flex items-start gap-2.5 rounded-xl p-3 ${
+                    urgente
+                      ? "bg-red-500/10 border border-red-500/20"
+                      : "bg-amber-500/8 border border-amber-500/20"
+                  }`}
+                >
+                  <AlertTriangle
+                    className={`h-3.5 w-3.5 shrink-0 mt-0.5 ${urgente ? "text-red-400" : "text-amber-400"}`}
+                  />
+                  <p
+                    className={`text-xs leading-relaxed ${urgente ? "text-red-300" : "text-amber-200/80"}`}
+                  >
+                    Você tem{" "}
+                    <strong className={urgente ? "text-red-200" : "text-amber-200"}>
+                      {rascunhos.length} pedido{rascunhos.length !== 1 ? "s" : ""} em rascunho
+                    </strong>
+                    {urgente
+                      ? " — o prazo está se encerrando. Revise e envie seus pedidos o quanto antes, ou serão enviados automaticamente ao fim do período."
+                      : ". Pedidos em rascunho serão enviados automaticamente ao encerrar o prazo. Você pode editá-los livremente até lá."}
+                  </p>
+                </div>
+              )}
+
+              {/* Janela aberta + todos já enviados */}
+              {janelaAtiva && todosEnviados && (
+                <div className="flex items-start gap-2.5 bg-emerald-500/8 border border-emerald-500/20 rounded-xl p-3">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-xs font-semibold text-emerald-300 mb-0.5">
+                      Todos os pedidos foram enviados
+                    </p>
+                    <p className="text-[11px] text-emerald-300/70 leading-relaxed">
+                      Caso necessite alterar algum pedido, entre em contato com a{" "}
+                      <strong>SSGeoInt do seu Cmd Mil A enquadrante</strong> ou
+                      o órgão ao qual está subordinado.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Janela fechada + rascunhos ainda pendentes */}
+              {janelaFechada && rascunhos.length > 0 && (
+                <p className="text-xs text-zinc-500">
+                  Você ainda tem{" "}
+                  <strong className="text-zinc-300">
+                    {rascunhos.length} pedido{rascunhos.length !== 1 ? "s" : ""} em rascunho
+                  </strong>{" "}
+                  — use o botão{" "}
+                  <strong className="text-emerald-400">Enviar Pedidos</strong>{" "}
+                  acima para encaminhá-lo{rascunhos.length !== 1 ? "s" : ""}.
+                </p>
+              )}
+
+            </div>
+
+            {/* Barra de progresso temporal */}
+            {janelaAtiva && dataFim && dataInicioJanela &&
+              (() => {
+                const total = dataFim.getTime() - dataInicioJanela.getTime();
+                const elapsed = now.getTime() - dataInicioJanela.getTime();
+                const pct = Math.min(100, Math.max(0, (elapsed / total) * 100));
+                return (
+                  <div className="h-1 bg-black/20">
+                    <div
+                      className={`h-full transition-all ${corBarra}`}
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                );
+              })()}
+          </div>
+        );
+      })()}
+
+      {/* ── Dica de reordenação + cabeçalho das colunas ── */}
       {canReorderPedidos && pedidos.length > 0 && (
-        <p className="text-xs text-emerald-500 font-semibold flex items-center gap-1.5 -mb-1">
-          <GripVertical className="h-3.5 w-3.5" />
-          Arraste para ordenar por prioridade
-        </p>
+        <div className="mb-2">
+          <p className="text-xs text-emerald-500 font-semibold flex items-center gap-1.5 mb-2">
+            <GripVertical className="h-3.5 w-3.5" />
+            Arraste para ordenar por prioridade
+          </p>
+          <div className="flex items-center gap-3 px-3 pb-1.5 border-b border-zinc-800 text-[10px] font-semibold text-zinc-600 uppercase tracking-wider">
+            <span className="w-[42px] shrink-0">Prioridade</span>
+            <span className="w-24 shrink-0 pl-5">ID</span>
+            <span className="flex-1 pl-1">Especificações</span>
+          </div>
+        </div>
       )}
 
       {/* ── Lista de pedidos ── */}

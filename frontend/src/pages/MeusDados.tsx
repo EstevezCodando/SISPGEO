@@ -51,7 +51,6 @@ const labelCls = 'block text-sm font-medium text-zinc-300 mb-1.5'
 
 export function MeusDados() {
   const { user, setUser } = useAuthStore()
-  const [nomeDeGuerra, setNomeDeGuerra] = useState(user?.nome_de_guerra ?? '')
   const [telefone, setTelefone] = useState(user?.telefone ?? '')
   const [secao, setSecao] = useState(user?.secao_om ?? '')
   const [posto, setPosto] = useState(user?.posto_graduacao ?? '')
@@ -65,7 +64,6 @@ export function MeusDados() {
     setSaving(true)
     try {
       const res = await usersApi.updateMe({
-        nome_de_guerra: nomeDeGuerra || undefined,
         telefone,
         secao_om: secao,
         posto_graduacao: posto || undefined,
@@ -157,16 +155,6 @@ export function MeusDados() {
                 </option>
               ))}
             </select>
-          </div>
-          <div>
-            <label className={labelCls}>Nome de Guerra</label>
-            <input
-              type="text"
-              value={nomeDeGuerra}
-              onChange={(e) => setNomeDeGuerra(e.target.value)}
-              placeholder="Como é chamado(a) militarmente"
-              className={inputCls}
-            />
           </div>
           <div>
             <label className={labelCls}>Telefone</label>
