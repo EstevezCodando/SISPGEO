@@ -1217,6 +1217,10 @@ async def enviar_lote(
     Usado ao final da janela de solicitações — manual (auto_submitted=False)
     ou automático pelo front-end quando a janela encerra (auto_submitted=True).
     Idempotente: se não houver RASCUNHO retorna lista vazia sem erro.
+
+    O roteamento segue a mesma lógica de submit_pedido:
+      - orgao_vinculante == COTER  → AGUARDANDO_SUPERVISOR (pelo C Mil A do usuário)
+      - orgao_vinculante == DEC/COLOG/DECEx/DSG → AGUARDANDO_CONSOLIDADOR
     """
     result = await db.execute(
         select(Pedido)
@@ -1224,21 +1228,25 @@ async def enviar_lote(
         .where(Pedido.status == StatusPedidoEnum.RASCUNHO)
         .order_by(Pedido.prioridade)
     )
-    pedidos = result.scalars().all()
+    pedidos = list(result.scalars().all())
 
     if not pedidos:
         return []
 
+    submitted = []
     for pedido in pedidos:
-        pedido.status = StatusPedidoEnum.AGUARDANDO_SUPERVISOR
-        pedido.submetido_gestor_em = datetime.now(timezone.utc)
-        pedido.auto_submitted = body.auto_submitted
+        # Marca auto_submitted antes de submeter para que o flag fique gravado
+        if body.auto_submitted:
+            pedido.auto_submitted = True
+            await db.flush()
+        try:
+            p = await pedido_service.submit_pedido(db, pedido, current_user)
+            submitted.append(p)
+        except HTTPException:
+            # Pedido já sem itens, já submetido ou outro erro de validação — ignora
+            pass
 
-    await db.commit()
-    for pedido in pedidos:
-        await db.refresh(pedido)
-
-    return await _enrich(db, list(pedidos))
+    return await _enrich(db, submitted)
 
 
 @router.post("/{pedido_id}/submit", response_model=PedidoOut)

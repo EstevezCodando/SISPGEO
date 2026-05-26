@@ -151,8 +151,8 @@ HIERARQUIA: list[dict] = [
         "Ricardo Analista CGeo", "Ricardo",
         "analista.cgeo@eb.mil.br", "(92) 99900-0001",
         "1º CGeo", "Seção de Produção Cartográfica",
-        None, "DSG", "ANALISTA_CGEO", "CGEO",
-        "Analista CGEO — analisa viabilidade e disponibiliza produtos no BDGEx (vinculado à DSG)",
+        "CMA", "DSG", "ANALISTA_CGEO", "CGEO",
+        "Analista CGEO — analisa viabilidade e disponibiliza produtos no BDGEx (1º CGeo, Manaus/CMA)",
         cgeo_id=1,
     ),
 
@@ -166,8 +166,8 @@ HIERARQUIA: list[dict] = [
         "Carlos Consolidador COTER", "Carlos",
         "consolidador.coter@eb.mil.br", "(61) 99900-0010",
         "COTER", "Seção de Geoinformação e Cartografia",
-        None, "COTER", "CONSOLIDADOR_COTER", "COTER",
-        "Consolidador COTER — consolida pedidos de todos os C Mil A e envia à DSG",
+        "CMP", "COTER", "CONSOLIDADOR_COTER", "COTER",
+        "Consolidador COTER — consolida pedidos de todos os C Mil A e envia à DSG (Brasília/CMP)",
     ),
 
     # ── Supervisores — um por Comando Militar de Área ─────────────────────────
@@ -296,15 +296,15 @@ HIERARQUIA: list[dict] = [
         "Luís Consolidador DEC", "Luís",
         "dec@eb.mil.br", "(61) 99902-0001",
         "DEC", "Seção de Geoinformação",
-        None, "DEC", "CONSOLIDADOR_DEC", "DEC",
-        "Consolidador DEC — recebe pedidos diretos das OM subordinadas ao DEC e envia à DSG",
+        "CMP", "DEC", "CONSOLIDADOR_DEC", "DEC",
+        "Consolidador DEC — recebe pedidos diretos das OM subordinadas ao DEC e envia à DSG (Brasília/CMP)",
     ),
     _u(
         "Natália Solicitante DEC", "Natália",
         "subordinado_dec@eb.mil.br", "(61) 99902-0002",
         "Centro de Instrução de Infantaria", "S3 - Operações",
-        None, "DEC", "SOLICITANTE", "DEC",
-        "Solicitante DEC — pedido: OM → CONSOLIDADOR_DEC → DSG → CGEO (sem C Mil A)",
+        "CMP", "DEC", "SOLICITANTE", "DEC",
+        "Solicitante DEC — pedido: OM → CONSOLIDADOR_DEC → DSG → CGEO (Brasília/CMP, sem C Mil A)",
     ),
 
     # ══════════════════════════════════════════════════════════════════════════
@@ -316,15 +316,15 @@ HIERARQUIA: list[dict] = [
         "Osvaldo Consolidador COLOG", "Osvaldo",
         "colog@eb.mil.br", "(61) 99903-0001",
         "COLOG", "Seção de Geoinformação",
-        None, "COLOG", "CONSOLIDADOR_COLOG", "COLOG",
-        "Consolidador COLOG — recebe pedidos diretos das OM subordinadas ao COLOG e envia à DSG",
+        "CMP", "COLOG", "CONSOLIDADOR_COLOG", "COLOG",
+        "Consolidador COLOG — recebe pedidos diretos das OM subordinadas ao COLOG e envia à DSG (Brasília/CMP)",
     ),
     _u(
         "Quintino Solicitante COLOG", "Quintino",
         "subordinado_colog@eb.mil.br", "(61) 99903-0002",
         "1ª Região Logística", "S4 - Logística",
-        None, "COLOG", "SOLICITANTE", "COLOG",
-        "Solicitante COLOG — pedido: OM → CONSOLIDADOR_COLOG → DSG → CGEO (sem C Mil A)",
+        "CMP", "COLOG", "SOLICITANTE", "COLOG",
+        "Solicitante COLOG — pedido: OM → CONSOLIDADOR_COLOG → DSG → CGEO (Brasília/CMP, sem C Mil A)",
     ),
 
     # ══════════════════════════════════════════════════════════════════════════
@@ -336,15 +336,15 @@ HIERARQUIA: list[dict] = [
         "Roberto Consolidador DECEx", "Roberto",
         "consolidador.decex@eb.mil.br", "(61) 99904-0001",
         "DECEx", "Seção de Geoinformação",
-        None, "DECEx", "CONSOLIDADOR_DECEX", "DECEx",
-        "Consolidador DECEx — recebe pedidos diretos das OM subordinadas ao DECEx e envia à DSG",
+        "CMP", "DECEx", "CONSOLIDADOR_DECEX", "DECEx",
+        "Consolidador DECEx — recebe pedidos diretos das OM subordinadas ao DECEx e envia à DSG (Brasília/CMP)",
     ),
     _u(
         "Tiago Solicitante DECEx", "Tiago",
-        "subordinado_decex@eb.mil.br", "(61) 99904-0002",
+        "subordinado_decex@eb.mil.br", "(11) 99904-0002",
         "ESPCEX", "Seção de Instrução",
-        None, "DECEx", "SOLICITANTE", "DECEx",
-        "Solicitante DECEx — pedido: OM → CONSOLIDADOR_DECEX → DSG → CGEO (sem C Mil A)",
+        "CMSE", "DECEx", "SOLICITANTE", "DECEx",
+        "Solicitante DECEx — pedido: OM → CONSOLIDADOR_DECEX → DSG → CGEO (ESPCEX/Campinas, CMSE, sem C Mil A)",
     ),
 
     # ══════════════════════════════════════════════════════════════════════════
@@ -356,15 +356,15 @@ HIERARQUIA: list[dict] = [
         "Ulises Consolidador DSG", "Ulises",
         "dsg@eb.mil.br", "(21) 99905-0001",
         "DSG", "Seção de Geoinformação",
-        None, "DSG", "CONSOLIDADOR_DSG", "DSG",
-        "Consolidador DSG — recebe pedidos de OM diretamente subordinadas à DSG",
+        "CML", "DSG", "CONSOLIDADOR_DSG", "DSG",
+        "Consolidador DSG — recebe pedidos de OM diretamente subordinadas à DSG (Rio de Janeiro/CML)",
     ),
     _u(
         "Vera Solicitante DSG", "Vera",
         "subordinado_dsg@eb.mil.br", "(21) 99905-0002",
         "1º CTEx", "S3 - Operações",
-        None, "DSG", "SOLICITANTE", "DSG",
-        "Solicitante DSG — pedido: OM → CONSOLIDADOR_DSG → Gestor Cartográfico",
+        "CML", "DSG", "SOLICITANTE", "DSG",
+        "Solicitante DSG — pedido: OM → CONSOLIDADOR_DSG → Gestor Cartográfico (1º CTEx/Rio/CML)",
     ),
 ]
 

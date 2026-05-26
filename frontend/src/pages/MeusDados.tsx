@@ -125,6 +125,14 @@ export function MeusDados() {
             <span className="text-zinc-500 text-xs">OM atual</span>
             <p className="font-medium text-zinc-200 mt-0.5">{user.om}</p>
           </div>
+          <div>
+            <span className="text-zinc-500 text-xs">Região Militar</span>
+            <p className="font-medium text-zinc-200 mt-0.5">
+              {user.regiao_militar
+                ? (CMILA_LABELS[user.regiao_militar] ?? user.regiao_militar)
+                : <span className="text-zinc-500 italic">Não informada</span>}
+            </p>
+          </div>
           <div className="col-span-2">
             <span className="text-zinc-500 text-xs">Órgão Consolidador</span>
             <p className="font-medium text-zinc-200 mt-0.5">{subordinacao.label}</p>
