@@ -85,7 +85,7 @@ class PedidoOut(BaseModel):
     usuario_telefone_ritex: str | None = None
     usuario_secao_om: str | None = None
     usuario_perfil: str | None = None
-    # Impressão física
+    # Impressão
     impressao_solicitada: bool = False
     impressao_quantidade: int | None = None
     impressao_tipo_material: str | None = None

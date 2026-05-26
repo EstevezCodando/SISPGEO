@@ -558,7 +558,7 @@ async def exportar_relatorio(
                     "disponivel_bdgex":   item.disponivel_bdgex,
                     "data_producao_bdgex": item.data_producao_bdgex.isoformat() if item.data_producao_bdgex else None,
                     "idade_anos":         _idade,
-                    # ── Impressão física ────────────────────────────────────
+                    # ── Impressão ────────────────────────────────────
                     "impressao_solicitada":  p.impressao_solicitada,
                     "impressao_quantidade":  item.impressao_quantidade,
                     "impressao_material":    item.impressao_tipo_material,
@@ -861,7 +861,7 @@ async def _build_admin_zip(
                     "disponivel_bdgex":    item.disponivel_bdgex,
                     "data_producao_bdgex": item.data_producao_bdgex.isoformat() if item.data_producao_bdgex else None,
                     "idade_anos":          (date.today() - item.data_producao_bdgex).days // 365 if item.data_producao_bdgex else None,
-                    # ── Impressão física ────────────────────────────────────
+                    # ── Impressão ───────────────────────────────────
                     "impressao_solicitada": p.impressao_solicitada,
                     "impressao_quantidade": item.impressao_quantidade,
                     "impressao_material":   item.impressao_tipo_material,

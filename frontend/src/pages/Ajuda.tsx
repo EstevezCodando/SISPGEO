@@ -693,11 +693,10 @@ const FAQS: FAQ[] = [
       <>
         <strong className="text-zinc-300">INOM</strong> (Índice de Nomenclatura)
         é o código oficial que identifica cada folha cartográfica em padrão
-        internacional.{" "}
-        <strong className="text-zinc-300">MI</strong> (Mapa Índice) é o código
-        numérico simplificado utilizado no Sistema Cartográfico Nacional. No mapa
-        de seleção, cada célula representa uma folha cartográfica identificada
-        pelo seu código INOM/MI.
+        internacional. <strong className="text-zinc-300">MI</strong> (Mapa
+        Índice) é o código numérico simplificado utilizado no Sistema
+        Cartográfico Nacional. No mapa de seleção, cada célula representa uma
+        folha cartográfica identificada pelo seu código INOM/MI.
       </>
     ),
   },
@@ -737,7 +736,7 @@ const FAQS: FAQ[] = [
               Subordinados a outros órgãos (DEC, COLOG, DECEx)
             </p>
             <p className="text-xs text-zinc-500">
-              OM → Supervisor → [Órgão] → DSG → CGEO
+              OM → [Órgão Consolidador] → DSG → CGEO
             </p>
           </div>
         </div>
@@ -757,24 +756,35 @@ const FLUXO_COTER = [
   { perfil: "C Mil. A", acao: "Supervisor revisa e encaminha", cor: "amber" },
   { perfil: "COTER", acao: "Consolida e envia à DSG", cor: "yellow" },
   { perfil: "DSG", acao: "Valida e atribui ao CGEO", cor: "blue" },
-  { perfil: "CGEO", acao: "Analisa, produz e disponibiliza no BDGEx", cor: "purple" },
+  {
+    perfil: "CGEO",
+    acao: "Analisa, produz e disponibiliza no BDGEx",
+    cor: "purple",
+  },
 ];
 
 const FLUXO_OUTROS = [
   { perfil: "OMDS", acao: "Cria e submete o pedido", cor: "emerald" },
-  { perfil: "Supervisor", acao: "Revisa e encaminha ao órgão", cor: "amber" },
-  { perfil: "DEC / COLOG / DECEx", acao: "Consolida e envia à DSG", cor: "orange" },
+  {
+    perfil: "DEC / COLOG / DECEx",
+    acao: "Consolida e envia à DSG",
+    cor: "orange",
+  },
   { perfil: "DSG", acao: "Valida e atribui ao CGEO", cor: "blue" },
-  { perfil: "CGEO", acao: "Analisa, produz e disponibiliza no BDGEx", cor: "purple" },
+  {
+    perfil: "CGEO",
+    acao: "Analisa, produz e disponibiliza no BDGEx",
+    cor: "purple",
+  },
 ];
 
 const COR: Record<string, string> = {
   emerald: "bg-emerald-500/10 border-emerald-500/30 text-emerald-400",
-  amber:   "bg-amber-500/10   border-amber-500/30   text-amber-400",
-  yellow:  "bg-yellow-500/10  border-yellow-500/30  text-yellow-400",
-  orange:  "bg-orange-500/10  border-orange-500/30  text-orange-400",
-  blue:    "bg-blue-500/10    border-blue-500/30    text-blue-400",
-  purple:  "bg-purple-500/10  border-purple-500/30  text-purple-400",
+  amber: "bg-amber-500/10   border-amber-500/30   text-amber-400",
+  yellow: "bg-yellow-500/10  border-yellow-500/30  text-yellow-400",
+  orange: "bg-orange-500/10  border-orange-500/30  text-orange-400",
+  blue: "bg-blue-500/10    border-blue-500/30    text-blue-400",
+  purple: "bg-purple-500/10  border-purple-500/30  text-purple-400",
 };
 
 // ─── Tutoriais ───────────────────────────────────────────────────────────────
@@ -816,7 +826,7 @@ const TUTORIAIS = {
     {
       n: "2",
       title: "Localize o pedido a editar",
-      desc: 'Apenas pedidos em rascunho (ainda não enviados) podem ser editados. Pedidos já encaminhados para a cadeia de comando estão bloqueados.',
+      desc: "Apenas pedidos em rascunho (ainda não enviados) podem ser editados. Pedidos já encaminhados para a cadeia de comando estão bloqueados.",
     },
     {
       n: "3",
@@ -919,37 +929,6 @@ const JORNADAS: JornadaGuia[] = [
         n: "3",
         title: "Encaminhe à DSG",
         desc: 'Selecione pedidos ou use "Enviar à DSG (todos)" para encaminhar o lote completo.',
-      },
-    ],
-  },
-  {
-    perfil: "DEC / COLOG / DECEx — Supervisor",
-    cor: "orange",
-    passos: [
-      {
-        n: "1",
-        title: 'Acesse "Pedidos Pendentes"',
-        desc: "Os pedidos das OM subordinadas ao seu órgão chegam diretamente a sua fila — sem passar pelo C Mil. A.",
-      },
-      {
-        n: "2",
-        title: "Expanda e verifique os itens",
-        desc: "Verifique itens, contatos e finalidade de cada pedido. Remova itens desnecessários se preciso.",
-      },
-      {
-        n: "3",
-        title: "Reordene por prioridade",
-        desc: "Arraste as linhas para ordenar do mais ao menos urgente antes de encaminhar.",
-      },
-      {
-        n: "4",
-        title: "Encaminhe ao consolidador do órgão",
-        desc: "Selecione os pedidos e encaminhe ao Consolidador do seu órgão (DEC, COLOG ou DECEx). Ou use o botão para encaminhar todos de uma vez.",
-      },
-      {
-        n: "5",
-        title: "Cancele se necessário",
-        desc: "Use o botão de cancelamento para reprovar pedidos inviáveis, informando o motivo.",
       },
     ],
   },
@@ -1228,10 +1207,10 @@ function TutorialAccordion({
 // ─── Jornada Card ─────────────────────────────────────────────────────────────
 const COR_JORNADA: Record<string, string> = {
   emerald: "bg-emerald-500/10 border-emerald-500/30 text-emerald-400",
-  amber:   "bg-amber-500/10   border-amber-500/30   text-amber-400",
-  yellow:  "bg-yellow-500/10  border-yellow-500/30  text-yellow-400",
-  orange:  "bg-orange-500/10  border-orange-500/30  text-orange-400",
-  blue:    "bg-blue-500/10    border-blue-500/30    text-blue-400",
+  amber: "bg-amber-500/10   border-amber-500/30   text-amber-400",
+  yellow: "bg-yellow-500/10  border-yellow-500/30  text-yellow-400",
+  orange: "bg-orange-500/10  border-orange-500/30  text-orange-400",
+  blue: "bg-blue-500/10    border-blue-500/30    text-blue-400",
 };
 
 function JornadaCard({ jornada }: { jornada: JornadaGuia }) {
@@ -1422,7 +1401,9 @@ export function Ajuda() {
           <div className="flex flex-wrap gap-2 items-center">
             {FLUXO_COTER.map((s, i) => (
               <div key={s.perfil} className="flex items-center gap-2">
-                <div className={`px-3 py-1.5 rounded-lg border text-xs font-medium ${COR[s.cor]}`}>
+                <div
+                  className={`px-3 py-1.5 rounded-lg border text-xs font-medium ${COR[s.cor]}`}
+                >
                   <span className="block font-semibold">{s.perfil}</span>
                   <span className="font-normal opacity-70">{s.acao}</span>
                 </div>
@@ -1442,7 +1423,9 @@ export function Ajuda() {
           <div className="flex flex-wrap gap-2 items-center">
             {FLUXO_OUTROS.map((s, i) => (
               <div key={s.perfil} className="flex items-center gap-2">
-                <div className={`px-3 py-1.5 rounded-lg border text-xs font-medium ${COR[s.cor]}`}>
+                <div
+                  className={`px-3 py-1.5 rounded-lg border text-xs font-medium ${COR[s.cor]}`}
+                >
                   <span className="block font-semibold">{s.perfil}</span>
                   <span className="font-normal opacity-70">{s.acao}</span>
                 </div>
@@ -1454,7 +1437,7 @@ export function Ajuda() {
           </div>
           <p className="mt-2 text-[11px] text-zinc-600 leading-relaxed">
             Neste fluxo o pedido não passa pelo C Mil. A — vai diretamente ao
-            Supervisor e depois ao Consolidador do órgão.
+            Consolidador do órgão.
           </p>
         </div>
 
@@ -1473,12 +1456,21 @@ export function Ajuda() {
         />
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
           {[
-            { label: "Rascunho",             desc: "Criado, ainda não enviado — pode ser editado" },
-            { label: "Enviado / Em revisão", desc: "Em análise na cadeia de aprovação" },
-            { label: "Aguardando DSG",       desc: "Recebido pela DSG" },
-            { label: "Em Atendimento",       desc: "Atribuído ao CGEO para produção" },
-            { label: "Produzido",            desc: "Disponível no BDGEx ✓" },
-            { label: "Cancelado/Reprovado",  desc: "Encerrado sem produção" },
+            {
+              label: "Rascunho",
+              desc: "Criado, ainda não enviado — pode ser editado",
+            },
+            {
+              label: "Enviado / Em revisão",
+              desc: "Em análise na cadeia de aprovação",
+            },
+            { label: "Aguardando DSG", desc: "Recebido pela DSG" },
+            {
+              label: "Em Atendimento",
+              desc: "Atribuído ao CGEO para produção",
+            },
+            { label: "Produzido", desc: "Disponível no BDGEx ✓" },
+            { label: "Cancelado/Reprovado", desc: "Encerrado sem produção" },
           ].map((s) => (
             <div
               key={s.label}

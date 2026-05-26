@@ -103,18 +103,18 @@ Usuario ──(1:N)──► Pedido ──(1:N)──► ItemPedido
 
 ### `StatusPedidoEnum` — Ciclo de vida do pedido
 
-| Valor                     | Significado                                   |
-| ------------------------- | --------------------------------------------- |
-| `RASCUNHO`                | Criado, não enviado para revisão              |
-| `AGUARDANDO_SUPERVISOR`   | Aguardando aprovação do supervisor do CMilA   |
-| `AGUARDANDO_CONSOLIDADOR` | Aguardando consolidação pelo órgão            |
+| Valor                     | Significado                                 |
+| ------------------------- | ------------------------------------------- |
+| `RASCUNHO`                | Criado, não enviado para revisão            |
+| `AGUARDANDO_SUPERVISOR`   | Aguardando aprovação do supervisor do CMilA |
+| `AGUARDANDO_CONSOLIDADOR` | Aguardando consolidação pelo órgão          |
 
-| `AGUARDANDO_CARTOGRAFICO` | Aguardando atribuição a CGEO pelo Gestor DSG  |
-| `ATRIBUIDO_CGEO`          | CGEO designado, análise em andamento          |
-| `APROVADO`                | Aprovado, em produção pelo CGEO               |
-| `REPROVADO`               | Inviável — produção impossível                |
-| `CANCELADO`               | Cancelado pelo solicitante ou gestor          |
-| `PRODUZIDO`               | Produto entregue — dados disponíveis no BDGEx |
+| `AGUARDANDO_CARTOGRAFICO` | Aguardando atribuição a CGEO pelo Gestor DSG |
+| `ATRIBUIDO_CGEO` | CGEO designado, análise em andamento |
+| `APROVADO` | Aprovado, em produção pelo CGEO |
+| `REPROVADO` | Inviável — produção impossível |
+| `CANCELADO` | Cancelado pelo solicitante ou gestor |
+| `PRODUZIDO` | Produto entregue — dados disponíveis no BDGEx |
 
 ### `TipoProdutoEnum` — Produtos geoespaciais
 
@@ -519,7 +519,7 @@ interface CartItem {
   solicitar_mesmo_disponivel: boolean; // Forçar mesmo com dado disponível
   disponivel_bdgex: boolean; // Cache local — disponível no BDGEx?
   geom?: object; // Geometria GeoJSON (preview no mapa)
-  impressao: boolean; // Flag: impressão física solicitada
+  impressao: boolean; // Flag: impressão solicitada
   impressaoId: string | null; // FK → ItemImpressao.id (null se !impressao)
 }
 ```
