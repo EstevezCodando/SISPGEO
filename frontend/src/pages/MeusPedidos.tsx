@@ -28,6 +28,8 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { pedidosApi } from '../api/pedidos'
+import { useCartStore, cartKey } from '../store/cartStore'
+import type { MaterialImpressao } from '../types/pedido'
 import { janelasApi, type MinhaJanela } from '../api/janelas'
 import { LoadingSpinner } from '../components/shared/LoadingSpinner'
 import { CadeiaAprovacao } from '../components/shared/CadeiaAprovacao'
@@ -896,6 +898,7 @@ function SpatializeModal({ pedido, onClose }: SpatializeModalProps) {
 type ModalType = 'edit' | 'delete' | 'spatialize' | 'enviar'
 
 export function MeusPedidos() {
+  const navigate = useNavigate()
   const [pedidos, setPedidos] = useState<Pedido[]>([])
   const [loading, setLoading] = useState(true)
   const [modal, setModal] = useState<{ type: ModalType; pedido?: Pedido } | null>(null)
@@ -958,7 +961,41 @@ export function MeusPedidos() {
     })
   }, [])
 
-  const handleOpenEdit = useCallback((p: Pedido) => setModal({ type: 'edit', pedido: p }), [])
+  const handleOpenEdit = useCallback((p: Pedido) => {
+    const cart = useCartStore.getState()
+    cart.clear()
+
+    // Pré-preenche campos do pedido
+    cart.setDataEntrega(p.data_entrega)
+    cart.setFinalidadeGeo(p.finalidade_geo ?? '')
+    cart.setFinalidade(p.finalidade ?? '')
+    cart.setEditingPedidoId(p.id)
+
+    // Adiciona todos os itens ao carrinho (ordem de prioridade)
+    const itensSorted = [...p.itens].sort((a, b) => a.prioridade - b.prioridade)
+    for (const item of itensSorted) {
+      cart.addItem({
+        inom: item.inom,
+        mi: item.mi,
+        tipo_produto: item.tipo_produto,
+        escala: item.escala,
+        solicitar_mesmo_disponivel: item.solicitar_mesmo_disponivel,
+        disponivel_bdgex: item.disponivel_bdgex,
+      })
+      if (item.impressao_quantidade && item.impressao_tipo_material) {
+        const key = cartKey({ inom: item.inom, tipo_produto: item.tipo_produto, escala: item.escala })
+        cart.setItemImpressao(key, item.impressao_quantidade, item.impressao_tipo_material as MaterialImpressao)
+      }
+    }
+
+    // Define tipo e escala do primeiro item para carregar o grid correto no mapa
+    if (itensSorted.length > 0) {
+      cart.setTipoProduto(itensSorted[0].tipo_produto)
+      cart.setEscala(itensSorted[0].escala)
+    }
+
+    navigate('/solicitar-produtos')
+  }, [navigate])
   const handleOpenDelete = useCallback((p: Pedido) => setModal({ type: 'delete', pedido: p }), [])
   const handleOpenSpatialize = useCallback((p: Pedido) => setModal({ type: 'spatialize', pedido: p }), [])
 

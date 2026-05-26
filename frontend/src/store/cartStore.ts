@@ -15,6 +15,8 @@ interface CartState {
   finalidade: string
   /** Entidades de impressão indexadas por ItemImpressao.id (== cartKey do item) */
   impressoes: Record<string, ItemImpressao>
+  /** ID do rascunho em edição — quando definido, o submit cancela o pedido antigo e cria um novo */
+  editingPedidoId: number | null
   addItem: (item: Omit<CartItem, 'impressao' | 'impressaoId'>) => void
   removeItem: (inom: string, tipoProduto?: TipoProduto, escala?: Escala) => void
   hasItem: (inom: string, tipoProduto?: TipoProduto, escala?: Escala) => boolean
@@ -27,6 +29,7 @@ interface CartState {
   setDataEntrega: (date: string | null) => void
   setFinalidadeGeo: (v: string) => void
   setFinalidade: (f: string) => void
+  setEditingPedidoId: (id: number | null) => void
   clear: () => void
 }
 
@@ -38,6 +41,7 @@ export const useCartStore = create<CartState>((set, get) => ({
   finalidadeGeo: '',
   finalidade: '',
   impressoes: {},
+  editingPedidoId: null,
 
   addItem: (item) => {
     const key = cartKey(item)
@@ -98,6 +102,7 @@ export const useCartStore = create<CartState>((set, get) => ({
   setDataEntrega: (date) => set({ dataEntrega: date }),
   setFinalidadeGeo: (v) => set({ finalidadeGeo: v }),
   setFinalidade: (f) => set({ finalidade: f }),
+  setEditingPedidoId: (id) => set({ editingPedidoId: id }),
 
   clear: () =>
     set({
@@ -108,5 +113,6 @@ export const useCartStore = create<CartState>((set, get) => ({
       finalidadeGeo: '',
       finalidade: '',
       impressoes: {},
+      editingPedidoId: null,
     }),
 }))

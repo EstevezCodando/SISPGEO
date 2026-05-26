@@ -5,7 +5,7 @@ import { addDays, format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import {
   ShoppingCart, Trash2, ClipboardCheck, Map as MapIcon,
-  Satellite, AlertTriangle, User, Phone, Building2, X, Check, Lock, CalendarX, Loader2,
+  Satellite, AlertTriangle, User, Phone, Building2, X, Check, Lock, CalendarX, Loader2, Pencil,
 } from 'lucide-react'
 import type { FeatureCollection, Feature } from 'geojson'
 import { MapContainer, TileLayer, useMap } from 'react-leaflet'
@@ -424,6 +424,7 @@ export function SolicitarProdutos() {
   const { user } = useAuthStore()
   const {
     items, tipoProduto, escala, dataEntrega, finalidadeGeo, finalidade, impressoes,
+    editingPedidoId,
     setTipoProduto, setEscala, setDataEntrega, setFinalidadeGeo, setFinalidade,
     setItemImpressao, removeItemImpressao,
     removeItem, clear,
@@ -515,6 +516,11 @@ export function SolicitarProdutos() {
 
     setSubmitting(true)
     try {
+      // Modo edição: cancela o rascunho anterior antes de criar o novo
+      if (editingPedidoId) {
+        await pedidosApi.cancel(editingPedidoId)
+      }
+
       const pedido = await pedidosApi.create({
         operacao_id: null,
         data_entrega: dataEntrega,
@@ -547,7 +553,10 @@ export function SolicitarProdutos() {
         navigate('/gestor/pedidos')
       } else {
         // Solicitante: salva em RASCUNHO — envio acontece em Meus Pedidos
-        toast.success(`Pedido #${pedido.data.id} salvo! Acesse Meus Pedidos para gerenciar.`)
+        const msg = editingPedidoId
+          ? `Pedido atualizado! Novo rascunho #${pedido.data.id} salvo.`
+          : `Pedido #${pedido.data.id} salvo! Acesse Meus Pedidos para gerenciar.`
+        toast.success(msg)
         clear()
         setShowRevisao(false)
         navigate('/meus-pedidos')
@@ -608,7 +617,11 @@ export function SolicitarProdutos() {
     <div className="h-full flex flex-col gap-4">
       {/* Header */}
       <div className="flex items-center justify-between shrink-0">
-        <h1 className="text-xl font-semibold text-zinc-100 tracking-tight">Solicitar Produtos</h1>
+        <div>
+          <h1 className="text-xl font-semibold text-zinc-100 tracking-tight">
+            {editingPedidoId ? `Editar Pedido #${editingPedidoId}` : 'Solicitar Produtos'}
+          </h1>
+        </div>
         <button
           onClick={() => setShowPedidosMap((v) => !v)}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors ${
@@ -621,6 +634,26 @@ export function SolicitarProdutos() {
           {showPedidosMap ? 'Ocultar pedidos anteriores' : 'Visualizar pedidos anteriores'}
         </button>
       </div>
+
+      {/* Banner modo edição */}
+      {editingPedidoId && (
+        <div className="flex items-start gap-3 px-4 py-3 bg-amber-500/10 border border-amber-500/25 rounded-xl shrink-0">
+          <Pencil className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-amber-200">Editando Pedido #{editingPedidoId}</p>
+            <p className="text-xs text-amber-300/70 mt-0.5 leading-relaxed">
+              Os produtos abaixo já foram carregados. Adicione ou remova itens no mapa e ajuste os campos. Ao confirmar, o rascunho anterior será substituído.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => { clear(); navigate('/meus-pedidos') }}
+            className="shrink-0 text-xs text-amber-400 hover:text-amber-300 transition-colors font-medium"
+          >
+            Cancelar edição
+          </button>
+        </div>
+      )}
 
       {showPedidosMap && (
         <div className="bg-zinc-900 border border-white/10 rounded-xl overflow-hidden shrink-0" style={{ height: '340px' }}>
