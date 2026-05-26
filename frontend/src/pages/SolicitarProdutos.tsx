@@ -663,15 +663,12 @@ export function SolicitarProdutos() {
     if (configEntrega?.datas_minimas?.[tipoProduto]) {
       return configEntrega.datas_minimas[tipoProduto];
     }
-    // fallback enquanto API carrega
+    // fallback enquanto API carrega — usa data atual como base se data_base ainda não veio
     const prazo = PRAZO_FALLBACK[tipoProduto];
-    return format(
-      addDays(
-        new Date(configEntrega?.data_base + "T00:00:00" || new Date()),
-        prazo,
-      ),
-      "yyyy-MM-dd",
-    );
+    const base = configEntrega?.data_base
+      ? new Date(configEntrega.data_base + "T00:00:00")
+      : new Date();
+    return format(addDays(base, prazo), "yyyy-MM-dd");
   })();
 
   const handleSubmit = async () => {
