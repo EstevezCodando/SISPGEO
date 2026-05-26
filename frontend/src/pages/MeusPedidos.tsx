@@ -450,15 +450,18 @@ function SortablePedidoRow_Base({
 
           {/* Produtos */}
           <div className="px-5 py-4">
-            <p className="text-xs font-medium text-zinc-500 mb-2 flex items-center gap-1.5">
-              <FileText className="h-3.5 w-3.5" />
-              Produtos do pedido ({localItems.length})
+            <div className="mb-2">
+              <p className="text-xs font-medium text-zinc-500 flex items-center gap-1.5">
+                <FileText className="h-3.5 w-3.5" />
+                Produtos do pedido ({localItems.length})
+              </p>
               {canReorder && (
-                <span className="ml-auto text-emerald-500 font-semibold tracking-wide text-[11px]">
+                <p className="text-[11px] text-emerald-500 font-semibold mt-1.5 flex items-center gap-1">
+                  <GripVertical className="h-3 w-3" />
                   Arraste para reordenar prioridade
-                </span>
+                </p>
               )}
-            </p>
+            </div>
 
             {canReorder ? (
               <DndContext
@@ -490,19 +493,31 @@ function SortablePedidoRow_Base({
                     key={item.id}
                     className="flex items-center gap-2.5 text-xs bg-zinc-800/60 border border-zinc-700/40 rounded-lg px-3 py-2"
                   >
-                    <span className="text-emerald-400 font-mono font-medium">
-                      {item.inom}
-                    </span>
                     {item.mi && (
-                      <span className="text-zinc-500">MI: {item.mi}</span>
+                      <span className="text-zinc-500 shrink-0">
+                        MI: <span className="text-zinc-300 font-mono">{item.mi}</span>
+                      </span>
                     )}
-                    <span className="text-zinc-400">
+                    <span className="text-zinc-500 shrink-0">
+                      INOM: <span className="text-emerald-400 font-mono font-medium">{item.inom}</span>
+                    </span>
+                    <span className="text-zinc-400 shrink-0">
                       {TIPO_PRODUTO_LABELS[item.tipo_produto]}
                     </span>
                     <span className="text-zinc-600">·</span>
-                    <span className="text-zinc-500">{item.escala}</span>
+                    <span className="text-zinc-500 shrink-0">{item.escala}</span>
+                    {item.impressao_quantidade && item.impressao_tipo_material ? (
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Printer className="h-3 w-3 text-violet-400" />
+                        <span className="text-zinc-400">
+                          {item.impressao_quantidade}× {item.impressao_tipo_material}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-zinc-700 shrink-0 text-[11px]">Impressão: Não</span>
+                    )}
                     {item.disponivel_bdgex && (
-                      <span className="ml-auto text-emerald-500 font-medium">
+                      <span className="ml-auto text-emerald-500 font-medium shrink-0">
                         Disponível no BDGEx
                       </span>
                     )}
@@ -586,25 +601,31 @@ function SortableItemRow({
         <GripVertical className="h-3.5 w-3.5" />
       </button>
       <span className="text-zinc-600 w-4 text-center shrink-0">{rank}</span>
-      <span className="text-emerald-400 font-mono font-medium">
-        {item.inom}
+      {item.mi && (
+        <span className="text-zinc-500 shrink-0">
+          MI: <span className="text-zinc-300 font-mono">{item.mi}</span>
+        </span>
+      )}
+      <span className="text-zinc-500 shrink-0">
+        INOM: <span className="text-emerald-400 font-mono font-medium">{item.inom}</span>
       </span>
-      {item.mi && <span className="text-zinc-500">MI: {item.mi}</span>}
-      <span className="text-zinc-400">
+      <span className="text-zinc-400 shrink-0">
         {TIPO_PRODUTO_LABELS[item.tipo_produto]}
       </span>
       <span className="text-zinc-600">·</span>
-      <span className="text-zinc-500">{item.escala}</span>
-      {item.impressao_quantidade && item.impressao_tipo_material && (
-        <div className="flex items-center gap-1 text-zinc-400">
+      <span className="text-zinc-500 shrink-0">{item.escala}</span>
+      {item.impressao_quantidade && item.impressao_tipo_material ? (
+        <div className="flex items-center gap-1 shrink-0">
           <Printer className="h-3 w-3 text-violet-400" />
-          <span>
-            {item.impressao_quantidade}x {item.impressao_tipo_material}
+          <span className="text-zinc-400">
+            {item.impressao_quantidade}× {item.impressao_tipo_material}
           </span>
         </div>
+      ) : (
+        <span className="text-zinc-700 shrink-0 text-[11px]">Impressão: Não</span>
       )}
       {item.disponivel_bdgex && (
-        <span className="text-emerald-500 font-medium">
+        <span className="text-emerald-500 font-medium shrink-0">
           Disponível no BDGEx
         </span>
       )}
@@ -1488,12 +1509,19 @@ export function MeusPedidos() {
         </div>
       )}
 
-      {/* ── Dica de reordenação — aparece abaixo do banner, perto da tabela ── */}
+      {/* ── Dica de reordenação + cabeçalho das colunas ── */}
       {canReorderPedidos && pedidos.length > 0 && (
-        <p className="text-xs text-emerald-500 font-semibold flex items-center gap-1.5 -mb-1">
-          <GripVertical className="h-3.5 w-3.5" />
-          Arraste para ordenar por prioridade
-        </p>
+        <div className="mb-2">
+          <p className="text-xs text-emerald-500 font-semibold flex items-center gap-1.5 mb-2">
+            <GripVertical className="h-3.5 w-3.5" />
+            Arraste para ordenar por prioridade
+          </p>
+          <div className="flex items-center gap-3 px-3 pb-1.5 border-b border-zinc-800 text-[10px] font-semibold text-zinc-600 uppercase tracking-wider">
+            <span className="w-[42px] shrink-0">Prioridade</span>
+            <span className="w-24 shrink-0 pl-5">ID</span>
+            <span className="flex-1 pl-1">Especificações</span>
+          </div>
+        </div>
       )}
 
       {/* ── Lista de pedidos ── */}
