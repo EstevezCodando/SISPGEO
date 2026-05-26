@@ -528,20 +528,41 @@ def run(base_url: str, dry_run: bool, skip_existing: bool, admin_senha: str | No
     if dry_run:
         warn("[DRY-RUN] Nenhuma alteração será realizada.\n")
 
-    # Resolver senha do admin: argumento > .env > prompt interativo
+    # Resolver senha do admin: argumento > variável de ambiente > .env > prompt interativo
+    if not admin_senha:
+        admin_senha = os.environ.get("ADMIN_PASSWORD", "").strip()
+        if admin_senha:
+            ok("ADMIN_PASSWORD lida da variável de ambiente (ADMIN_PASSWORD)")
+
     if not admin_senha:
         admin_senha = _read_admin_senha_from_env()
         if admin_senha:
             ok("ADMIN_PASSWORD lida do .env")
-        else:
-            print(f"\n  Senha do admin ({ADMIN_EMAIL}) não encontrada no .env.")
-            try:
-                admin_senha = getpass.getpass("  ADMIN_PASSWORD: ")
-            except Exception:
-                admin_senha = input("  ADMIN_PASSWORD (visível): ").strip()
-            if not admin_senha:
-                print("\033[31mSenha não pode ser vazia.\033[0m")
-                sys.exit(1)
+
+    if not admin_senha:
+        # Sem TTY (ex: docker exec sem -it) → mensagem clara em vez de travar
+        if not sys.stdin.isatty():
+            print(
+                "\033[31m\n  Senha do admin não encontrada e não há terminal interativo.\n"
+                "  Passe a senha de uma das formas abaixo:\n\n"
+                "    # Argumento direto:\n"
+                "    docker exec sispgeo_backend python scripts/create_hierarchy_users.py"
+                " --admin-senha 'SuaSenha'\n\n"
+                "    # Variável de ambiente no docker exec:\n"
+                "    docker exec -e ADMIN_PASSWORD='SuaSenha' sispgeo_backend"
+                " python scripts/create_hierarchy_users.py\n\n"
+                "    # Ou adicione ADMIN_PASSWORD=xxx ao .env do backend\n"
+                "\033[0m"
+            )
+            sys.exit(1)
+        print(f"\n  Senha do admin ({ADMIN_EMAIL}) não encontrada no .env.")
+        try:
+            admin_senha = getpass.getpass("  ADMIN_PASSWORD: ")
+        except Exception:
+            admin_senha = input("  ADMIN_PASSWORD (visível): ").strip()
+        if not admin_senha:
+            print("\033[31mSenha não pode ser vazia.\033[0m")
+            sys.exit(1)
 
     with httpx.Client(base_url=base_url, timeout=20) as client:
         # Aguarda o backend inicializar (até 90 s)
