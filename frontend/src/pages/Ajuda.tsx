@@ -1556,8 +1556,7 @@ export function Ajuda() {
           </p>
           <p className="text-xs text-zinc-500 mt-1 leading-relaxed">
             Entre em contato com a equipe técnica da DSG pelo e-mail
-            institucional ou acione seu Gestor DSG pelo sistema. Mantenha seus
-            dados atualizados em{" "}
+            institucional. Mantenha seus dados atualizados em{" "}
             <span className="text-emerald-400">"Meus Dados"</span> para receber
             notificações corretamente.
           </p>

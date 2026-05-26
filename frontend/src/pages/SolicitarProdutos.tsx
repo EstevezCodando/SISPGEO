@@ -663,15 +663,12 @@ export function SolicitarProdutos() {
     if (configEntrega?.datas_minimas?.[tipoProduto]) {
       return configEntrega.datas_minimas[tipoProduto];
     }
-    // fallback enquanto API carrega
+    // fallback enquanto API carrega — usa data atual como base se data_base ainda não veio
     const prazo = PRAZO_FALLBACK[tipoProduto];
-    return format(
-      addDays(
-        new Date(configEntrega?.data_base + "T00:00:00" || new Date()),
-        prazo,
-      ),
-      "yyyy-MM-dd",
-    );
+    const base = configEntrega?.data_base
+      ? new Date(configEntrega.data_base + "T00:00:00")
+      : new Date();
+    return format(addDays(base, prazo), "yyyy-MM-dd");
   })();
 
   const handleSubmit = async () => {
@@ -1047,7 +1044,7 @@ export function SolicitarProdutos() {
                       { color: "#eab308", label: "10–20 anos" },
                       { color: "#f97316", label: "20–30 anos" },
                       { color: "#ef4444", label: "> 30 anos" },
-                      { color: "#52525b", label: "Sem dado" },
+                      { color: "#f1f1f300", label: "Sem dados" },
                     ].map((l) => (
                       <div key={l.color} className="flex items-center gap-1.5">
                         <span
