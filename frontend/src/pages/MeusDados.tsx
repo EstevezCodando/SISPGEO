@@ -4,16 +4,47 @@ import { usersApi } from '../api/users'
 import { useAuthStore } from '../store/authStore'
 import { POSTOS, formatNomeComPosto } from '../data/postos'
 
-const CMILA_CODES = [
-  { code: 'CMP',   label: 'CMP - Comando Militar do Planalto' },
-  { code: 'CML',   label: 'CML - Comando Militar do Leste' },
-  { code: 'CMS',   label: 'CMS - Comando Militar do Sul' },
-  { code: 'CMO',   label: 'CMO - Comando Militar do Oeste' },
-  { code: 'CMAO',  label: 'CMAO - Comando Militar da Amazônia Oriental' },
-  { code: 'CMA',   label: 'CMA - Comando Militar da Amazônia' },
-  { code: 'CMNOR', label: 'CMNOR - Comando Militar do Nordeste' },
-  { code: 'CMSE',  label: 'CMSE - Comando Militar do Sudeste' },
-]
+const CMILA_LABELS: Record<string, string> = {
+  CMP:  'C Mil Planalto (Brasília)',
+  CML:  'C Mil Leste (Rio de Janeiro)',
+  CMS:  'C Mil Sul (Porto Alegre)',
+  CMO:  'C Mil Oeste (Campo Grande)',
+  CMAO: 'C Mil Amazônia Ocidental (Boa Vista)',
+  CMA:  'C Mil Amazônia (Manaus)',
+  CMNE: 'C Mil Nordeste (Recife)',
+  CMSE: 'C Mil Sudeste (São Paulo)',
+}
+
+const ORGAO_LABELS: Record<string, string> = {
+  COTER: 'COTER — Comando de Operações Terrestres',
+  DEC:   'DEC — Departamento de Educação e Cultura',
+  COLOG: 'COLOG — Comando Logístico',
+  DECEx: 'DECEx — Dep. de Educação e Cultura do Exército',
+  DSG:   'DSG — Diretoria do Serviço Geográfico',
+}
+
+/** Retorna o rótulo de subordinação e o detalhe do fluxo para exibição. */
+function getSubordinacao(
+  orgao: string | null,
+  regiao: string | null,
+): { label: string; fluxo: string } {
+  if (!orgao) return { label: '—', fluxo: '' }
+
+  // Usuário vinculado ao COTER com região militar definida (passa pelo C Mil A)
+  if (orgao === 'COTER' && regiao) {
+    const cmila = CMILA_LABELS[regiao] ?? regiao
+    return {
+      label: cmila,
+      fluxo: 'Pedidos: OM → Supervisor C Mil A → Consolidador COTER → DSG',
+    }
+  }
+
+  // Vinculado a outro órgão (sem supervisor C Mil A intermediário)
+  return {
+    label: ORGAO_LABELS[orgao] ?? orgao,
+    fluxo: `Pedidos: OM → Consolidador ${orgao} → DSG`,
+  }
+}
 
 const inputCls = 'w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 transition-colors'
 const labelCls = 'block text-sm font-medium text-zinc-300 mb-1.5'
@@ -66,10 +97,7 @@ export function MeusDados() {
 
   if (!user) return null
 
-  const subordinacao =
-    CMILA_CODES.find((c) => c.code === user.regiao_militar)?.label ||
-    user.regiao_militar ||
-    '-'
+  const subordinacao = getSubordinacao(user.orgao_vinculante, user.regiao_militar)
 
   return (
     <div className="max-w-2xl space-y-6">
@@ -97,9 +125,12 @@ export function MeusDados() {
             <span className="text-zinc-500 text-xs">OM atual</span>
             <p className="font-medium text-zinc-200 mt-0.5">{user.om}</p>
           </div>
-          <div>
-            <span className="text-zinc-500 text-xs">Subordinação</span>
-            <p className="font-medium text-zinc-200 mt-0.5">{subordinacao}</p>
+          <div className="col-span-2">
+            <span className="text-zinc-500 text-xs">Órgão Consolidador</span>
+            <p className="font-medium text-zinc-200 mt-0.5">{subordinacao.label}</p>
+            {subordinacao.fluxo && (
+              <p className="text-[11px] text-zinc-500 mt-0.5">{subordinacao.fluxo}</p>
+            )}
           </div>
         </div>
 
