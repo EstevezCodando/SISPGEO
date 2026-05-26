@@ -1047,7 +1047,7 @@ export function SolicitarProdutos() {
                       { color: "#eab308", label: "10–20 anos" },
                       { color: "#f97316", label: "20–30 anos" },
                       { color: "#ef4444", label: "> 30 anos" },
-                      { color: "#52525b", label: "Sem dado" },
+                      { color: "#f1f1f300", label: "Sem dados" },
                     ].map((l) => (
                       <div key={l.color} className="flex items-center gap-1.5">
                         <span
