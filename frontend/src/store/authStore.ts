@@ -1,10 +1,11 @@
 // SisPGeo — Sistema de Pedidos de Geoinformação
-// © 2026 Estevez Alvarez <alvarez.jean@eb.mil.br>  ·  Software Engineer
-// Regras de negócio: Raphael Perrut <perrut.raphael@eb.mil.br>  ·  Cartographic Engineer
+// © 2026 2º Sgt Estevez Alvarez <alvarez.jean@eb.mil.br>  ·  Software Engineer
+// Regras de negócio e contratos: Cap Perrut <perrut.raphael@eb.mil.br>  ·  Cartographic Engineer
+// Revisão técnica do projeto: Cel Azeredo <azeredo.marcio@eb.mil.br>  ·  Cartographic Engineer
 
 import { create } from "zustand";
 import type { Usuario } from "../types/user";
-import { SUPERVISOR_PROFILES, CONSOLIDADOR_PROFILES } from "../types/user";
+import { CONSOLIDADOR_PROFILES, SUPERVISOR_PROFILES } from "../types/user";
 
 interface AuthState {
   user: Usuario | null;
@@ -35,7 +36,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   isGestor: () => {
     const p = get().user?.perfil;
-    return !!(p && (SUPERVISOR_PROFILES.has(p) || CONSOLIDADOR_PROFILES.has(p)));
+    return !!(
+      p &&
+      (SUPERVISOR_PROFILES.has(p) || CONSOLIDADOR_PROFILES.has(p))
+    );
   },
 
   isDSG: () => get().user?.perfil === "GESTOR_CARTOGRAFICO",

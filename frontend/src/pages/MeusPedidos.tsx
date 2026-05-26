@@ -1264,6 +1264,7 @@ export function MeusPedidos() {
           escala: item.escala,
           solicitar_mesmo_disponivel: item.solicitar_mesmo_disponivel,
           disponivel_bdgex: item.disponivel_bdgex,
+          data_producao_bdgex: item.data_producao_bdgex ?? null,
         });
         if (item.impressao_quantidade && item.impressao_tipo_material) {
           const key = cartKey({
@@ -1520,9 +1521,9 @@ export function MeusPedidos() {
                         </span>
                       </div>
                       <p className="text-[11px] text-zinc-500 leading-relaxed">
-                        Pedido criado, mas ainda não enviado ao escalão superior.
-                        Pode ser editado ou cancelado livremente até o fim do
-                        período.
+                        Pedido criado, mas ainda não enviado ao escalão
+                        superior. Pode ser editado ou cancelado livremente até o
+                        fim do período.
                       </p>
                     </div>
                     <div className="bg-zinc-800/50 border border-zinc-700/50 rounded-xl p-3">
@@ -1584,7 +1585,7 @@ export function MeusPedidos() {
                         Caso necessite alterar algum pedido, entre em contato
                         com a{" "}
                         <strong>SSGeoInt do seu Cmd Mil A enquadrante</strong>{" "}
-                        ou o órgão ao qual está subordinado.
+                        ou o <strong>Órgão</strong> ao qual está subordinado.
                       </p>
                     </div>
                   </div>

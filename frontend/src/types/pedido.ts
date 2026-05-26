@@ -158,6 +158,7 @@ export interface CartItem {
   escala: Escala
   solicitar_mesmo_disponivel: boolean
   disponivel_bdgex: boolean
+  data_producao_bdgex: string | null
   geom?: object
   /** true quando o usuário solicitou impressão física para este item */
   impressao: boolean

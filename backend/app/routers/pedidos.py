@@ -205,6 +205,8 @@ async def create_pedido(
             solicitar_mesmo_disponivel=item_data.solicitar_mesmo_disponivel,
             impressao_quantidade=item_data.impressao_quantidade,
             impressao_tipo_material=item_data.impressao_tipo_material,
+            disponivel_bdgex=item_data.disponivel_bdgex,
+            data_producao_bdgex=item_data.data_producao_bdgex,
         )
         db.add(item)
 
@@ -425,8 +427,8 @@ async def exportar_relatorio(
     db: AsyncSession = Depends(get_db),
     current_user: Usuario = Depends(require_profiles(
         PerfilEnum.SOLICITANTE,
-        PerfilEnum.SUPERVISOR,
-        PerfilEnum.CONSOLIDADOR,
+        *SUPERVISOR_PROFILES,
+        *CONSOLIDADOR_PROFILES,
     )),
 ):
     """Exporta relatório completo de pedidos como ZIP.
@@ -450,16 +452,17 @@ async def exportar_relatorio(
     # ── Filtro por perfil ─────────────────────────────────────────────────────
     if current_user.perfil == PerfilEnum.SOLICITANTE:
         q = select(Pedido).where(
-            (Pedido.usuario_id == current_user.id) | (Pedido.criador_id == current_user.id)
+            (Pedido.usuario_id == current_user.id) | (Pedido.criador_id == current_user.id),
+            Pedido.status.notin_([StatusPedidoEnum.CANCELADO, StatusPedidoEnum.REPROVADO]),
         ).order_by(Pedido.prioridade.asc(), Pedido.criado_em.asc())
 
-    elif current_user.perfil == PerfilEnum.SUPERVISOR:
+    elif current_user.perfil in SUPERVISOR_PROFILES:
         q = select(Pedido).where(
             Pedido.regiao_militar == current_user.regiao_militar,
             Pedido.status.notin_([StatusPedidoEnum.RASCUNHO, StatusPedidoEnum.CANCELADO]),
         ).order_by(Pedido.prioridade.asc(), Pedido.criado_em.asc())
 
-    else:  # CONSOLIDADOR
+    else:  # CONSOLIDADOR_*
         q = select(Pedido).where(
             Pedido.orgao_vinculante == current_user.orgao_vinculante,
             Pedido.status.notin_([StatusPedidoEnum.RASCUNHO, StatusPedidoEnum.CANCELADO]),
@@ -467,6 +470,18 @@ async def exportar_relatorio(
 
     pedidos = list(await db.scalars(q))
     enriched = await _enrich(db, pedidos)
+
+    # ── SOPEGEO fallback para itens criados antes do bug-fix ─────────────────
+    from app.services.bdgex_service import _load_sopegeo_ages as _load_sop
+    _sopegeo = _load_sop()
+
+    def _bdgex_info(item) -> tuple[bool, object]:
+        """Retorna (disponivel, data_producao) do DB ou, se ausente, do SOPEGEO."""
+        if item.data_producao_bdgex is not None:
+            return item.disponivel_bdgex, item.data_producao_bdgex
+        bucket = _sopegeo.get(item.tipo_produto.value, {})
+        d = (bucket.get(item.mi) if item.mi else None) or bucket.get(item.inom)
+        return d is not None, d
 
     # ── Geometrias por escala (lazy, 1 chamada por escala presente) ───────────
     _scale_geoms: dict[str, dict] = {}
@@ -488,15 +503,20 @@ async def exportar_relatorio(
         "Disponivel_BDGEx", "Data_Producao_BDGEx", "Idade_Anos",
         "Impressao_Solicitada", "Impressao_Quantidade", "Impressao_Material",
     ])
-    for p in enriched:
-        for item in sorted(p.itens, key=lambda x: x.prioridade):
-            idade_anos = (date.today() - item.data_producao_bdgex).days // 365 if item.data_producao_bdgex else ""
+    for pedido_rank, p in enumerate(enriched, 1):
+        for item_rank, item in enumerate(sorted(p.itens, key=lambda x: x.prioridade), 1):
+            _disp, _dprod = _bdgex_info(item)
+            idade_anos = (date.today() - _dprod).days // 365 if _dprod else ""
+            _sol = (
+                f"{p.usuario_posto_graduacao} {p.usuario_nome}".strip()
+                if p.usuario_posto_graduacao else (p.usuario_nome or "")
+            )
             writer.writerow([
                 p.id,
-                p.prioridade,
+                pedido_rank,
                 p.status.value,
                 p.usuario_posto_graduacao or "",
-                p.usuario_nome or "",
+                _sol,
                 p.usuario_om or "",
                 p.usuario_secao_om or "",
                 p.usuario_email or "",
@@ -507,13 +527,13 @@ async def exportar_relatorio(
                 p.regiao_militar or "",
                 p.data_entrega.isoformat() if p.data_entrega else "",
                 p.criado_em.strftime("%d/%m/%Y %H:%M") if p.criado_em else "",
-                item.prioridade,
+                item_rank,
                 item.mi or "",
                 item.inom,
                 item.tipo_produto.value,
                 item.escala.value,
-                "Sim" if item.disponivel_bdgex else "Não",
-                item.data_producao_bdgex.isoformat() if item.data_producao_bdgex else "",
+                "Sim" if _disp else "Não",
+                _dprod.isoformat() if _dprod else "",
                 idade_anos,
                 "Sim" if p.impressao_solicitada else "Não",
                 item.impressao_quantidade or "",
@@ -523,30 +543,33 @@ async def exportar_relatorio(
 
     # ── GeoJSONs por escala ───────────────────────────────────────────────────
     geojsons: dict[str, list[dict]] = {}  # sufixo → lista de features
-    for p in enriched:
-        for item in p.itens:
+    _suffix_map = {"1:25.000": "25k", "1:50.000": "50k", "1:100.000": "100k", "1:250.000": "250k"}
+    for pedido_rank, p in enumerate(enriched, 1):
+        for item_rank, item in enumerate(sorted(p.itens, key=lambda x: x.prioridade), 1):
             sv = item.escala.value
-            suffix = sv.replace("1:", "").replace(".", "").replace(" ", "")  # "1:50.000" → "50000"
-            # normalizar: "1:50.000" → "50k" style
-            suffix_map = {"1:25.000": "25k", "1:50.000": "50k", "1:100.000": "100k", "1:250.000": "250k"}
-            suffix = suffix_map.get(sv, sv.replace(":", "").replace(".", "").replace(" ", ""))
+            suffix = _suffix_map.get(sv, sv.replace(":", "").replace(".", "").replace(" ", ""))
             geom = _scale_geoms.get(sv, {}).get(item.inom)
-            _idade = (date.today() - item.data_producao_bdgex).days // 365 if item.data_producao_bdgex else None
+            _disp, _dprod = _bdgex_info(item)
+            _idade = (date.today() - _dprod).days // 365 if _dprod else None
+            _sol = (
+                f"{p.usuario_posto_graduacao} {p.usuario_nome}".strip()
+                if p.usuario_posto_graduacao else p.usuario_nome
+            )
             feat = {
                 "type": "Feature",
                 "geometry": geom,
                 "properties": {
                     # ── Identificação do pedido/item ────────────────────────
                     "pedido_id":          p.id,
-                    "prioridade_pedido":  p.prioridade,
-                    "prioridade_item":    item.prioridade,
+                    "prioridade_pedido":  pedido_rank,
+                    "prioridade_item":    item_rank,
                     "status":             p.status.value,
                     # ── Dados do solicitante ────────────────────────────────
                     "posto_graduacao":    p.usuario_posto_graduacao,
-                    "solicitante":        p.usuario_nome,
+                    "solicitante":        _sol,
                     "om":                 p.usuario_om,
                     "secao_om":           p.usuario_secao_om,
-                    "c_mila":             p.regiao_militar,
+                    "c_mil_a":            p.regiao_militar,
                     "tel_ritex":          p.usuario_telefone_ritex,
                     "tel_comercial":      p.usuario_telefone,
                     "email":              p.usuario_email,
@@ -561,9 +584,9 @@ async def exportar_relatorio(
                     "escala":             item.escala.value,
                     "data_entrega":       p.data_entrega.isoformat() if p.data_entrega else None,
                     "criado_em":          p.criado_em.isoformat() if p.criado_em else None,
-                    "disponivel_bdgex":   item.disponivel_bdgex,
-                    "data_producao_bdgex": item.data_producao_bdgex.isoformat() if item.data_producao_bdgex else None,
-                    "idade_anos":         _idade,
+                    "disponivel_bdgex":   _disp,
+                    "data_producao_bdgex": _dprod.isoformat() if _dprod else None,
+                    "bdgex_idade_produto":         _idade,
                     # ── Impressão ────────────────────────────────────
                     "impressao_solicitada":  p.impressao_solicitada,
                     "impressao_quantidade":  item.impressao_quantidade,
@@ -828,6 +851,20 @@ async def _build_admin_zip(
             if _sv not in _scale_geoms:
                 _scale_geoms[_sv] = get_inom_geometries(EscalaEnum(_sv))
 
+    # ── SOPEGEO fallback para itens criados antes do bug-fix ────────────────
+    from app.services.bdgex_service import _load_sopegeo_ages as _load_sop_adm
+    _sopegeo_adm = _load_sop_adm()
+
+    def _bdgex_info_adm(item) -> tuple[bool, object]:
+        if item.data_producao_bdgex is not None:
+            return item.disponivel_bdgex, item.data_producao_bdgex
+        bucket = _sopegeo_adm.get(item.tipo_produto.value, {})
+        d = (bucket.get(item.mi) if item.mi else None) or bucket.get(item.inom)
+        return d is not None, d
+
+    # ── Rank sequencial por posição na lista (não valor bruto de prioridade) ─
+    _pedido_rank: dict[int, int] = {p.id: rank for rank, p in enumerate(enriched, 1)}
+
     # ── Mapa de duplicatas (calculado uma vez, usado em GeoJSON, CSV e TXT) ─────
     from collections import defaultdict as _defaultdict
     _dup_map: dict[tuple, list] = _defaultdict(list)
@@ -844,11 +881,18 @@ async def _build_admin_zip(
     # ── GeoJSONs por escala ──────────────────────────────────────────────────
     geojsons: dict[str, list[dict]] = {}
     for p in enriched:
-        for item in p.itens:
+        _p_rank = _pedido_rank[p.id]
+        for item_rank, item in enumerate(sorted(p.itens, key=lambda x: x.prioridade), 1):
             sv = item.escala.value
             suffix = suffix_map.get(sv, sv.replace(":", "").replace(".", "").replace(" ", ""))
             geom = _scale_geoms.get(sv, {}).get(item.inom)
             _is_dup = bool(item.mi and (item.mi, item.tipo_produto.value) in dup_keys)
+            _disp, _dprod = _bdgex_info_adm(item)
+            _idade = (date.today() - _dprod).days // 365 if _dprod else None
+            _sol = (
+                f"{p.usuario_posto_graduacao} {p.usuario_nome}".strip()
+                if p.usuario_posto_graduacao else p.usuario_nome
+            )
             feat = {
                 "type": "Feature",
                 "geometry": geom,
@@ -856,15 +900,15 @@ async def _build_admin_zip(
                     # ── Pedido / item ───────────────────────────────────────
                     "pedido_id":           p.id,
                     "item_id":             item.id,
-                    "prioridade_pedido":   p.prioridade,
-                    "prioridade_item":     item.prioridade,
+                    "prioridade_pedido":   _p_rank,
+                    "prioridade_item":     item_rank,
                     "status":              p.status.value,
                     # ── Dados do solicitante ────────────────────────────────
                     "posto_graduacao":     p.usuario_posto_graduacao,
-                    "solicitante":         p.usuario_nome,
+                    "solicitante":         _sol,
                     "om":                  p.usuario_om,
                     "secao_om":            p.usuario_secao_om,
-                    "c_mila":              p.regiao_militar,
+                    "c_mil_a":             p.regiao_militar,
                     "tel_ritex":           p.usuario_telefone_ritex,
                     "tel_comercial":       p.usuario_telefone,
                     "email":               p.usuario_email,
@@ -883,9 +927,9 @@ async def _build_admin_zip(
                     "escala":              item.escala.value,
                     "data_entrega":        p.data_entrega.isoformat() if p.data_entrega else None,
                     "criado_em":           p.criado_em.isoformat() if p.criado_em else None,
-                    "disponivel_bdgex":    item.disponivel_bdgex,
-                    "data_producao_bdgex": item.data_producao_bdgex.isoformat() if item.data_producao_bdgex else None,
-                    "idade_anos":          (date.today() - item.data_producao_bdgex).days // 365 if item.data_producao_bdgex else None,
+                    "disponivel_bdgex":    _disp,
+                    "data_producao_bdgex": _dprod.isoformat() if _dprod else None,
+                    "idade_anos":          _idade,
                     # ── Impressão ───────────────────────────────────
                     "impressao_solicitada": p.impressao_solicitada,
                     "impressao_quantidade": item.impressao_quantidade,
@@ -899,28 +943,34 @@ async def _build_admin_zip(
     writer = csv.writer(csv_buf, dialect="excel")
     writer.writerow([
         "Pedido_ID", "Item_ID", "Prioridade_Pedido", "Prioridade_Item", "Status",
-        "Posto_Graduacao", "Solicitante", "OM", "Secao_OM", "C_MilA",
+        "Posto_Graduacao", "Solicitante", "OM", "Secao_OM", "C_Mil_A",
         "Tel_Ritex", "Tel_Comercial", "Email",
         "Finalidade_Geo", "Informacao_Complementar", "Orgao_Vinculante",
         "Observacoes", "Motivo_Reprovacao", "Link_BDGEx",
         "Data_Entrega", "Criado_Em",
         "MI", "INOM", "Tipo_Produto", "Escala",
-        "Disponivel_BDGEx", "Data_Producao_BDGEx", "Idade_Anos",
+        "Disponivel_BDGEx", "Data_Producao_BDGEx", "Bdgex_Idade_Produto",
         "Duplicado",
         "Impressao_Solicitada", "Impressao_Quantidade", "Impressao_Material",
     ])
     for p in enriched:
-        for item in sorted(p.itens, key=lambda x: x.prioridade):
-            idade_anos = (date.today() - item.data_producao_bdgex).days // 365 if item.data_producao_bdgex else ""
+        _p_rank = _pedido_rank[p.id]
+        for item_rank, item in enumerate(sorted(p.itens, key=lambda x: x.prioridade), 1):
+            _disp, _dprod = _bdgex_info_adm(item)
+            idade_anos = (date.today() - _dprod).days // 365 if _dprod else ""
             is_dup = "Sim" if (item.mi, item.tipo_produto.value) in dup_keys else "Não"
+            _sol = (
+                f"{p.usuario_posto_graduacao} {p.usuario_nome}".strip()
+                if p.usuario_posto_graduacao else (p.usuario_nome or "")
+            )
             writer.writerow([
                 p.id,
                 item.id,
-                p.prioridade,
-                item.prioridade,
+                _p_rank,
+                item_rank,
                 p.status.value,
                 p.usuario_posto_graduacao or "",
-                p.usuario_nome or "",
+                _sol,
                 p.usuario_om or "",
                 p.usuario_secao_om or "",
                 p.regiao_militar or "",
@@ -939,8 +989,8 @@ async def _build_admin_zip(
                 item.inom,
                 item.tipo_produto.value,
                 item.escala.value,
-                "Sim" if item.disponivel_bdgex else "Não",
-                item.data_producao_bdgex.isoformat() if item.data_producao_bdgex else "",
+                "Sim" if _disp else "Não",
+                _dprod.isoformat() if _dprod else "",
                 idade_anos,
                 is_dup,
                 "Sim" if p.impressao_solicitada else "Não",
@@ -980,10 +1030,11 @@ async def _build_admin_zip(
         for (mi, tipo), entries in sorted(dup_entries.items()):
             # representante para dados do BDGEx (primeiro item com data, ou qualquer)
             rep_item = next((e[1] for e in entries if e[1].data_producao_bdgex), entries[0][1])
-            bdgex_flag = "✓ Disponível" if rep_item.disponivel_bdgex else "✗ Não disponível"
-            if rep_item.data_producao_bdgex:
-                _ia = (date.today() - rep_item.data_producao_bdgex).days // 365
-                bdgex_data = f" — Produzido em {rep_item.data_producao_bdgex.strftime('%d/%m/%Y')} ({_ia} ano{'s' if _ia != 1 else ''})"
+            _rep_disp, _rep_dprod = _bdgex_info_adm(rep_item)
+            bdgex_flag = "✓ Disponível" if _rep_disp else "✗ Não disponível"
+            if _rep_dprod:
+                _ia = (date.today() - _rep_dprod).days // 365
+                bdgex_data = f" — Produzido em {_rep_dprod.strftime('%d/%m/%Y')} ({_ia} ano{'s' if _ia != 1 else ''})"
             else:
                 bdgex_data = " — Data de produção não disponível"
             # escala do primeiro item
@@ -1004,7 +1055,7 @@ async def _build_admin_zip(
                 dup_om    = pp.usuario_om or "—"
                 dup_fin   = pp.finalidade_geo or pp.finalidade or "—"
                 linhas.append(
-                    f"    • Pedido #{pid}  [{pp.status.value}]  Prio {pp.prioridade}"
+                    f"    • Pedido #{pid}  [{pp.status.value}]  Prio {_pedido_rank.get(pid, pp.prioridade)}"
                     f" — {dup_posto} {dup_nome} / {dup_om}"
                     f"\n      Finalidade: {dup_fin}"
                 )
@@ -1012,6 +1063,7 @@ async def _build_admin_zip(
 
     # ── Fichas por pedido ─────────────────────────────────────────────────────
     for p in enriched:
+        _p_rank = _pedido_rank[p.id]
         imp_pedido = f"Sim ({p.impressao_quantidade}x {p.impressao_tipo_material})" if p.impressao_solicitada and p.impressao_quantidade else ("Sim" if p.impressao_solicitada else "Não")
         # Itens com flag de duplicata
         _itens_dup = {
@@ -1020,7 +1072,7 @@ async def _build_admin_zip(
         }
         linhas += [
             "",
-            f"PEDIDO #{p.id}  [{p.status.value}]  — Prioridade {p.prioridade}",
+            f"PEDIDO #{p.id}  [{p.status.value}]  — Prioridade {_p_rank}",
             f"  Posto/Grad.         : {p.usuario_posto_graduacao or '—'}",
             f"  Solicitante         : {p.usuario_nome or '—'}",
             f"  OM                  : {p.usuario_om or '—'}",
@@ -1041,16 +1093,17 @@ async def _build_admin_zip(
             f"  Itens ({len(p.itens)}):",
         ]
         for i, item in enumerate(sorted(p.itens, key=lambda x: x.prioridade), 1):
-            bdgex = "✓" if item.disponivel_bdgex else "✗"
-            if item.data_producao_bdgex:
-                _ia = (date.today() - item.data_producao_bdgex).days // 365
-                prod = f" | Produção: {item.data_producao_bdgex.strftime('%d/%m/%Y')} ({_ia} ano{'s' if _ia != 1 else ''})"
+            _disp, _dprod = _bdgex_info_adm(item)
+            bdgex = "✓" if _disp else "✗"
+            if _dprod:
+                _ia = (date.today() - _dprod).days // 365
+                prod = f" | Produção: {_dprod.strftime('%d/%m/%Y')} ({_ia} ano{'s' if _ia != 1 else ''})"
             else:
                 prod = ""
             imp_item = f" | Impr.: {item.impressao_quantidade}x {item.impressao_tipo_material}" if item.impressao_quantidade else ""
             dup_flag = " ⚠ DUPLICADO" if item.id in _itens_dup else ""
             linhas.append(
-                f"    {i:2}. [Prio {item.prioridade:2}] {item.tipo_produto.value}"
+                f"    {i:2}. [Prio {i:2}] {item.tipo_produto.value}"
                 f" | {item.escala.value} | MI: {item.mi or '—'} | INOM: {item.inom}"
                 f" | BDGEx: {bdgex}{prod}{imp_item}{dup_flag}"
             )

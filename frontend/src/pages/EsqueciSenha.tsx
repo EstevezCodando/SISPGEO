@@ -1,33 +1,33 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
-import toast from 'react-hot-toast'
-import { Mail, ArrowLeft, CheckCircle2 } from 'lucide-react'
-import { authApi } from '../api/auth'
+import { ArrowLeft, CheckCircle2, Mail } from "lucide-react";
+import { useState } from "react";
+import toast from "react-hot-toast";
+import { Link } from "react-router-dom";
+import { authApi } from "../api/auth";
 
 export function EsqueciSenha() {
-  const [email, setEmail] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [enviado, setEnviado] = useState(false)
+  const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [enviado, setEnviado] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!email.endsWith('@eb.mil.br')) {
-      toast.error('Somente emails @eb.mil.br são aceitos')
-      return
+    e.preventDefault();
+    if (!email.endsWith("@eb.mil.br")) {
+      toast.error("Somente emails @eb.mil.br são aceitos");
+      return;
     }
-    setLoading(true)
+    setLoading(true);
     try {
-      await authApi.forgotPassword(email)
-      setEnviado(true)
+      await authApi.forgotPassword(email);
+      setEnviado(true);
     } catch (err: unknown) {
-      const e = err as { response?: { data?: { detail?: string } } }
-      const msg = e.response?.data?.detail ?? 'Erro ao enviar e-mail'
+      const e = err as { response?: { data?: { detail?: string } } };
+      const msg = e.response?.data?.detail ?? "Erro ao enviar e-mail";
       // 429 = limite diário atingido
-      toast.error(msg, { duration: 6000 })
+      toast.error(msg, { duration: 6000 });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4 relative overflow-hidden">
@@ -35,7 +35,6 @@ export function EsqueciSenha() {
 
       <div className="relative z-10 w-full max-w-md">
         <div className="bg-zinc-900 border border-white/10 rounded-2xl shadow-2xl p-8">
-
           {/* Logo */}
           <div className="text-center mb-8">
             <div className="flex justify-center mb-4">
@@ -56,21 +55,28 @@ export function EsqueciSenha() {
                 </div>
               </div>
               <div>
-                <p className="text-zinc-100 font-medium">Verifique seu e-mail</p>
+                <p className="text-zinc-100 font-medium">
+                  Verifique seu e-mail
+                </p>
                 <p className="text-zinc-400 text-sm mt-2 leading-relaxed">
-                  Se <span className="text-zinc-200 font-medium">{email}</span> estiver
-                  cadastrado, você receberá um link para redefinir sua senha.
-                  O link expira em <span className="text-zinc-200">1 hora</span>.
+                  Se <span className="text-zinc-200 font-medium">{email}</span>{" "}
+                  estiver cadastrado, você receberá um link para redefinir sua
+                  senha. O link expira em{" "}
+                  <span className="text-zinc-200">1 hora</span>.
                 </p>
               </div>
               <div className="bg-zinc-800/60 border border-white/5 rounded-lg p-3 text-left">
                 <p className="text-xs text-zinc-400 leading-relaxed">
-                  <span className="text-zinc-300 font-medium">Não recebeu o e-mail?</span>
-                  {' '}Verifique a caixa de spam ou aguarde alguns minutos.
+                  <span className="text-zinc-300 font-medium">
+                    Não recebeu o e-mail?
+                  </span>{" "}
+                  Verifique a caixa de spam ou aguarde alguns minutos.
                 </p>
                 <p className="text-xs text-zinc-500 mt-1.5 leading-relaxed">
-                  Caso não receba o e-mail para mudança de senha,
-                  entre em contato com a <span className="text-zinc-400 font-medium">DSG</span>.
+                  Caso não receba o e-mail para mudança de senha, entre em
+                  contato com a{" "}
+                  <span className="text-zinc-400 font-medium">DSG</span> no
+                  telefone (61) 3415-5237 ou 860-5237 (RITEx.
                 </p>
               </div>
               <Link
@@ -112,7 +118,7 @@ export function EsqueciSenha() {
                   disabled={loading}
                   className="w-full bg-emerald-500 text-white py-2.5 rounded-lg font-medium hover:bg-emerald-400 transition-colors disabled:opacity-60 disabled:cursor-not-allowed shadow-[0_4px_20px_-4px_rgba(16,185,129,0.5)]"
                 >
-                  {loading ? 'Enviando...' : 'Enviar link de recuperação'}
+                  {loading ? "Enviando..." : "Enviar link de recuperação"}
                 </button>
               </form>
 
@@ -130,5 +136,5 @@ export function EsqueciSenha() {
         </div>
       </div>
     </div>
-  )
+  );
 }

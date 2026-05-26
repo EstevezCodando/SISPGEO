@@ -5,7 +5,7 @@ const PRODUCTS = [
   { label: "Modelo Digital do Terreno (MDT)", color: "#10b981" },
   { label: "Modelo Digital de Superfície (MDS)", color: "#06b6d4" },
   {
-    label: "CDGV — Conjunto de Dados Geoespaciais Vetoriais",
+    label: "Conjunto de Dados Geoespaciais Vetoriais (CDGV)",
     color: "#f97316",
   },
   { label: "Impressão de Carta Topográfica", color: "#ec4899" },

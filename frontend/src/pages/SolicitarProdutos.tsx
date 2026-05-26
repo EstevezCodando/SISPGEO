@@ -73,7 +73,7 @@ const FINALIDADES_GEO = [
   "Manobra Escolar",
   "Instrução Militar",
   "Atualização de Campo de Instrução",
-  "Atualização",
+  "Outra Finalidade",
 ] as const;
 
 const inputCls =
@@ -722,6 +722,8 @@ export function SolicitarProdutos() {
             inom: i.inom,
             mi: i.mi,
             solicitar_mesmo_disponivel: i.solicitar_mesmo_disponivel,
+            disponivel_bdgex: i.disponivel_bdgex,
+            data_producao_bdgex: i.data_producao_bdgex ?? null,
             impressao_quantidade: imp?.quantidade ?? null,
             impressao_tipo_material: imp?.tipo ?? null,
           };
@@ -1163,7 +1165,8 @@ export function SolicitarProdutos() {
               <div className="flex flex-wrap gap-1.5 mb-2.5">
                 <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[11px] text-emerald-400">
                   <ClipboardCheck className="h-3 w-3" />
-                  Impressão: configure na revisão
+                  Impressão: configure quantidade e material de impressão na
+                  revisão
                 </span>
               </div>
             )}

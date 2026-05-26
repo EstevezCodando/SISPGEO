@@ -135,6 +135,7 @@ export function InteractiveMap({ inomGrid, showData = true, basemap = 'osm', som
               escala: escala as Escala,
               solicitar_mesmo_disponivel: false,
               disponivel_bdgex: disponivel === true,
+              data_producao_bdgex: data_conclusao ?? null,
             })
           }
           const path = layer as L.Path

@@ -1,6 +1,7 @@
 // SisPGeo — Sistema de Pedidos de Geoinformação
-// © 2026 Estevez Alvarez <alvarez.jean@eb.mil.br>  ·  Software Engineer
-// Regras de negócio: Raphael Perrut <perrut.raphael@eb.mil.br>  ·  Cartographic Engineer
+// © 2026 2º Sgt Estevez Alvarez <alvarez.jean@eb.mil.br>  ·  Software Engineer
+// Regras de negócio e contratos: Cap Perrut <perrut.raphael@eb.mil.br>  ·  Cartographic Engineer
+// Revisão técnica do projeto: Cel Azeredo <azeredo.marcio@eb.mil.br>  ·  Cartographic Engineer
 
 import { useEffect } from "react";
 import { Toaster } from "react-hot-toast";
@@ -17,26 +18,29 @@ import { AdminPedidos } from "./pages/admin/AdminPedidos";
 import { ApiMetricas } from "./pages/admin/ApiMetricas";
 import { GerenciarUsuarios } from "./pages/admin/GerenciarUsuarios";
 import { Ajuda } from "./pages/Ajuda";
+import { AtivarConta } from "./pages/AtivarConta";
 import { CGEODashboard } from "./pages/cgeo/CGEODashboard";
 import { Dashboard } from "./pages/Dashboard";
 import { DSGDashboard } from "./pages/dsg/DSGDashboard";
 import { JanelasPedidos } from "./pages/dsg/JanelasPedidos";
 import { Relatorios } from "./pages/dsg/Relatorios";
+import { EsqueciSenha } from "./pages/EsqueciSenha";
 import { GestorDashboard } from "./pages/gestor/GestorDashboard";
 import { PedidosHomologados } from "./pages/gestor/PedidosHomologados";
 import { Integracoes } from "./pages/Integracoes";
-import { EsqueciSenha } from "./pages/EsqueciSenha";
 import { Login } from "./pages/Login";
 import { MeusDados } from "./pages/MeusDados";
-import { RedefinirSenha } from "./pages/RedefinirSenha";
 import { MeusPedidos } from "./pages/MeusPedidos";
-import { AtivarConta } from "./pages/AtivarConta";
+import { RedefinirSenha } from "./pages/RedefinirSenha";
 import { Register } from "./pages/Register";
 import { SolicitarProdutos } from "./pages/SolicitarProdutos";
 import { useAuthStore } from "./store/authStore";
-import { SUPERVISOR_PROFILES, CONSOLIDADOR_PROFILES } from "./types/user";
+import { CONSOLIDADOR_PROFILES, SUPERVISOR_PROFILES } from "./types/user";
 
-const GESTOR_PROFILES = new Set([...SUPERVISOR_PROFILES, ...CONSOLIDADOR_PROFILES]);
+const GESTOR_PROFILES = new Set([
+  ...SUPERVISOR_PROFILES,
+  ...CONSOLIDADOR_PROFILES,
+]);
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const { token, user, setUser } = useAuthStore();
@@ -56,7 +60,13 @@ function RequireAuth({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-function RequireProfile({ profiles, children }: { profiles: Set<string>; children: React.ReactNode }) {
+function RequireProfile({
+  profiles,
+  children,
+}: {
+  profiles: Set<string>;
+  children: React.ReactNode;
+}) {
   const { user } = useAuthStore();
   if (user && !profiles.has(user.perfil)) return <Navigate to="/" replace />;
   return <>{children}</>;
@@ -65,7 +75,11 @@ function RequireProfile({ profiles, children }: { profiles: Set<string>; childre
 export default function App() {
   return (
     <BrowserRouter>
-      <Toaster position="top-right" toastOptions={{ duration: 4000 }} containerStyle={{ zIndex: 99999 }} />
+      <Toaster
+        position="top-right"
+        toastOptions={{ duration: 4000 }}
+        containerStyle={{ zIndex: 99999 }}
+      />
       <Routes>
         {/* Public */}
         <Route path="/login" element={<Login />} />
@@ -86,8 +100,22 @@ export default function App() {
           <Route path="/solicitar-produtos" element={<SolicitarProdutos />} />
           <Route path="/meus-pedidos" element={<MeusPedidos />} />
           <Route path="/meus-dados" element={<MeusDados />} />
-          <Route path="/gestor/pedidos" element={<RequireProfile profiles={GESTOR_PROFILES}><GestorDashboard /></RequireProfile>} />
-          <Route path="/gestor/homologados" element={<RequireProfile profiles={GESTOR_PROFILES}><PedidosHomologados /></RequireProfile>} />
+          <Route
+            path="/gestor/pedidos"
+            element={
+              <RequireProfile profiles={GESTOR_PROFILES}>
+                <GestorDashboard />
+              </RequireProfile>
+            }
+          />
+          <Route
+            path="/gestor/homologados"
+            element={
+              <RequireProfile profiles={GESTOR_PROFILES}>
+                <PedidosHomologados />
+              </RequireProfile>
+            }
+          />
           <Route path="/dsg/pedidos" element={<DSGDashboard />} />
           <Route path="/dsg/janelas" element={<JanelasPedidos />} />
           <Route path="/dsg/relatorios" element={<Relatorios />} />

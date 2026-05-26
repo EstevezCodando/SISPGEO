@@ -1,12 +1,12 @@
 // SisPGeo — Sistema de Pedidos de Geoinformação
-// © 2026 Estevez Alvarez <alvarez.jean@eb.mil.br>  ·  Software Engineer
-// Regras de negócio: Raphael Perrut <perrut.raphael@eb.mil.br>  ·  Cartographic Engineer
-// Fonte dos dados: SOPEGEO — C:\ProjetoCoter\coter\dados\SOPEGEO
+// © 2026 2º Sgt Estevez Alvarez <alvarez.jean@eb.mil.br>  ·  Software Engineer
+// Regras de negócio e contratos: Cap Perrut <perrut.raphael@eb.mil.br>  ·  Cartographic Engineer
+// Revisão técnica do projeto: Cel Azeredo <azeredo.marcio@eb.mil.br>  ·  Cartographic Engineer
 
 export const OMS_DATA: Record<string, { label: string; oms: string[] }> = {
-  "CMA": {
-    "label": "Comando Militar da Amazônia",
-    "oms": [
+  CMA: {
+    label: "Comando Militar da Amazônia",
+    oms: [
       "1º B COM SL",
       "1º B LOG SL",
       "1º BIS",
@@ -68,12 +68,12 @@ export const OMS_DATA: Record<string, { label: string; oms: string[] }> = {
       "H GU S G CACHOEIRA",
       "H GU TABATINGA",
       "H MIL A MANAUS",
-      "PQ R MNT/12ª RM"
-    ]
+      "PQ R MNT/12ª RM",
+    ],
   },
-  "CMAO": {
-    "label": "Comando Militar da Amazônia Oriental",
-    "oms": [
+  CMAO: {
+    label: "Comando Militar da Amazônia Oriental",
+    oms: [
       "1º GAC/SL",
       "2º B Com GE Sl",
       "2º BIS",
@@ -103,12 +103,12 @@ export const OMS_DATA: Record<string, { label: string; oms: string[] }> = {
       "CMDO FRON AMAPA/34º BIS",
       "CRO 8",
       "H GE BELEM",
-      "H GU MBA"
-    ]
+      "H GU MBA",
+    ],
   },
-  "CML": {
-    "label": "Comando Militar do Leste",
-    "oms": [
+  CML: {
+    label: "Comando Militar do Leste",
+    oms: [
       "1ª CIA E CMB PQDT",
       "1ª ICFEX",
       "1º BG",
@@ -224,12 +224,12 @@ export const OMS_DATA: Record<string, { label: string; oms: string[] }> = {
       "PMRJ",
       "PMZS",
       "PRM 04/001",
-      "PRM 04/002"
-    ]
+      "PRM 04/002",
+    ],
   },
-  "CMP": {
-    "label": "Comando Militar do Planalto",
-    "oms": [
+  CMP: {
+    label: "Comando Militar do Planalto",
+    oms: [
       "1ª Bia A AAE",
       "1º BF Esp",
       "1º BAC",
@@ -315,12 +315,12 @@ export const OMS_DATA: Record<string, { label: string; oms: string[] }> = {
       "HMAB",
       "PMB",
       "SEF",
-      "SGEx"
-    ]
+      "SGEx",
+    ],
   },
-  "CMO": {
-    "label": "Comando Militar do Oeste",
-    "oms": [
+  CMO: {
+    label: "Comando Militar do Oeste",
+    oms: [
       "2ª CIA FRON",
       "3ª Bia AAAe",
       "3ª Cia Fron/Forte Coimbra",
@@ -368,12 +368,12 @@ export const OMS_DATA: Record<string, { label: string; oms: string[] }> = {
       "CRO/9ª RM",
       "ESQD CMDO 4ª BDA C MEC",
       "H MIL A C GRANDE",
-      "PQ R MNT/9"
-    ]
+      "PQ R MNT/9",
+    ],
   },
-  "CMS": {
-    "label": "Comando Militar do Sul",
-    "oms": [
+  CMS: {
+    label: "Comando Militar do Sul",
+    oms: [
       "1ª CIA E CMB MEC",
       "1º B FV",
       "1º BCOM",
@@ -539,12 +539,12 @@ export const OMS_DATA: Record<string, { label: string; oms: string[] }> = {
       "P MED Gu SÃO GABRIEL",
       "POLICL M PA",
       "PQ R MNT/5",
-      "PQRMNT 3"
-    ]
+      "PQRMNT 3",
+    ],
   },
-  "CMNE": {
-    "label": "Comando Militar do Nordeste",
-    "oms": [
+  CMNE: {
+    label: "Comando Militar do Nordeste",
+    oms: [
       "1ª CIA INF",
       "1º BEC",
       "2ª CIA GD",
@@ -628,12 +628,12 @@ export const OMS_DATA: Record<string, { label: string; oms: string[] }> = {
       "HGUN",
       "PQ R MNT/6ª RM",
       "PQ R MNT/7ª RM",
-      "PQ R MNT/10ª RM"
-    ]
+      "PQ R MNT/10ª RM",
+    ],
   },
-  "CMSE": {
-    "label": "Comando Militar do Sudeste",
-    "oms": [
+  CMSE: {
+    label: "Comando Militar do Sudeste",
+    oms: [
       "1º B AV EX",
       "2ª CGCFEX",
       "2ª Cia Com Mec",
@@ -683,7 +683,7 @@ export const OMS_DATA: Record<string, { label: string; oms: string[] }> = {
       "CRO/2ª RM",
       "ES P C EX",
       "H Mil A S PAULO",
-      "PRM"
-    ]
-  }
-}
+      "PRM",
+    ],
+  },
+};

@@ -18,6 +18,8 @@ class ItemPedidoCreate(BaseModel):
     solicitar_mesmo_disponivel: bool = False
     impressao_quantidade: int | None = None
     impressao_tipo_material: str | None = None
+    disponivel_bdgex: bool = False
+    data_producao_bdgex: date | None = None
 
 
 class ItemPedidoOut(BaseModel):
