@@ -32,6 +32,25 @@ const PERFIL_GROUPS: { label: string; perfis: Perfil[] }[] = [
   { label: 'DSG / CGEO', perfis: ['GESTOR_CARTOGRAFICO', 'ANALISTA_CGEO'] },
 ]
 
+/** Badge colorido por órgão vinculante. */
+const ORGAO_BADGE: Record<string, string> = {
+  COTER:  'bg-blue-500/15 text-blue-300 border-blue-500/30',
+  DEC:    'bg-amber-500/15 text-amber-300 border-amber-500/30',
+  COLOG:  'bg-orange-500/15 text-orange-300 border-orange-500/30',
+  DECEx:  'bg-purple-500/15 text-purple-300 border-purple-500/30',
+  DSG:    'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
+}
+
+function OrgaoBadge({ orgao }: { orgao: string | null }) {
+  if (!orgao) return <span className="text-xs text-zinc-600 italic">não definido</span>
+  const cls = ORGAO_BADGE[orgao] ?? 'bg-zinc-700/50 text-zinc-300 border-zinc-600/40'
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold border ${cls}`}>
+      {orgao}
+    </span>
+  )
+}
+
 /** Descreve a posição do usuário no fluxo de aprovação. */
 function fluxoLabel(u: Usuario): string {
   const p = u.perfil
@@ -216,7 +235,7 @@ function DetailPanel({ u }: { u: Usuario }) {
         {field('Telefone', u.telefone, <Phone className="h-3 w-3" />)}
         {field('Telefone RITEX', u.telefone_ritex)}
         {field('Região Militar', u.regiao_militar, <MapPin className="h-3 w-3" />)}
-        {field('Órgão Vinculante', u.orgao_vinculante)}
+        {field('Órgão Vinculante', <OrgaoBadge orgao={u.orgao_vinculante} />)}
         {field('Posto/Graduação', u.posto_graduacao)}
         {field('CGEO ID', u.cgeo_id != null ? String(u.cgeo_id) : null)}
 
@@ -299,12 +318,9 @@ function UserRow({
           </div>
         </td>
 
-        {/* Órgão */}
-        <td className="px-3 py-3 hidden lg:table-cell">
-          {u.orgao_vinculante
-            ? <span className="text-xs px-1.5 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-zinc-300">{u.orgao_vinculante}</span>
-            : <span className="text-xs text-zinc-600">—</span>
-          }
+        {/* Órgão — sempre visível, colorido por tipo */}
+        <td className="px-3 py-3">
+          <OrgaoBadge orgao={u.orgao_vinculante} />
         </td>
 
         {/* Perfil — dropdown (clique não propaga para expand) */}
@@ -451,7 +467,7 @@ export function GerenciarUsuarios() {
               <th className="px-3 py-3 w-8" />
               <th className="px-3 py-3 text-left font-medium text-zinc-400 text-xs uppercase tracking-wide">Usuário</th>
               <th className="px-3 py-3 text-left font-medium text-zinc-400 text-xs uppercase tracking-wide hidden md:table-cell">OM / Região</th>
-              <th className="px-3 py-3 text-left font-medium text-zinc-400 text-xs uppercase tracking-wide hidden lg:table-cell">Órgão</th>
+              <th className="px-3 py-3 text-left font-medium text-zinc-400 text-xs uppercase tracking-wide">Órgão Vinculante</th>
               <th className="px-3 py-3 text-left font-medium text-zinc-400 text-xs uppercase tracking-wide">Perfil</th>
               <th className="px-3 py-3 text-left font-medium text-zinc-400 text-xs uppercase tracking-wide">Status</th>
               <th className="px-3 py-3 text-left font-medium text-zinc-400 text-xs uppercase tracking-wide">Ações</th>
