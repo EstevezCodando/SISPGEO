@@ -151,8 +151,8 @@ HIERARQUIA: list[dict] = [
         "Ricardo Analista CGeo", "Ricardo",
         "analista.cgeo@eb.mil.br", "(92) 99900-0001",
         "1º CGeo", "Seção de Produção Cartográfica",
-        None, None, "ANALISTA_CGEO", "CGEO",
-        "Analista CGEO — analisa viabilidade e disponibiliza produtos no BDGEx",
+        None, "DSG", "ANALISTA_CGEO", "CGEO",
+        "Analista CGEO — analisa viabilidade e disponibiliza produtos no BDGEx (vinculado à DSG)",
         cgeo_id=1,
     ),
 
