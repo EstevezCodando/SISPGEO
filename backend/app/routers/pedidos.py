@@ -1,6 +1,7 @@
 # SisPGeo — Sistema de Pedidos de Geoinformação
-# © 2026 Estevez Alvarez <alvarez.jean@eb.mil.br>  ·  Software Engineer
-# Regras de negócio: Raphael Perrut <perrut.raphael@eb.mil.br>  ·  Eng. Cartógrafo
+# © 2026 2º Sgt Estevez Alvarez <alvarez.jean@eb.mil.br>  ·  Software Engineer
+# Regras de negócio e contratos: Cap Perrut <perrut.raphael@eb.mil.br>  ·  Cartographic Engineer
+# Revisão técnica do projeto: Cel Azeredo <azeredo.marcio@eb.mil.br>  ·  Cartographic Engineer
 
 import csv
 import io
@@ -59,7 +60,8 @@ async def _enrich(db: AsyncSession, pedidos: list[Pedido]) -> list[PedidoOut]:
     user_rows = await db.execute(
         select(
             Usuario.id, Usuario.nome, Usuario.om, Usuario.email,
-            Usuario.telefone, Usuario.telefone_ritex, Usuario.secao_om, Usuario.perfil,
+            Usuario.telefone, Usuario.telefone_ritex, Usuario.secao_om,
+            Usuario.perfil, Usuario.posto_graduacao,
         ).where(Usuario.id.in_(user_ids))
     )
     users: dict[int, dict] = {
@@ -71,6 +73,7 @@ async def _enrich(db: AsyncSession, pedidos: list[Pedido]) -> list[PedidoOut]:
             "telefone_ritex": r.telefone_ritex,
             "secao_om": r.secao_om,
             "perfil": r.perfil.value if r.perfil else None,
+            "posto_graduacao": r.posto_graduacao,
         }
         for r in user_rows
     }
@@ -93,6 +96,7 @@ async def _enrich(db: AsyncSession, pedidos: list[Pedido]) -> list[PedidoOut]:
         out.usuario_telefone_ritex = u.get("telefone_ritex")
         out.usuario_secao_om = u.get("secao_om")
         out.usuario_perfil = u.get("perfil")
+        out.usuario_posto_graduacao = u.get("posto_graduacao")
         out.operacao_nome = ops.get(p.operacao_id) if p.operacao_id else None
         out.criador_id = p.criador_id
         out.criador_nome = users.get(p.criador_id, {}).get("nome") if p.criador_id else None
@@ -477,7 +481,7 @@ async def exportar_relatorio(
     writer = csv.writer(csv_buf, dialect="excel")
     writer.writerow([
         "Pedido_ID", "Prioridade_Pedido", "Status",
-        "Solicitante", "OM", "Secao_OM", "Email", "Telefone",
+        "Posto_Graduacao", "Solicitante", "OM", "Secao_OM", "Email", "Telefone",
         "Finalidade_Geo", "Informacao_Complementar", "Orgao_Vinculante", "Regiao_Militar",
         "Data_Entrega", "Criado_Em",
         "Item_Prioridade", "MI", "INOM", "Tipo_Produto", "Escala",
@@ -491,6 +495,7 @@ async def exportar_relatorio(
                 p.id,
                 p.prioridade,
                 p.status.value,
+                p.usuario_posto_graduacao or "",
                 p.usuario_nome or "",
                 p.usuario_om or "",
                 p.usuario_secao_om or "",
@@ -537,6 +542,7 @@ async def exportar_relatorio(
                     "prioridade_item":    item.prioridade,
                     "status":             p.status.value,
                     # ── Dados do solicitante ────────────────────────────────
+                    "posto_graduacao":    p.usuario_posto_graduacao,
                     "solicitante":        p.usuario_nome,
                     "om":                 p.usuario_om,
                     "secao_om":           p.usuario_secao_om,
@@ -602,6 +608,7 @@ async def exportar_relatorio(
     ritex         = (current_user.telefone_ritex or "").strip() or "—"
     telefone      = (current_user.telefone or "").strip() or "—"
     secao         = (current_user.secao_om or "").strip() or "—"
+    posto         = (current_user.posto_graduacao or "").strip() or "—"
     hoje          = datetime.now().strftime("%d/%m/%Y %H:%M")
     geojson_files = "  ".join(f"pedidos_{s}.geojson" for s in sorted(geojsons))
 
@@ -698,6 +705,8 @@ Data/Hora  : {hoje}
 DADOS DO SIGNATÁRIO
 -------------------------------------------------------
 
+  Posto/Grad.    : {posto}
+  Nome           : {current_user.nome}
   OM / Órgão     : {om_display}
   Seção          : {secao}
   Subordinação   : {cmila_label}
@@ -819,6 +828,19 @@ async def _build_admin_zip(
             if _sv not in _scale_geoms:
                 _scale_geoms[_sv] = get_inom_geometries(EscalaEnum(_sv))
 
+    # ── Mapa de duplicatas (calculado uma vez, usado em GeoJSON, CSV e TXT) ─────
+    from collections import defaultdict as _defaultdict
+    _dup_map: dict[tuple, list] = _defaultdict(list)
+    for _p in enriched:
+        for _it in _p.itens:
+            if _it.mi:
+                _dup_map[(_it.mi, _it.tipo_produto.value)].append((_p, _it))
+    dup_entries: dict[tuple, list] = {
+        k: v for k, v in _dup_map.items()
+        if len({e[0].id for e in v}) > 1
+    }
+    dup_keys = set(dup_entries.keys())
+
     # ── GeoJSONs por escala ──────────────────────────────────────────────────
     geojsons: dict[str, list[dict]] = {}
     for p in enriched:
@@ -826,6 +848,7 @@ async def _build_admin_zip(
             sv = item.escala.value
             suffix = suffix_map.get(sv, sv.replace(":", "").replace(".", "").replace(" ", ""))
             geom = _scale_geoms.get(sv, {}).get(item.inom)
+            _is_dup = bool(item.mi and (item.mi, item.tipo_produto.value) in dup_keys)
             feat = {
                 "type": "Feature",
                 "geometry": geom,
@@ -837,6 +860,7 @@ async def _build_admin_zip(
                     "prioridade_item":     item.prioridade,
                     "status":              p.status.value,
                     # ── Dados do solicitante ────────────────────────────────
+                    "posto_graduacao":     p.usuario_posto_graduacao,
                     "solicitante":         p.usuario_nome,
                     "om":                  p.usuario_om,
                     "secao_om":            p.usuario_secao_om,
@@ -851,6 +875,7 @@ async def _build_admin_zip(
                     "observacoes":         p.observacoes,
                     "motivo_reprovacao":   p.motivo_reprovacao,
                     "link_bdgex":          p.link_bdgex,
+                    "duplicado":           _is_dup,
                     # ── Produto cartográfico ────────────────────────────────
                     "mi":                  item.mi,
                     "inom":                item.inom,
@@ -874,23 +899,27 @@ async def _build_admin_zip(
     writer = csv.writer(csv_buf, dialect="excel")
     writer.writerow([
         "Pedido_ID", "Item_ID", "Prioridade_Pedido", "Prioridade_Item", "Status",
-        "Solicitante", "OM", "Secao_OM", "C_MilA", "Tel_Ritex", "Tel_Comercial", "Email",
+        "Posto_Graduacao", "Solicitante", "OM", "Secao_OM", "C_MilA",
+        "Tel_Ritex", "Tel_Comercial", "Email",
         "Finalidade_Geo", "Informacao_Complementar", "Orgao_Vinculante",
         "Observacoes", "Motivo_Reprovacao", "Link_BDGEx",
         "Data_Entrega", "Criado_Em",
         "MI", "INOM", "Tipo_Produto", "Escala",
         "Disponivel_BDGEx", "Data_Producao_BDGEx", "Idade_Anos",
+        "Duplicado",
         "Impressao_Solicitada", "Impressao_Quantidade", "Impressao_Material",
     ])
     for p in enriched:
         for item in sorted(p.itens, key=lambda x: x.prioridade):
             idade_anos = (date.today() - item.data_producao_bdgex).days // 365 if item.data_producao_bdgex else ""
+            is_dup = "Sim" if (item.mi, item.tipo_produto.value) in dup_keys else "Não"
             writer.writerow([
                 p.id,
                 item.id,
                 p.prioridade,
                 item.prioridade,
                 p.status.value,
+                p.usuario_posto_graduacao or "",
                 p.usuario_nome or "",
                 p.usuario_om or "",
                 p.usuario_secao_om or "",
@@ -913,6 +942,7 @@ async def _build_admin_zip(
                 "Sim" if item.disponivel_bdgex else "Não",
                 item.data_producao_bdgex.isoformat() if item.data_producao_bdgex else "",
                 idade_anos,
+                is_dup,
                 "Sim" if p.impressao_solicitada else "Não",
                 item.impressao_quantidade or "",
                 item.impressao_tipo_material or "",
@@ -935,11 +965,63 @@ async def _build_admin_zip(
         f"Total itens   : {total_itens}",
         "=" * 70,
     ]
+
+    # ── Seção de duplicatas ────────────────────────────────────────────────────
+    if dup_entries:
+        linhas += [
+            "",
+            "=" * 70,
+            "ATENÇÃO — ITENS DUPLICADOS ENTRE PEDIDOS DISTINTOS",
+            "=" * 70,
+            "Os itens abaixo foram solicitados em mais de um pedido.",
+            "Verificar disponibilidade e data no BDGEx antes de produzir.",
+            "-" * 70,
+        ]
+        for (mi, tipo), entries in sorted(dup_entries.items()):
+            # representante para dados do BDGEx (primeiro item com data, ou qualquer)
+            rep_item = next((e[1] for e in entries if e[1].data_producao_bdgex), entries[0][1])
+            bdgex_flag = "✓ Disponível" if rep_item.disponivel_bdgex else "✗ Não disponível"
+            if rep_item.data_producao_bdgex:
+                _ia = (date.today() - rep_item.data_producao_bdgex).days // 365
+                bdgex_data = f" — Produzido em {rep_item.data_producao_bdgex.strftime('%d/%m/%Y')} ({_ia} ano{'s' if _ia != 1 else ''})"
+            else:
+                bdgex_data = " — Data de produção não disponível"
+            # escala do primeiro item
+            escalas_unicas = list(dict.fromkeys(e[1].escala.value for e in entries))
+            linhas += [
+                "",
+                f"  MI: {mi}  |  Produto: {tipo}  |  Escala(s): {', '.join(escalas_unicas)}",
+                f"  BDGEx: {bdgex_flag}{bdgex_data}",
+                f"  Pedidos envolvidos ({len({e[0].id for e in entries})}):",
+            ]
+            # agrupar por pedido
+            por_pedido: dict[int, tuple] = {}
+            for (pp, it) in entries:
+                por_pedido[pp.id] = (pp, it)
+            for pid, (pp, it) in sorted(por_pedido.items()):
+                dup_posto = pp.usuario_posto_graduacao or ""
+                dup_nome  = pp.usuario_nome or "—"
+                dup_om    = pp.usuario_om or "—"
+                dup_fin   = pp.finalidade_geo or pp.finalidade or "—"
+                linhas.append(
+                    f"    • Pedido #{pid}  [{pp.status.value}]  Prio {pp.prioridade}"
+                    f" — {dup_posto} {dup_nome} / {dup_om}"
+                    f"\n      Finalidade: {dup_fin}"
+                )
+        linhas += ["", "-" * 70, "FIM DA SEÇÃO DE DUPLICATAS", "=" * 70]
+
+    # ── Fichas por pedido ─────────────────────────────────────────────────────
     for p in enriched:
         imp_pedido = f"Sim ({p.impressao_quantidade}x {p.impressao_tipo_material})" if p.impressao_solicitada and p.impressao_quantidade else ("Sim" if p.impressao_solicitada else "Não")
+        # Itens com flag de duplicata
+        _itens_dup = {
+            it.id for it in p.itens
+            if it.mi and (it.mi, it.tipo_produto.value) in dup_keys
+        }
         linhas += [
             "",
             f"PEDIDO #{p.id}  [{p.status.value}]  — Prioridade {p.prioridade}",
+            f"  Posto/Grad.         : {p.usuario_posto_graduacao or '—'}",
             f"  Solicitante         : {p.usuario_nome or '—'}",
             f"  OM                  : {p.usuario_om or '—'}",
             f"  Seção               : {p.usuario_secao_om or '—'}",
@@ -966,10 +1048,11 @@ async def _build_admin_zip(
             else:
                 prod = ""
             imp_item = f" | Impr.: {item.impressao_quantidade}x {item.impressao_tipo_material}" if item.impressao_quantidade else ""
+            dup_flag = " ⚠ DUPLICADO" if item.id in _itens_dup else ""
             linhas.append(
                 f"    {i:2}. [Prio {item.prioridade:2}] {item.tipo_produto.value}"
                 f" | {item.escala.value} | MI: {item.mi or '—'} | INOM: {item.inom}"
-                f" | BDGEx: {bdgex}{prod}{imp_item}"
+                f" | BDGEx: {bdgex}{prod}{imp_item}{dup_flag}"
             )
         linhas.append("-" * 70)
     txt_bytes = "\n".join(linhas).encode("utf-8")

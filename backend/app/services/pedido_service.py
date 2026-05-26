@@ -194,13 +194,20 @@ async def submit_pedido(db: AsyncSession, pedido: Pedido, current_user: Usuario)
     await db.refresh(pedido)
 
     # E-mail de confirmação ao solicitante
-    operacao_nome = "Sem operação"
-    if pedido.operacao_id:
-        operacao = await db.get(Operacao, pedido.operacao_id)
-        if operacao:
-            operacao_nome = operacao.nome
+    _ov_str = str(pedido.orgao_vinculante.value if pedido.orgao_vinculante else "") or (
+        str(current_user.orgao_vinculante.value) if current_user.orgao_vinculante else ""
+    )
+    _rm = pedido.regiao_militar or current_user.regiao_militar
 
-    subject, html = pedido_submetido(current_user.nome, pedido.id, operacao_nome)
+    subject, html = pedido_submetido(
+        nome=current_user.nome,
+        pedido_id=pedido.id,
+        finalidade_geo=pedido.finalidade_geo,
+        finalidade=pedido.finalidade,
+        orgao_vinculante=_ov_str,
+        regiao_militar=_rm,
+        posto_graduacao=current_user.posto_graduacao,
+    )
     await send_email(current_user.email, subject, html)
 
     # Notifica o perfil do próximo escalão por e-mail + in-app.
@@ -226,7 +233,17 @@ async def submit_pedido(db: AsyncSession, pedido: Pedido, current_user: Usuario)
         )
 
     for g in gestores:
-        subject_g, html_g = notificar_gestor(g.nome, current_user.nome, pedido.id, current_user.om)
+        subject_g, html_g = notificar_gestor(
+            nome_gestor=g.nome,
+            nome_usuario=current_user.nome,
+            pedido_id=pedido.id,
+            om=current_user.om,
+            finalidade_geo=pedido.finalidade_geo,
+            finalidade=pedido.finalidade,
+            posto_graduacao=current_user.posto_graduacao,
+            orgao_vinculante=_ov_str,
+            regiao_militar=_rm,
+        )
         await send_email(g.email, subject_g, html_g)
 
     svc = NotificationService(db)

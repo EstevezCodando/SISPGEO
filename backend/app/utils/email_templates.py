@@ -337,15 +337,83 @@ def confirmacao_email(nome: str, token: str) -> tuple[str, str]:
 
 # ── Notificações de pedidos ───────────────────────────────────────────────────
 
-def pedido_submetido(nome: str, pedido_id: int, operacao: str) -> tuple[str, str]:
-    subject = f"SisPGeo — Pedido #{pedido_id} recebido"
+def pedido_submetido(
+    nome: str,
+    pedido_id: int,
+    finalidade_geo: str | None,
+    finalidade: str | None,
+    orgao_vinculante: str,
+    regiao_militar: str | None,
+    posto_graduacao: str | None = None,
+) -> tuple[str, str]:
+    """Confirmação ao solicitante após submissão do pedido."""
+    _cmila_labels: dict[str, str] = {
+        "CMA":   "Comando Militar da Amazônia (CMA)",
+        "CMAO":  "Comando Militar da Amazônia Oriental (CMAO)",
+        "CML":   "Comando Militar do Leste (CML)",
+        "CMP":   "Comando Militar do Planalto (CMP)",
+        "CMO":   "Comando Militar do Oeste (CMO)",
+        "CMS":   "Comando Militar do Sul (CMS)",
+        "CMNE":  "Comando Militar do Nordeste (CMNE)",
+        "CMSE":  "Comando Militar do Sudeste (CMSE)",
+    }
+    _org_labels: dict[str, str] = {
+        "DSG":   "Consolidador da DSG",
+        "DEC":   "Consolidador do DEC",
+        "COLOG": "Consolidador do COLOG",
+        "DECEx": "Consolidador do DECEx",
+    }
+    if orgao_vinculante == "COTER" and regiao_militar:
+        _cmila = _cmila_labels.get(regiao_militar, f"C Mil. A ({regiao_militar})")
+        proximo_escalao = f"Supervisor de Geoinformação — {_cmila}"
+    elif orgao_vinculante in _org_labels:
+        proximo_escalao = _org_labels[orgao_vinculante]
+    else:
+        proximo_escalao = f"Consolidador {orgao_vinculante}" if orgao_vinculante else "Gestor Demandante"
+
+    _finalidade_html = (
+        f'<strong style="color:#2a4010">{finalidade_geo}</strong>'
+        if finalidade_geo
+        else '<em style="color:#9a9880">Não informada</em>'
+    )
+    _complementar_row = (
+        _info_row("Inf. Complementar", finalidade)
+        if finalidade else ""
+    )
+    _saudacao = f"{posto_graduacao} {nome}".strip() if posto_graduacao else nome
+
+    subject = f"SisPGeo — Pedido #{pedido_id} submetido com sucesso"
     body = f"""
-<h2 style="margin:0 0 12px 0;color:#3a4c22;font-size:18px;font-weight:700">
-  Pedido #{pedido_id} registrado.</h2>
-<p style="{_P}">
-  {nome}, seu pedido <strong>#{pedido_id}</strong> referente a
-  <strong>{operacao}</strong> foi submetido e aguarda análise do Gestor Demandante.
+<h2 style="margin:0 0 4px 0;color:#3a4c22;font-size:18px;font-weight:700">
+  Pedido #{pedido_id} submetido.</h2>
+<p style="{_P};border-bottom:1px solid #e0ddd0;padding-bottom:16px">
+  {_saudacao}, seu pedido foi registrado e encaminhado ao
+  <strong>{proximo_escalao}</strong> para análise e tramitação.
 </p>
+
+<table cellpadding="0" cellspacing="0"
+       style="width:100%;border-collapse:collapse;margin-bottom:24px;
+              border:1px solid #c8c4b0">
+  {_info_row("Pedido", f"<strong>#{pedido_id}</strong>")}
+  {_divider()}
+  {_info_row("Finalidade da Geoinformação", _finalidade_html)}
+  {_complementar_row}
+  {_divider()}
+  {_info_row("Encaminhado para", proximo_escalao)}
+  {_info_row("Status", '<span style="color:#8b6914;font-weight:700">● Aguardando análise do gestor</span>')}
+</table>
+
+<div style="background:#f5f8f0;border-left:4px solid #6b8040;
+            padding:12px 16px;border-radius:0 3px 3px 0;margin-bottom:20px">
+  <p style="margin:0 0 4px 0;color:#3a4c22;font-size:12px;font-weight:700;
+            text-transform:uppercase;letter-spacing:0.5px">Próximos passos</p>
+  <p style="margin:0;color:#4a5a38;font-size:13px;line-height:1.6;text-align:justify">
+    Acompanhe o andamento do pedido nesta tela. Você será notificado por
+    e-mail a cada mudança de status. Pedidos em rascunho podem ser editados
+    a qualquer momento antes do envio.
+  </p>
+</div>
+
 {_btn(f"{settings.FRONTEND_URL}/meus-pedidos", "▶ Acompanhar Pedido")}
 """
     return subject, _base(subject, body)
@@ -422,15 +490,83 @@ def pedido_transferido(nome_novo: str, nome_anterior: str, count: int) -> tuple[
     return subject, _base(subject, body)
 
 
-def notificar_gestor(nome_gestor: str, nome_usuario: str, pedido_id: int, om: str) -> tuple[str, str]:
-    subject = f"SisPGeo — Pedido #{pedido_id} aguardando revisão"
+def notificar_gestor(
+    nome_gestor: str,
+    nome_usuario: str,
+    pedido_id: int,
+    om: str,
+    finalidade_geo: str | None = None,
+    finalidade: str | None = None,
+    posto_graduacao: str | None = None,
+    orgao_vinculante: str = "",
+    regiao_militar: str | None = None,
+) -> tuple[str, str]:
+    """Notificação ao gestor demandante de novo pedido aguardando revisão."""
+    _cmila_labels: dict[str, str] = {
+        "CMA":   "Comando Militar da Amazônia (CMA)",
+        "CMAO":  "Comando Militar da Amazônia Oriental (CMAO)",
+        "CML":   "Comando Militar do Leste (CML)",
+        "CMP":   "Comando Militar do Planalto (CMP)",
+        "CMO":   "Comando Militar do Oeste (CMO)",
+        "CMS":   "Comando Militar do Sul (CMS)",
+        "CMNE":  "Comando Militar do Nordeste (CMNE)",
+        "CMSE":  "Comando Militar do Sudeste (CMSE)",
+    }
+    # De onde veio (cadeia do solicitante)
+    if orgao_vinculante == "COTER" and regiao_militar:
+        _cmila = _cmila_labels.get(regiao_militar, f"C Mil. A ({regiao_militar})")
+        origem_cadeia = f"Solicitante via {_cmila} (COTER)"
+    elif orgao_vinculante:
+        origem_cadeia = f"Solicitante via {orgao_vinculante}"
+    else:
+        origem_cadeia = f"Solicitante — {om}"
+
+    _solicitante_display = f"{posto_graduacao} {nome_usuario}".strip() if posto_graduacao else nome_usuario
+    _finalidade_html = (
+        f'<strong style="color:#2a4010">{finalidade_geo}</strong>'
+        if finalidade_geo
+        else '<em style="color:#9a9880">Não informada</em>'
+    )
+    _complementar_row = (
+        _info_row("Inf. Complementar", finalidade)
+        if finalidade else ""
+    )
+
+    subject = f"SisPGeo — Pedido #{pedido_id} aguardando sua revisão"
     body = f"""
-<h2 style="margin:0 0 12px 0;color:#3a4c22;font-size:18px;font-weight:700">
-  Novo pedido aguardando revisão.</h2>
-<p style="{_P}">
-  {nome_gestor}, o usuário <strong>{nome_usuario}</strong> da OM <strong>{om}</strong>
-  submeteu o pedido <strong>#{pedido_id}</strong> para análise.
+<h2 style="margin:0 0 4px 0;color:#3a4c22;font-size:18px;font-weight:700">
+  Novo pedido para análise.</h2>
+<p style="{_P};border-bottom:1px solid #e0ddd0;padding-bottom:16px">
+  {nome_gestor}, o pedido <strong>#{pedido_id}</strong> está aguardando
+  sua revisão e aprovação.
 </p>
+
+<table cellpadding="0" cellspacing="0"
+       style="width:100%;border-collapse:collapse;margin-bottom:24px;
+              border:1px solid #c8c4b0">
+  {_info_row("Pedido", f"<strong>#{pedido_id}</strong>")}
+  {_divider()}
+  {_info_row("Solicitante", _solicitante_display)}
+  {_info_row("OM / Organização", om)}
+  {_info_row("Origem na cadeia", origem_cadeia)}
+  {_divider()}
+  {_info_row("Finalidade da Geoinformação", _finalidade_html)}
+  {_complementar_row}
+  {_divider()}
+  {_info_row("Status", '<span style="color:#8b6914;font-weight:700">● Aguardando sua revisão</span>')}
+</table>
+
+<div style="background:#fdf6e8;border-left:4px solid #8b7d3a;
+            padding:12px 16px;border-radius:0 3px 3px 0;margin-bottom:20px">
+  <p style="margin:0 0 4px 0;color:#4a3c10;font-size:12px;font-weight:700;
+            text-transform:uppercase;letter-spacing:0.5px">Ação necessária</p>
+  <p style="margin:0;color:#5a4c1a;font-size:13px;line-height:1.6;text-align:justify">
+    Acesse o sistema para revisar os produtos solicitados, verificar a
+    finalidade da geoinformação e aprovar ou reprovar o pedido conforme
+    as prioridades do seu escalão.
+  </p>
+</div>
+
 {_btn(f"{settings.FRONTEND_URL}/gestor/pedidos", "▶ Revisar Pedido")}
 """
     return subject, _base(subject, body)
