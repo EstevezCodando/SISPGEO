@@ -51,6 +51,7 @@ class PedidoCreate(BaseModel):
 class PedidoUpdate(BaseModel):
     operacao_id: int | None = None
     data_entrega: date | None = None
+    finalidade_geo: str | None = None
     finalidade: str | None = None
 
 

@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef, memo } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { format, isAfter } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -10,7 +10,7 @@ import {
   ChevronDown, ChevronRight,
   Pencil, Trash2, MapPin, X, Loader2, FileText, ExternalLink,
   GripVertical, AlertCircle, Clock, User, Phone, Building2, Mail,
-  CalendarClock, Lock, Send, CheckCircle2, AlertTriangle, Download,
+  CalendarClock, Lock, Send, CheckCircle2, AlertTriangle, Download, Printer,
 } from 'lucide-react'
 import {
   DndContext,
@@ -29,7 +29,6 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 import { pedidosApi } from '../api/pedidos'
 import { janelasApi, type MinhaJanela } from '../api/janelas'
-import { operacoesApi, type Operacao } from '../api/operacoes'
 import { LoadingSpinner } from '../components/shared/LoadingSpinner'
 import { CadeiaAprovacao } from '../components/shared/CadeiaAprovacao'
 import { useAuthStore } from '../store/authStore'
@@ -207,6 +206,12 @@ function SortablePedidoRow_Base({
               {!descricao && (
                 <span className="italic text-zinc-600">{p.itens.length} item(ns)</span>
               )}
+              {p.impressao_solicitada && (
+                <span className="ml-2 inline-flex items-center gap-0.5 text-[10px] text-violet-400 font-medium">
+                  <Printer className="h-3 w-3" />
+                  Impressão
+                </span>
+              )}
             </p>
           </div>
         </button>
@@ -308,6 +313,25 @@ function SortablePedidoRow_Base({
               <div className="col-span-2 sm:col-span-3">
                 <p className="text-zinc-500 mb-0.5">Observações do gestor</p>
                 <p className="text-zinc-300 leading-relaxed">{p.observacoes}</p>
+              </div>
+            )}
+            {p.impressao_solicitada && (
+              <div className="col-span-2 sm:col-span-3">
+                <p className="text-zinc-500 mb-1">Impressão Física</p>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="inline-flex items-center gap-1.5 text-xs bg-violet-500/10 border border-violet-500/20 text-violet-300 px-2.5 py-1 rounded-lg">
+                    <Printer className="h-3 w-3" />
+                    Impressão solicitada
+                  </span>
+                  {p.impressao_quantidade && (
+                    <span className="text-xs text-zinc-400">
+                      {p.impressao_quantidade} cópia{p.impressao_quantidade !== 1 ? 's' : ''}
+                    </span>
+                  )}
+                  {p.impressao_tipo_material && (
+                    <span className="text-xs text-zinc-400">· {p.impressao_tipo_material}</span>
+                  )}
+                </div>
               </div>
             )}
             {p.link_bdgex && (
@@ -598,16 +622,26 @@ function EnviarPedidosModal({ rascunhos, onClose, onEnviado }: EnviarPedidosModa
 }
 
 // ─── Edit Modal ───────────────────────────────────────────────────────────────
+const FINALIDADES_GEO = [
+  'Operação Militar',
+  'Exercício Combinado',
+  'Exercício Integrador',
+  'Manobra Escolar',
+  'Instrução Militar',
+  'Atualização de Campo de Instrução',
+  'Atualização',
+] as const
+
 interface EditModalProps {
   pedido: Pedido
-  operacoes: Operacao[]
   onClose: () => void
   onSaved: (updated: Pedido) => void
 }
-function EditModal({ pedido, operacoes, onClose, onSaved }: EditModalProps) {
+function EditModal({ pedido, onClose, onSaved }: EditModalProps) {
+  const navigate = useNavigate()
   const [dataEntrega, setDataEntrega] = useState(pedido.data_entrega)
+  const [finalidadeGeo, setFinalidadeGeo] = useState(pedido.finalidade_geo ?? '')
   const [finalidade, setFinalidade] = useState(pedido.finalidade ?? '')
-  const [operacaoId, setOperacaoId] = useState<string>(pedido.operacao_id?.toString() ?? '')
   const [saving, setSaving] = useState(false)
 
   const handleSave = async () => {
@@ -615,8 +649,8 @@ function EditModal({ pedido, operacoes, onClose, onSaved }: EditModalProps) {
     try {
       const res = await pedidosApi.update(pedido.id, {
         data_entrega: dataEntrega,
+        finalidade_geo: finalidadeGeo || null,
         finalidade: finalidade || null,
-        operacao_id: operacaoId ? parseInt(operacaoId) : null,
       })
       toast.success('Pedido atualizado')
       onSaved(res.data)
@@ -631,13 +665,16 @@ function EditModal({ pedido, operacoes, onClose, onSaved }: EditModalProps) {
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <div className="bg-zinc-900 border border-white/10 rounded-2xl shadow-2xl w-full max-w-md">
+        {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-white/10">
           <h2 className="text-base font-semibold text-zinc-100">Editar Pedido #{pedido.id}</h2>
           <button onClick={onClose} className="text-zinc-500 hover:text-zinc-300 transition-colors">
             <X className="h-5 w-5" />
           </button>
         </div>
+
         <div className="p-6 space-y-4">
+          {/* Data de entrega */}
           <div>
             <label className="block text-xs font-medium text-zinc-400 mb-1.5">Data sugerida de entrega</label>
             <input
@@ -647,34 +684,61 @@ function EditModal({ pedido, operacoes, onClose, onSaved }: EditModalProps) {
               className="w-full bg-zinc-800 border border-zinc-700 text-zinc-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500"
             />
           </div>
+
+          {/* Finalidade da Geoinformação */}
           <div>
-            <label className="block text-xs font-medium text-zinc-400 mb-1.5">Finalidade</label>
+            <label className="block text-xs font-medium text-zinc-400 mb-1.5">Finalidade da Geoinformação</label>
+            <select
+              value={finalidadeGeo}
+              onChange={e => setFinalidadeGeo(e.target.value)}
+              className="w-full bg-zinc-800 border border-zinc-700 text-zinc-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500"
+            >
+              <option value="">Selecione…</option>
+              {FINALIDADES_GEO.map(f => (
+                <option key={f} value={f}>{f}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Informação Complementar */}
+          <div>
+            <label className="block text-xs font-medium text-zinc-400 mb-1.5">
+              Informação Complementar <span className="text-zinc-600">(opcional)</span>
+            </label>
             <textarea
               value={finalidade}
               onChange={e => setFinalidade(e.target.value)}
               rows={3}
               className="w-full bg-zinc-800 border border-zinc-700 text-zinc-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500 resize-none placeholder:text-zinc-600"
-              placeholder="Descreva a finalidade do pedido…"
+              placeholder="Informações adicionais sobre o pedido…"
             />
           </div>
-          <div>
-            <label className="block text-xs font-medium text-zinc-400 mb-1.5">
-              Operação <span className="text-zinc-600">(opcional)</span>
-            </label>
-            <select
-              value={operacaoId}
-              onChange={e => setOperacaoId(e.target.value)}
-              className="w-full bg-zinc-800 border border-zinc-700 text-zinc-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500"
+
+          {/* Gerenciar produtos */}
+          <div className="bg-zinc-800/50 border border-zinc-700/50 rounded-xl p-3 flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-xs font-medium text-zinc-300">Adicionar ou remover produtos</p>
+              <p className="text-xs text-zinc-500 mt-0.5 leading-relaxed">
+                Para alterar os produtos (MI/INOM) vá à tela de solicitação.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => { onClose(); navigate('/solicitar-produtos') }}
+              className="shrink-0 inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors"
             >
-              <option value="">Outros / Sem operação</option>
-              {operacoes.map(o => (
-                <option key={o.id} value={o.id.toString()}>{o.nome}</option>
-              ))}
-            </select>
+              <ExternalLink className="h-3.5 w-3.5" />
+              Ir para pedido
+            </button>
           </div>
         </div>
+
+        {/* Footer */}
         <div className="flex gap-2 p-6 pt-0">
-          <button onClick={onClose} className="flex-1 px-4 py-2 rounded-lg border border-white/10 text-zinc-400 text-sm hover:bg-white/5 transition-colors">
+          <button
+            onClick={onClose}
+            className="flex-1 px-4 py-2 rounded-lg border border-white/10 text-zinc-400 text-sm hover:bg-white/5 transition-colors"
+          >
             Cancelar
           </button>
           <button
@@ -833,7 +897,6 @@ type ModalType = 'edit' | 'delete' | 'spatialize' | 'enviar'
 
 export function MeusPedidos() {
   const [pedidos, setPedidos] = useState<Pedido[]>([])
-  const [operacoes, setOperacoes] = useState<Operacao[]>([])
   const [loading, setLoading] = useState(true)
   const [modal, setModal] = useState<{ type: ModalType; pedido?: Pedido } | null>(null)
   const [expanded, setExpanded] = useState<Set<number>>(new Set())
@@ -845,11 +908,10 @@ export function MeusPedidos() {
 
   const load = useCallback(() => {
     setLoading(true)
-    Promise.all([pedidosApi.list(), operacoesApi.list()])
-      .then(([pRes, oRes]) => {
-        const sorted = [...pRes.data].sort((a, b) => a.prioridade - b.prioridade)
+    pedidosApi.list()
+      .then(res => {
+        const sorted = [...res.data].sort((a, b) => a.prioridade - b.prioridade)
         setPedidos(sorted)
-        setOperacoes(oRes.data)
       })
       .catch(() => toast.error('Erro ao carregar pedidos'))
       .finally(() => setLoading(false))
@@ -1031,8 +1093,9 @@ export function MeusPedidos() {
                 <p className={`text-sm mt-2 font-semibold ${urgente ? 'text-red-400' : 'text-emerald-400'}`}>
                   {diasRestantes <= 0 ? 'Encerra hoje!' : `${diasRestantes} dia${diasRestantes !== 1 ? 's' : ''} restante${diasRestantes !== 1 ? 's' : ''}`}
                 </p>
-                <p className="text-xs text-zinc-500 mt-1">
-                  Quando o período de solicitações encerrar, os pedidos em rascunho serão enviados automaticamente ao supervisor.
+                <p className="text-xs text-zinc-500 mt-1 leading-relaxed">
+                  Pedidos em <span className="text-zinc-400 font-medium">rascunho</span> ainda não foram submetidos à cadeia de
+                  comando — você pode editá-los livremente até o fim do período. Quando o prazo encerrar, serão enviados automaticamente.
                 </p>
               </>
             )}
@@ -1137,7 +1200,6 @@ export function MeusPedidos() {
       {modal?.type === 'edit' && modal.pedido && (
         <EditModal
           pedido={modal.pedido}
-          operacoes={operacoes}
           onClose={() => setModal(null)}
           onSaved={handleUpdated}
         />

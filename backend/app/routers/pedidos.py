@@ -568,10 +568,14 @@ async def exportar_relatorio(
 
     # ── LEIA-ME ───────────────────────────────────────────────────────────────
     _perfil_labels = {
-        "SOLICITANTE":         "Solicitante (OMDS)",
-        "SUPERVISOR":          "Supervisor (C Mil. A)",
-        "CONSOLIDADOR":        "Consolidador (COTER)",
-        "GESTOR_CARTOGRAFICO": "Gestor Cartográfico (DSG)",
+        "SOLICITANTE":           "Solicitante (OMDS)",
+        "SUPERVISOR":            "Supervisor (C Mil. A)",
+        "CONSOLIDADOR_COTER":    "Consolidador (COTER)",
+        "CONSOLIDADOR_DSG":      "Consolidador (DSG)",
+        "CONSOLIDADOR_DEC":      "Consolidador (DEC)",
+        "CONSOLIDADOR_COLOG":    "Consolidador (COLOG)",
+        "CONSOLIDADOR_DECEX":    "Consolidador (DECEx)",
+        "GESTOR_CARTOGRAFICO":   "Gestor Cartográfico (DSG)",
     }
     _cmila_labels: dict[str, str] = {
         "CMA":   "CMA — Comando Militar da Amazônia",
@@ -581,8 +585,16 @@ async def exportar_relatorio(
         "CMO":   "CMO — Comando Militar do Oeste",
         "CMS":   "CMS — Comando Militar do Sul",
         "CMNE":  "CMNE — Comando Militar do Nordeste",
-        "CMNOR": "CMNOR — Comando Militar do Nordeste",
+        "CMNOR": "CMNOR — Comando Militar do Norte",
         "CMSE":  "CMSE — Comando Militar do Sudeste",
+    }
+    # Labels dos órgãos intermediários usados nas cadeias
+    _ov_labels: dict[str, str] = {
+        "DSG":   "DSG  (Diretoria de Serviço Geográfico)",
+        "COTER": "COTER  (Seção de Geoinformação e Cartografia)",
+        "DEC":   "DEC  (Departamento de Engenharia e Construção)",
+        "COLOG": "COLOG  (Comando Logístico)",
+        "DECEx": "DECEx  (Depto. de Educação e Cultura do Exército)",
     }
     perfil_label  = _perfil_labels.get(current_user.perfil.value, current_user.perfil.value)
     cmila_code    = (current_user.regiao_militar or "").strip()
@@ -595,36 +607,88 @@ async def exportar_relatorio(
 
     cmila_short = cmila_code if cmila_code else "C Mil. A"
     om_display  = current_user.om or "OMDS"
+    ov_value    = current_user.orgao_vinculante.value if current_user.orgao_vinculante else ""
 
-    # Cadeia de comando específica ao perfil do signatário
+    # ── Cadeia de comando — específica ao perfil e órgão vinculante ──────────
     if current_user.perfil == PerfilEnum.SOLICITANTE:
-        _cadeia_titulo = f"Cadeia prevista — {om_display} subordinada ao COTER:"
-        _cadeia_diagrama = (
-            f"  {om_display}\n"
-            f"    └─► {cmila_short}  (Supervisor de Geoinformação)\n"
-            f"          └─► COTER  (Seção de Geoinformação e Cartografia)\n"
-            f"                └─► DSG  (Diretoria de Serviço Geográfico)"
-        )
+        if ov_value == "DSG":
+            _cadeia_titulo = f"Cadeia prevista — {om_display} subordinada à DSG:"
+            _cadeia_diagrama = (
+                f"  {om_display}\n"
+                f"    └─► DSG  (Diretoria de Serviço Geográfico)"
+            )
+        elif ov_value == "COTER":
+            _cadeia_titulo = f"Cadeia prevista — {om_display} subordinada ao COTER:"
+            _cadeia_diagrama = (
+                f"  {om_display}\n"
+                f"    └─► {cmila_short}  (Supervisor de Geoinformação)\n"
+                f"          └─► COTER  (Seção de Geoinformação e Cartografia)\n"
+                f"                └─► DSG  (Diretoria de Serviço Geográfico)"
+            )
+        elif ov_value in _ov_labels:
+            _ov_disp = _ov_labels[ov_value]
+            _cadeia_titulo = f"Cadeia prevista — {om_display} subordinada ao {ov_value}:"
+            _cadeia_diagrama = (
+                f"  {om_display}\n"
+                f"    └─► {_ov_disp}\n"
+                f"          └─► DSG  (Diretoria de Serviço Geográfico)"
+            )
+        else:
+            _cadeia_titulo = f"Cadeia prevista — {om_display}:"
+            _cadeia_diagrama = (
+                f"  {om_display}\n"
+                f"    └─► DSG  (Diretoria de Serviço Geográfico)"
+            )
+
     elif current_user.perfil in SUPERVISOR_PROFILES:
         _cmila_display = cmila_label if cmila_label != "—" else cmila_short
-        _cadeia_titulo = f"Cadeia prevista — {_cmila_display} ao COTER:"
-        _cadeia_diagrama = (
-            f"  {_cmila_display}\n"
-            f"    └─► COTER  (Seção de Geoinformação e Cartografia)\n"
-            f"          └─► DSG  (Diretoria de Serviço Geográfico)"
-        )
-    else:  # CONSOLIDADOR
-        _cadeia_titulo = "Cadeia prevista — COTER ao DSG:"
-        _cadeia_diagrama = (
-            "  COTER  (Seção de Geoinformação e Cartografia)\n"
-            "    └─► DSG  (Diretoria de Serviço Geográfico)"
-        )
+        if ov_value == "COTER":
+            _cadeia_titulo = f"Cadeia prevista — {_cmila_display} ao COTER:"
+            _cadeia_diagrama = (
+                f"  {_cmila_display}\n"
+                f"    └─► COTER  (Seção de Geoinformação e Cartografia)\n"
+                f"          └─► DSG  (Diretoria de Serviço Geográfico)"
+            )
+        else:
+            _cadeia_titulo = f"Cadeia prevista — {_cmila_display} à DSG:"
+            _cadeia_diagrama = (
+                f"  {_cmila_display}\n"
+                f"    └─► DSG  (Diretoria de Serviço Geográfico)"
+            )
+
+    else:  # CONSOLIDADOR_*  (COTER, DSG, DEC, COLOG, DECEx)
+        if current_user.perfil == PerfilEnum.CONSOLIDADOR_COTER:
+            _cadeia_titulo = "Cadeia prevista — COTER ao DSG:"
+            _cadeia_diagrama = (
+                "  COTER  (Seção de Geoinformação e Cartografia)\n"
+                "    └─► DSG  (Diretoria de Serviço Geográfico)"
+            )
+        elif current_user.perfil == PerfilEnum.CONSOLIDADOR_DEC:
+            _cadeia_titulo = "Cadeia prevista — DEC ao DSG:"
+            _cadeia_diagrama = (
+                "  DEC  (Departamento de Engenharia e Construção)\n"
+                "    └─► DSG  (Diretoria de Serviço Geográfico)"
+            )
+        elif current_user.perfil == PerfilEnum.CONSOLIDADOR_COLOG:
+            _cadeia_titulo = "Cadeia prevista — COLOG ao DSG:"
+            _cadeia_diagrama = (
+                "  COLOG  (Comando Logístico)\n"
+                "    └─► DSG  (Diretoria de Serviço Geográfico)"
+            )
+        elif current_user.perfil == PerfilEnum.CONSOLIDADOR_DECEX:
+            _cadeia_titulo = "Cadeia prevista — DECEx ao DSG:"
+            _cadeia_diagrama = (
+                "  DECEx  (Depto. de Educação e Cultura do Exército)\n"
+                "    └─► DSG  (Diretoria de Serviço Geográfico)"
+            )
+        else:  # CONSOLIDADOR_DSG ou GESTOR_CARTOGRAFICO
+            _cadeia_titulo = "Órgão responsável pelo processamento:"
+            _cadeia_diagrama = "  DSG  (Diretoria de Serviço Geográfico)"
 
     readme = f"""\
 LEIA-ME — SisPGeo: Sistema de Pedidos de Geoinformação
 =======================================================
 Diretoria de Serviço Geográfico (DSG) / Exército Brasileiro
-COTER — Comando de Operações Terrestres
 
 Gerado por : {current_user.nome}
 Perfil     : {perfil_label}
@@ -1462,6 +1526,8 @@ async def update_pedido(
 
     if body.data_entrega is not None:
         pedido.data_entrega = body.data_entrega
+    if body.finalidade_geo is not None:
+        pedido.finalidade_geo = body.finalidade_geo
     if body.finalidade is not None:
         pedido.finalidade = body.finalidade
     if body.operacao_id is not None:
