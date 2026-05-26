@@ -60,7 +60,7 @@ export function EsqueciSenha() {
                 <p className="text-zinc-400 text-sm mt-2 leading-relaxed">
                   Se <span className="text-zinc-200 font-medium">{email}</span> estiver
                   cadastrado, você receberá um link para redefinir sua senha.
-                  O link expira em <span className="text-zinc-200">2 horas</span>.
+                  O link expira em <span className="text-zinc-200">1 hora</span>.
                 </p>
               </div>
               <div className="bg-zinc-800/60 border border-white/5 rounded-lg p-3 text-left">

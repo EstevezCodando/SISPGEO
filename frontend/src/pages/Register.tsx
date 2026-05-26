@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Eye, EyeOff } from "lucide-react";
+import { CheckCircle2, Eye, EyeOff, Mail, XCircle } from "lucide-react";
 import toast from "react-hot-toast";
 import { Link, useNavigate } from "react-router-dom";
 import { authApi } from "../api/auth";
@@ -12,7 +12,6 @@ const CMILITAR = Object.entries(OMS_DATA).map(([code, { label }]) => ({
   label,
 }));
 
-// Subordinação: órgão ao qual a OM é subordinada (DCT removido — não faz parte do fluxo)
 const SUBORDINACOES = [
   { value: "COTER", label: "COTER - Comando de Operações Terrestres" },
   { value: "DSG",   label: "DSG - Diretoria de Serviço Geográfico" },
@@ -20,6 +19,30 @@ const SUBORDINACOES = [
   { value: "COLOG", label: "COLOG - Comando Logístico" },
   { value: "DECEx", label: "DECEx - Departamento de Educação e Cultura do Exército" },
 ];
+
+// ── Validação de senha (mesmas regras do backend) ─────────────────────────────
+
+function validarSenha(senha: string): string | null {
+  if (senha.length < 8)               return "Mínimo 8 caracteres";
+  if (!/[A-Z]/.test(senha))           return "Pelo menos uma letra maiúscula";
+  if (!/[a-z]/.test(senha))           return "Pelo menos uma letra minúscula";
+  if (!/[0-9]/.test(senha))           return "Pelo menos um número";
+  if (!/[^A-Za-z0-9]/.test(senha))   return "Pelo menos um caractere especial";
+  return null;
+}
+
+function RequisitosItem({ ok, texto }: { ok: boolean; texto: string }) {
+  return (
+    <li className={`flex items-center gap-1.5 text-xs transition-colors ${ok ? "text-emerald-400" : "text-zinc-500"}`}>
+      {ok
+        ? <CheckCircle2 className="h-3.5 w-3.5 flex-shrink-0" />
+        : <XCircle className="h-3.5 w-3.5 flex-shrink-0" />}
+      {texto}
+    </li>
+  );
+}
+
+// ── Componente principal ──────────────────────────────────────────────────────
 
 export function Register() {
   const navigate = useNavigate();
@@ -83,6 +106,11 @@ export function Register() {
   const phoneTouched = phoneDigits.length > 0;
   const phoneValid = phoneDigits.length === 10 || phoneDigits.length === 11;
 
+  // Senha
+  const erroSenha = form.senha ? validarSenha(form.senha) : null;
+  const senhaOk = form.senha.length > 0 && erroSenha === null;
+  const confirmacaoOk = form.senha === form.confirmar_senha && form.confirmar_senha.length > 0;
+
   useEffect(() => {
     if (!form.regiao_militar) { setCustomOMs([]); return; }
     omsApi.listar(form.regiao_militar)
@@ -97,22 +125,12 @@ export function Register() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (form.senha !== form.confirmar_senha) {
-      toast.error("As senhas não coincidem");
-      return;
-    }
-    if (!form.email.endsWith("@eb.mil.br")) {
-      toast.error("Somente emails @eb.mil.br são aceitos");
-      return;
-    }
-    if (!form.om.trim()) {
-      toast.error("Informe a Organização Militar");
-      return;
-    }
-    if (!phoneValid) {
-      toast.error("Informe um telefone válido com DDD - ex: (61) 99999-9999");
-      return;
-    }
+    const erroSenhaAtual = validarSenha(form.senha);
+    if (erroSenhaAtual) { toast.error(erroSenhaAtual); return; }
+    if (form.senha !== form.confirmar_senha) { toast.error("As senhas não coincidem"); return; }
+    if (!form.email.endsWith("@eb.mil.br")) { toast.error("Somente emails @eb.mil.br são aceitos"); return; }
+    if (!form.om.trim()) { toast.error("Informe a Organização Militar"); return; }
+    if (!phoneValid) { toast.error("Informe um telefone válido com DDD – ex: (61) 99999-9999"); return; }
 
     const ritex =
       form.ritex_prefix.length === 3 && form.ritex_number.length === 4
@@ -124,7 +142,6 @@ export function Register() {
       if (omCustom && form.om.trim() && form.regiao_militar) {
         await omsApi.criar(form.regiao_militar, form.om.trim()).catch(() => {/* silent */});
       }
-
       await authApi.register({
         nome: form.nome,
         nome_de_guerra: form.nome_de_guerra || undefined,
@@ -141,52 +158,75 @@ export function Register() {
       setRegistered(form.email);
     } catch (err: any) {
       const msg = err.response?.data?.detail ?? "Erro no cadastro";
-      toast.error(
-        Array.isArray(msg) ? (msg[0]?.msg ?? String(msg)) : String(msg),
-      );
+      toast.error(Array.isArray(msg) ? (msg[0]?.msg ?? String(msg)) : String(msg));
     } finally {
       setLoading(false);
     }
   };
 
+  // ── Tela de confirmação de cadastro ──────────────────────────────────────────
   if (registered) {
     return (
       <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4 relative overflow-hidden">
         <div className="absolute top-[-200px] left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-emerald-500/10 blur-[140px] rounded-full pointer-events-none" />
         <div className="relative z-10 w-full max-w-md">
-          <div className="bg-zinc-900 border border-white/10 rounded-2xl shadow-2xl p-8 text-center">
-            <div className="flex justify-center mb-5">
+          <div className="bg-zinc-900 border border-white/10 rounded-2xl shadow-2xl p-8">
+
+            {/* Logo */}
+            <div className="flex justify-center mb-6">
               <img src="/dsg.png" alt="DSG" className="h-12 w-auto opacity-80" />
             </div>
+
+            {/* Ícone de sucesso */}
             <div className="flex justify-center mb-5">
               <div className="h-16 w-16 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center">
-                <svg className="h-8 w-8 text-emerald-400" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
+                <CheckCircle2 className="h-8 w-8 text-emerald-400" />
               </div>
             </div>
-            <h2 className="text-xl font-bold text-zinc-100 mb-2 tracking-tight">
-              Cadastro realizado!
+
+            {/* Título */}
+            <h2 className="text-xl font-bold text-zinc-100 text-center tracking-tight mb-2">
+              Cadastro realizado com sucesso!
             </h2>
-            <p className="text-zinc-400 text-sm leading-relaxed mb-1">
-              Um e-mail de ativação foi enviado para:
+            <p className="text-zinc-400 text-sm text-center leading-relaxed mb-5">
+              Um link de ativação foi enviado para o endereço abaixo. Siga as instruções para concluir o acesso ao sistema.
             </p>
-            <p className="text-emerald-400 font-mono text-sm font-semibold mb-4">
-              {registered}
-            </p>
-            <div className="bg-zinc-800/60 border border-zinc-700/50 rounded-lg p-4 mb-6 text-left">
-              <p className="text-zinc-300 text-sm leading-relaxed">
-                <span className="font-semibold text-zinc-100">Próximos passos:</span>
+
+            {/* E-mail em destaque */}
+            <div className="flex items-center gap-2.5 bg-zinc-800/70 border border-zinc-700/60 rounded-lg px-4 py-3 mb-6">
+              <Mail className="h-4 w-4 text-emerald-400 flex-shrink-0" />
+              <span className="font-mono text-sm text-emerald-300 font-semibold truncate">
+                {registered}
+              </span>
+            </div>
+
+            {/* Próximos passos */}
+            <div className="bg-zinc-800/50 border border-zinc-700/40 rounded-lg p-4 mb-5">
+              <p className="text-xs font-semibold text-zinc-300 uppercase tracking-wider mb-3">
+                Próximos passos
               </p>
-              <ol className="mt-2 space-y-1.5 text-zinc-400 text-sm">
-                <li className="flex gap-2"><span className="text-emerald-500 font-bold shrink-0">1.</span> Acesse sua caixa de entrada (<span className="font-mono text-xs">{registered}</span>)</li>
-                <li className="flex gap-2"><span className="text-emerald-500 font-bold shrink-0">2.</span> Clique no link de ativação enviado pelo SisPGeo</li>
-                <li className="flex gap-2"><span className="text-emerald-500 font-bold shrink-0">3.</span> Retorne ao login e acesse o sistema</li>
+              <ol className="space-y-2.5">
+                <li className="flex gap-3 text-sm text-zinc-400">
+                  <span className="text-emerald-500 font-bold text-xs mt-0.5 shrink-0">01</span>
+                  <span>Acesse a caixa de entrada do seu e-mail institucional</span>
+                </li>
+                <li className="flex gap-3 text-sm text-zinc-400">
+                  <span className="text-emerald-500 font-bold text-xs mt-0.5 shrink-0">02</span>
+                  <span>Abra a mensagem enviada pelo <strong className="text-zinc-300">SisPGeo</strong> e clique em <strong className="text-zinc-300">Ativar Minha Conta</strong></span>
+                </li>
+                <li className="flex gap-3 text-sm text-zinc-400">
+                  <span className="text-emerald-500 font-bold text-xs mt-0.5 shrink-0">03</span>
+                  <span>Retorne ao sistema e realize seu primeiro acesso</span>
+                </li>
               </ol>
             </div>
-            <p className="text-zinc-600 text-xs mb-5">
-              O link de ativação é válido por 24 horas. Verifique também a pasta de spam.
+
+            {/* Nota de expiração */}
+            <p className="text-center text-xs text-zinc-600 mb-6">
+              O link de ativação é válido por <span className="text-zinc-500">24 horas</span>.
+              Caso não encontre o e-mail, verifique a pasta de spam.
             </p>
+
             <button
               onClick={() => navigate("/login")}
               className="w-full border border-zinc-700 text-zinc-300 py-2.5 rounded-lg font-medium text-sm hover:border-zinc-500 hover:text-zinc-100 transition-colors"
@@ -199,6 +239,7 @@ export function Register() {
     );
   }
 
+  // ── Formulário de cadastro ────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4 relative overflow-hidden">
       <div className="absolute top-[-200px] left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-emerald-500/15 blur-[120px] rounded-full pointer-events-none" />
@@ -212,7 +253,7 @@ export function Register() {
             <h1 className="text-xl font-semibold text-zinc-100 tracking-tight">
               Cadastro de novo usuário
             </h1>
-            <p className="text-zinc-500 text-sm">SisPGeo - DSG/EB</p>
+            <p className="text-zinc-500 text-sm">SisPGeo – DSG/EB</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-3">
@@ -231,7 +272,7 @@ export function Register() {
                 <option value="" className="bg-zinc-800">Selecione o posto / graduação</option>
                 {POSTOS.map((p) => (
                   <option key={p.id} value={p.nome} className="bg-zinc-800">
-                    {p.abrev} - {p.nome}
+                    {p.abrev} – {p.nome}
                   </option>
                 ))}
               </select>
@@ -295,7 +336,7 @@ export function Register() {
               </div>
               {phoneTouched && !phoneValid && (
                 <p className="mt-1 text-xs text-red-400">
-                  Número incompleto - informe DDD + número (fixo: 8 dígitos, celular: 9 dígitos)
+                  Número incompleto – informe DDD + número (fixo: 8 dígitos, celular: 9 dígitos)
                 </p>
               )}
             </div>
@@ -304,9 +345,7 @@ export function Register() {
             <div>
               <label className="block text-sm font-medium text-zinc-300 mb-1.5">
                 Telefone Funcional (Ritex)
-                <span className="text-zinc-500 text-xs font-normal ml-1">
-                  - opcional
-                </span>
+                <span className="text-zinc-500 text-xs font-normal ml-1">– opcional</span>
               </label>
               <div className="flex items-center gap-2">
                 <input
@@ -350,7 +389,7 @@ export function Register() {
                 <option value="" className="bg-zinc-800">Escolha o C Mil A Enquadrante</option>
                 {CMILITAR.map(({ code, label }) => (
                   <option key={code} value={code} className="bg-zinc-800">
-                    {code} - {label}
+                    {code} – {label}
                   </option>
                 ))}
               </select>
@@ -413,7 +452,7 @@ export function Register() {
               )}
             </div>
 
-            {/* Função / Seção — logo após OM */}
+            {/* Função / Seção */}
             <Field
               label="Função / Seção"
               type="text"
@@ -442,27 +481,90 @@ export function Register() {
               </select>
             </div>
 
-            {/* Senha e Confirmar Senha */}
-            <div className="grid grid-cols-2 gap-3">
-              <PasswordField
-                label="Senha"
-                value={form.senha}
-                show={showSenha}
-                onToggle={() => setShowSenha((v) => !v)}
-                onChange={set("senha")}
-              />
-              <PasswordField
-                label="Confirmar Senha"
-                value={form.confirmar_senha}
-                show={showConfirmar}
-                onToggle={() => setShowConfirmar((v) => !v)}
-                onChange={set("confirmar_senha")}
-              />
+            {/* ── Senha ─────────────────────────────────────────────────────────── */}
+            <div>
+              <label className="block text-sm font-medium text-zinc-300 mb-1.5">
+                Senha <span className="text-red-400">*</span>
+              </label>
+              <div className="relative">
+                <input
+                  type={showSenha ? "text" : "password"}
+                  value={form.senha}
+                  onChange={set("senha")}
+                  required
+                  placeholder="Crie uma senha segura"
+                  className={`w-full bg-zinc-800 rounded-lg px-3 py-2.5 pr-10 text-sm text-zinc-100
+                    placeholder:text-zinc-500 focus:outline-none focus:ring-1 transition-colors
+                    ${form.senha.length > 0
+                      ? senhaOk
+                        ? "border border-emerald-500/60 focus:ring-emerald-500 focus:border-emerald-500"
+                        : "border border-red-500/60 focus:ring-red-500/50 focus:border-red-500/50"
+                      : "border border-zinc-700 focus:ring-emerald-500 focus:border-emerald-500"
+                    }`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowSenha((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors"
+                  tabIndex={-1}
+                  aria-label={showSenha ? "Ocultar senha" : "Mostrar senha"}
+                >
+                  {showSenha ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+
+              {/* Requisitos dinâmicos — aparecem quando o usuário começa a digitar */}
+              {form.senha.length > 0 && (
+                <ul className="mt-2 space-y-1 pl-0.5">
+                  <RequisitosItem ok={form.senha.length >= 8}              texto="Mínimo 8 caracteres" />
+                  <RequisitosItem ok={/[A-Z]/.test(form.senha)}            texto="Uma letra maiúscula" />
+                  <RequisitosItem ok={/[a-z]/.test(form.senha)}            texto="Uma letra minúscula" />
+                  <RequisitosItem ok={/[0-9]/.test(form.senha)}            texto="Um número" />
+                  <RequisitosItem ok={/[^A-Za-z0-9]/.test(form.senha)}     texto="Um caractere especial (!@#$...)" />
+                </ul>
+              )}
             </div>
 
-            <p className="text-xs text-zinc-500">
-              A senha deve conter no mínimo 8 caracteres, uma letra maiúscula, uma letra minúscula, um número e um caractere especial.
-            </p>
+            {/* ── Confirmar Senha ────────────────────────────────────────────────── */}
+            <div>
+              <label className="block text-sm font-medium text-zinc-300 mb-1.5">
+                Confirmar Senha <span className="text-red-400">*</span>
+              </label>
+              <div className="relative">
+                <input
+                  type={showConfirmar ? "text" : "password"}
+                  value={form.confirmar_senha}
+                  onChange={set("confirmar_senha")}
+                  required
+                  placeholder="Repita a senha"
+                  className={`w-full bg-zinc-800 rounded-lg px-3 py-2.5 pr-10 text-sm text-zinc-100
+                    placeholder:text-zinc-500 focus:outline-none focus:ring-1 transition-colors
+                    ${form.confirmar_senha.length > 0
+                      ? confirmacaoOk
+                        ? "border border-emerald-500/60 focus:ring-emerald-500 focus:border-emerald-500"
+                        : "border border-red-500/60 focus:ring-red-500/50 focus:border-red-500/50"
+                      : "border border-zinc-700 focus:ring-emerald-500 focus:border-emerald-500"
+                    }`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmar((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors"
+                  tabIndex={-1}
+                  aria-label={showConfirmar ? "Ocultar senha" : "Mostrar senha"}
+                >
+                  {showConfirmar ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              {form.confirmar_senha.length > 0 && !confirmacaoOk && (
+                <p className="mt-1 text-xs text-red-400">As senhas não coincidem</p>
+              )}
+              {confirmacaoOk && (
+                <p className="mt-1 text-xs text-emerald-400 flex items-center gap-1">
+                  <CheckCircle2 className="h-3.5 w-3.5" /> Senhas conferem
+                </p>
+              )}
+            </div>
 
             <button
               type="submit"
@@ -487,6 +589,8 @@ export function Register() {
     </div>
   );
 }
+
+// ── Componentes auxiliares ────────────────────────────────────────────────────
 
 function Field({
   label,
@@ -516,45 +620,6 @@ function Field({
         required={required}
         className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
       />
-    </div>
-  );
-}
-
-function PasswordField({
-  label,
-  value,
-  show,
-  onToggle,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  show: boolean;
-  onToggle: () => void;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-}) {
-  return (
-    <div>
-      <label className="block text-sm font-medium text-zinc-300 mb-1.5">
-        {label} <span className="text-red-400">*</span>
-      </label>
-      <div className="relative">
-        <input
-          type={show ? "text" : "password"}
-          value={value}
-          onChange={onChange}
-          required
-          className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2.5 pr-9 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
-        />
-        <button
-          type="button"
-          onClick={onToggle}
-          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors"
-          tabIndex={-1}
-        >
-          {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-        </button>
-      </div>
     </div>
   );
 }
