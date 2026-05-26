@@ -579,7 +579,7 @@ async def exportar_relatorio(
     }
     _cmila_labels: dict[str, str] = {
         "CMA":   "CMA — Comando Militar da Amazônia",
-        "CMAO":  "CMAO — Comando Militar da Amazônia Ocidental",
+        "CMAO":  "CMAO — Comando Militar da Amazônia Oriental",
         "CML":   "CML — Comando Militar do Leste",
         "CMP":   "CMP — Comando Militar do Planalto",
         "CMO":   "CMO — Comando Militar do Oeste",
@@ -1097,7 +1097,7 @@ async def delete_item(
 ):
     """Remove um item (célula) de um pedido.
 
-    - Dono do pedido: pode remover se status RASCUNHO ou DEVOLVIDO.
+    - Dono do pedido: pode remover se status RASCUNHO.
     - Supervisor: pode remover itens de pedidos AGUARDANDO_SUPERVISOR na sua regiao_militar.
     - Consolidador: pode remover itens de pedidos AGUARDANDO_CONSOLIDADOR no seu orgao_vinculante.
     O pedido deve ter ao menos 1 item restante.
@@ -1121,7 +1121,7 @@ async def delete_item(
     if not (is_owner or is_supervisor or is_consolidador):
         raise HTTPException(status_code=403, detail="Acesso negado")
 
-    if is_owner and pedido.status not in (StatusPedidoEnum.RASCUNHO, StatusPedidoEnum.DEVOLVIDO):
+    if is_owner and pedido.status != StatusPedidoEnum.RASCUNHO:
         raise HTTPException(status_code=400, detail="Pedido não pode ser editado neste status")
 
     if (is_supervisor or is_consolidador):
@@ -1514,13 +1514,13 @@ async def update_pedido(
     db: AsyncSession = Depends(get_db),
     current_user: Usuario = Depends(get_current_user),
 ):
-    """Usuário edita metadados do pedido (somente RASCUNHO ou DEVOLVIDO)."""
+    """Usuário edita metadados do pedido (somente RASCUNHO)."""
     pedido = await db.get(Pedido, pedido_id)
     if not pedido:
         raise HTTPException(status_code=404, detail="Pedido não encontrado")
     if pedido.usuario_id != current_user.id:
         raise HTTPException(status_code=403, detail="Acesso negado")
-    editable = {StatusPedidoEnum.RASCUNHO, StatusPedidoEnum.DEVOLVIDO}
+    editable = {StatusPedidoEnum.RASCUNHO}
     if pedido.status not in editable:
         raise HTTPException(status_code=400, detail="Pedido não pode ser editado neste estágio")
 

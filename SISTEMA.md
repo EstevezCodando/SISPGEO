@@ -158,7 +158,7 @@ O ciclo de solicitações segue janelas temporais configuradas pelo Gestor DSG:
 
 ### Meus Pedidos (solicitante)
 - Expandir cada pedido para ver todos os detalhes e itens
-- Editar pedidos em rascunho ou quando devolvidos pelo gestor
+- Editar pedidos em rascunho
 - Cancelar pedidos antes de serem encaminhados além da Brigada
 - Solicitar remoção formal (notificação ao gestor) quando o pedido já foi enviado
 - Espacializar pedido: visualizar as células INOM no mapa

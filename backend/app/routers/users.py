@@ -177,7 +177,7 @@ async def transferir_pedidos(
     """Transfere todos os pedidos ativos do usuário ``user_id`` para outro da mesma OM.
 
     Somente o próprio usuário ou um GESTOR_CARTOGRAFICO podem disparar a transferência.
-    Os pedidos nos estados RASCUNHO e DEVOLVIDO serão reatribuídos.
+    Os pedidos no estado RASCUNHO serão reatribuídos.
     O novo responsável recebe notificação in-app e e-mail.
     """
     if current_user.id != user_id and current_user.perfil != PerfilEnum.GESTOR_CARTOGRAFICO:

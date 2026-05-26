@@ -9,7 +9,7 @@ class PerfilEnum(str, enum.Enum):
     SUPERVISOR_CML  = "SUPERVISOR_CML"    # Comando Militar do Leste
     SUPERVISOR_CMS  = "SUPERVISOR_CMS"    # Comando Militar do Sul
     SUPERVISOR_CMO  = "SUPERVISOR_CMO"    # Comando Militar do Oeste
-    SUPERVISOR_CMAO = "SUPERVISOR_CMAO"   # Comando Militar da Amazônia Ocidental
+    SUPERVISOR_CMAO = "SUPERVISOR_CMAO"   # Comando Militar da Amazônia Oriental
     SUPERVISOR_CMA  = "SUPERVISOR_CMA"    # Comando Militar da Amazônia
     SUPERVISOR_CMNE  = "SUPERVISOR_CMNE"  # Comando Militar do Nordeste
     SUPERVISOR_CMSE = "SUPERVISOR_CMSE"   # Comando Militar do Sudeste
@@ -67,6 +67,7 @@ class StatusPedidoEnum(str, enum.Enum):
     RASCUNHO = "RASCUNHO"
     AGUARDANDO_SUPERVISOR = "AGUARDANDO_SUPERVISOR"
     AGUARDANDO_CONSOLIDADOR = "AGUARDANDO_CONSOLIDADOR"
+    # DEVOLVIDO removido do fluxo — mantido apenas para compatibilidade com registros históricos no BD
     DEVOLVIDO = "DEVOLVIDO"
     AGUARDANDO_CARTOGRAFICO = "AGUARDANDO_CARTOGRAFICO"
     ATRIBUIDO_CGEO = "ATRIBUIDO_CGEO"

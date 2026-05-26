@@ -277,7 +277,6 @@ async def review_pedido(
     allowed_statuses = {
         StatusPedidoEnum.AGUARDANDO_SUPERVISOR,
         StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR,
-        StatusPedidoEnum.DEVOLVIDO,
     }
     if pedido.status not in allowed_statuses:
         raise HTTPException(status_code=400, detail="Pedido não está disponível para revisão")
@@ -308,10 +307,6 @@ async def review_pedido(
         if usuario:
             subject, html = pedido_reprovado(usuario.nome, pedido.id, motivo or "Sem motivo informado")
             await send_email(usuario.email, subject, html)
-
-    elif acao == "editar":
-        pedido.status = StatusPedidoEnum.DEVOLVIDO
-        pedido.gestor_demandante_id = gestor.id
 
     elif acao == "aprovar":
         pedido.status = _aprovar_status
@@ -542,7 +537,7 @@ async def transferir_pedidos(
 ) -> int:
     """Transfere todos os pedidos ativos de um usuário para outro da mesma OM.
 
-    Pedidos transferíveis: RASCUNHO, DEVOLVIDO.
+    Pedidos transferíveis: RASCUNHO.
 
     Args:
         db:              Sessão assíncrona do banco de dados.
@@ -566,7 +561,6 @@ async def transferir_pedidos(
 
     transferable = {
         StatusPedidoEnum.RASCUNHO,
-        StatusPedidoEnum.DEVOLVIDO,
     }
     pedidos = list(await db.scalars(
         select(Pedido).where(

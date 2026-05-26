@@ -156,8 +156,7 @@ function TransferModal({ source, allUsers, onClose }: TransferModalProps) {
           <div className="flex items-start gap-3 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
             <ArrowRightLeft className="h-4 w-4 text-amber-400 mt-0.5 shrink-0" />
             <p className="text-xs text-amber-300/80 leading-relaxed">
-              Todos os pedidos em <strong>Rascunho</strong>, <strong>Em revisão</strong> e
-              <strong> Devolvido</strong> serão reatribuídos ao novo responsável. Ele
+              Todos os pedidos em <strong>Rascunho</strong> serão reatribuídos ao novo responsável. Ele
               receberá uma notificação in-app e um e-mail.
             </p>
           </div>

@@ -64,7 +64,7 @@ function GeoJSONLayer({ geojson }: { geojson: FeatureCollection }) {
 }
 
 // ─── Status codes ─────────────────────────────────────────────────────────────
-const STATUS_CAN_EDIT: string[]   = ['RASCUNHO', 'DEVOLVIDO']
+const STATUS_CAN_EDIT: string[]   = ['RASCUNHO']
 const STATUS_CAN_CANCEL: string[] = ['RASCUNHO']
 
 // ─── Sortable Pedido Row ──────────────────────────────────────────────────────
