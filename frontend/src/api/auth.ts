@@ -22,4 +22,5 @@ export const authApi = {
   resetPassword: (token: string, nova_senha: string) =>
     api.post('/auth/reset-password', { token, nova_senha }),
   confirmEmail: (token: string) => api.get(`/auth/confirm-email/${token}`),
+  resendActivation: (email: string) => api.post('/auth/resend-activation', { email }),
 }

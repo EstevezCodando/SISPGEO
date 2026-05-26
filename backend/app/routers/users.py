@@ -207,6 +207,13 @@ async def toggle_activate(
 
     foi_inativo = not user.ativo
     user.ativo = not user.ativo
+
+    # Ativação administrativa equivale à confirmação por e-mail:
+    # garante que o usuário não seja barrado na tela de login por
+    # "E-mail não confirmado" mesmo sem ter clicado no link de ativação.
+    if user.ativo:
+        user.email_confirmado = True
+
     await db.commit()
 
     if foi_inativo and user.ativo:

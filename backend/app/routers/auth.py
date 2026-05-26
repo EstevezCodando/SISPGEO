@@ -16,7 +16,7 @@ from app.models.audit_log import AuditLog
 from app.models.user import Usuario
 from app.schemas.auth import (
     ForgotPasswordRequest, LoginRequest, RegisterRequest,
-    ResetPasswordRequest, TokenResponse,
+    ResendActivationRequest, ResetPasswordRequest, TokenResponse,
 )
 from app.services import auth_service
 
@@ -98,6 +98,24 @@ async def login(
     ))
     await db.commit()
     return TokenResponse(access_token=access_token)
+
+
+@router.post("/resend-activation", status_code=200)
+async def resend_activation(
+    body: ResendActivationRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """Reenvia o e-mail de ativação para um usuário com e-mail não confirmado.
+
+    Aplica cooldown de 30 minutos entre reenvios. A resposta é sempre genérica
+    por segurança (não revela se o e-mail existe ou já está confirmado).
+
+    Args:
+        body: E-mail do usuário que solicita o reenvio.
+    """
+    logger.info("POST /auth/resend-activation → email=%s", body.email)
+    await auth_service.resend_activation_email(db, body.email)
+    return {"message": "Se o e-mail estiver cadastrado e pendente de confirmação, o link foi reenviado."}
 
 
 @router.post("/forgot-password", status_code=200)

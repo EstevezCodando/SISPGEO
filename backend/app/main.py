@@ -114,6 +114,8 @@ async def _run_migrations():
         "ALTER TABLE itens_pedido ADD COLUMN IF NOT EXISTS impressao_tipo_material VARCHAR(20)",
         # 2026-05: finalidade da geoinformação (dropdown) separado da informação complementar (textarea)
         "ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS finalidade_geo VARCHAR(100)",
+        # 2026-05: timestamp do último envio de e-mail de ativação (controle de cooldown 30 min)
+        "ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS activation_email_sent_at TIMESTAMPTZ",
     ]
     for stmt in migrations:
         try:
