@@ -13,7 +13,7 @@ import type { Transferencia } from '../../api/users'
 import { LoadingSpinner } from '../../components/shared/LoadingSpinner'
 import type { Usuario, Perfil } from '../../types/user'
 import { PERFIL_LABELS } from '../../types/user'
-import { formatNomeComPosto } from '../../data/postos'
+import { formatNomeComPosto, POSTO_ABREV } from '../../data/postos'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -431,7 +431,9 @@ function DetailPanel({ u }: { u: Usuario }) {
         {field('Telefone RITEX', u.telefone_ritex)}
         {field('Região Militar', u.regiao_militar, <MapPin className="h-3 w-3" />)}
         {field('Órgão Vinculante', <OrgaoBadge orgao={u.orgao_vinculante} />)}
-        {field('Posto/Graduação', u.posto_graduacao)}
+        {field('Posto/Graduação', u.posto_graduacao
+          ? `${POSTO_ABREV[u.posto_graduacao] ?? u.posto_graduacao} (${u.posto_graduacao})`
+          : null)}
         {field('CGEO ID', u.cgeo_id != null ? String(u.cgeo_id) : null)}
 
         {field('E-mail confirmado',

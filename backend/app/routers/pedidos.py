@@ -28,6 +28,7 @@ from app.schemas.pedido import (
     ReorderRequest,
 )
 from app.services import pedido_service
+from app.utils.postos import abrev_posto as _abrev_posto
 
 
 class ExportRequest(BaseModel):
@@ -59,7 +60,7 @@ async def _enrich(db: AsyncSession, pedidos: list[Pedido]) -> list[PedidoOut]:
 
     user_rows = await db.execute(
         select(
-            Usuario.id, Usuario.nome, Usuario.om, Usuario.email,
+            Usuario.id, Usuario.nome, Usuario.nome_de_guerra, Usuario.om, Usuario.email,
             Usuario.telefone, Usuario.telefone_ritex, Usuario.secao_om,
             Usuario.perfil, Usuario.posto_graduacao,
         ).where(Usuario.id.in_(user_ids))
@@ -67,6 +68,7 @@ async def _enrich(db: AsyncSession, pedidos: list[Pedido]) -> list[PedidoOut]:
     users: dict[int, dict] = {
         r.id: {
             "nome": r.nome,
+            "nome_de_guerra": r.nome_de_guerra,
             "om": r.om,
             "email": r.email,
             "telefone": r.telefone,
@@ -97,6 +99,7 @@ async def _enrich(db: AsyncSession, pedidos: list[Pedido]) -> list[PedidoOut]:
         out.usuario_secao_om = u.get("secao_om")
         out.usuario_perfil = u.get("perfil")
         out.usuario_posto_graduacao = u.get("posto_graduacao")
+        out.usuario_nome_de_guerra = u.get("nome_de_guerra")
         out.operacao_nome = ops.get(p.operacao_id) if p.operacao_id else None
         out.criador_id = p.criador_id
         out.criador_nome = users.get(p.criador_id, {}).get("nome") if p.criador_id else None
@@ -505,14 +508,14 @@ async def exportar_relatorio(
             _disp, _dprod = _bdgex_info(item)
             idade_anos = (date.today() - _dprod).days // 365 if _dprod else ""
             _sol = (
-                f"{p.usuario_posto_graduacao} {p.usuario_nome}".strip()
+                f"{_abrev_posto(p.usuario_posto_graduacao)} {p.usuario_nome}".strip()
                 if p.usuario_posto_graduacao else (p.usuario_nome or "")
             )
             writer.writerow([
                 p.id,
                 pedido_rank,
                 p.status.value,
-                p.usuario_posto_graduacao or "",
+                _abrev_posto(p.usuario_posto_graduacao),
                 _sol,
                 p.usuario_om or "",
                 p.usuario_secao_om or "",
@@ -549,7 +552,7 @@ async def exportar_relatorio(
             _disp, _dprod = _bdgex_info(item)
             _idade = (date.today() - _dprod).days // 365 if _dprod else None
             _sol = (
-                f"{p.usuario_posto_graduacao} {p.usuario_nome}".strip()
+                f"{_abrev_posto(p.usuario_posto_graduacao)} {p.usuario_nome}".strip()
                 if p.usuario_posto_graduacao else p.usuario_nome
             )
             feat = {
@@ -562,7 +565,7 @@ async def exportar_relatorio(
                     "prioridade_item":    item_rank,
                     "status":             p.status.value,
                     # ── Dados do solicitante ────────────────────────────────
-                    "posto_graduacao":    p.usuario_posto_graduacao,
+                    "posto_graduacao":    _abrev_posto(p.usuario_posto_graduacao),
                     "solicitante":        _sol,
                     "om":                 p.usuario_om,
                     "secao_om":           p.usuario_secao_om,
@@ -887,7 +890,7 @@ async def _build_admin_zip(
             _disp, _dprod = _bdgex_info_adm(item)
             _idade = (date.today() - _dprod).days // 365 if _dprod else None
             _sol = (
-                f"{p.usuario_posto_graduacao} {p.usuario_nome}".strip()
+                f"{_abrev_posto(p.usuario_posto_graduacao)} {p.usuario_nome}".strip()
                 if p.usuario_posto_graduacao else p.usuario_nome
             )
             feat = {
@@ -901,7 +904,7 @@ async def _build_admin_zip(
                     "prioridade_item":     item_rank,
                     "status":              p.status.value,
                     # ── Dados do solicitante ────────────────────────────────
-                    "posto_graduacao":     p.usuario_posto_graduacao,
+                    "posto_graduacao":     _abrev_posto(p.usuario_posto_graduacao),
                     "solicitante":         _sol,
                     "om":                  p.usuario_om,
                     "secao_om":            p.usuario_secao_om,
@@ -957,7 +960,7 @@ async def _build_admin_zip(
             idade_anos = (date.today() - _dprod).days // 365 if _dprod else ""
             is_dup = "Sim" if (item.mi, item.tipo_produto.value) in dup_keys else "Não"
             _sol = (
-                f"{p.usuario_posto_graduacao} {p.usuario_nome}".strip()
+                f"{_abrev_posto(p.usuario_posto_graduacao)} {p.usuario_nome}".strip()
                 if p.usuario_posto_graduacao else (p.usuario_nome or "")
             )
             writer.writerow([
@@ -966,7 +969,7 @@ async def _build_admin_zip(
                 _p_rank,
                 item_rank,
                 p.status.value,
-                p.usuario_posto_graduacao or "",
+                _abrev_posto(p.usuario_posto_graduacao),
                 _sol,
                 p.usuario_om or "",
                 p.usuario_secao_om or "",
@@ -1047,7 +1050,7 @@ async def _build_admin_zip(
             for (pp, it) in entries:
                 por_pedido[pp.id] = (pp, it)
             for pid, (pp, it) in sorted(por_pedido.items()):
-                dup_posto = pp.usuario_posto_graduacao or ""
+                dup_posto = _abrev_posto(pp.usuario_posto_graduacao)
                 dup_nome  = pp.usuario_nome or "—"
                 dup_om    = pp.usuario_om or "—"
                 dup_fin   = pp.finalidade_geo or pp.finalidade or "—"
@@ -1070,7 +1073,7 @@ async def _build_admin_zip(
         linhas += [
             "",
             f"PEDIDO #{p.id}  [{p.status.value}]  — Prioridade {_p_rank}",
-            f"  Posto/Grad.         : {p.usuario_posto_graduacao or '—'}",
+            f"  Posto/Grad.         : {_abrev_posto(p.usuario_posto_graduacao) or '—'}",
             f"  Solicitante         : {p.usuario_nome or '—'}",
             f"  OM                  : {p.usuario_om or '—'}",
             f"  Seção               : {p.usuario_secao_om or '—'}",

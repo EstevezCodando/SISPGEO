@@ -4,13 +4,22 @@ import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import {
   Trash2, RefreshCw, ChevronDown, ChevronUp, Search,
-  Download, Loader2, X, CheckCircle2,
+  Download, Loader2, X, CheckCircle2, Printer,
 } from 'lucide-react'
 import { pedidosApi } from '../../api/pedidos'
 import { StatusBadge } from '../../components/shared/StatusBadge'
 import { LoadingSpinner } from '../../components/shared/LoadingSpinner'
 import type { Pedido } from '../../types/pedido'
 import { TIPO_PRODUTO_LABELS, STATUS_LABELS } from '../../types/pedido'
+import { formatNomeComPosto } from '../../data/postos'
+
+const ORG_CLS: Record<string, string> = {
+  COTER: 'bg-blue-500/10 text-blue-300 border-blue-500/20',
+  DEC:   'bg-amber-500/10 text-amber-300 border-amber-500/20',
+  COLOG: 'bg-orange-500/10 text-orange-300 border-orange-500/20',
+  DECEx: 'bg-purple-500/10 text-purple-300 border-purple-500/20',
+  DSG:   'bg-emerald-500/10 text-emerald-300 border-emerald-500/20',
+}
 
 /** Com quem está o pedido (escalão atual) */
 const STATUS_RESPONSAVEL: Record<string, string> = {
@@ -302,7 +311,7 @@ export function AdminPedidos() {
           <table className="w-full text-sm">
             <thead className="border-b border-white/10 text-xs">
               <tr>
-                <th className="px-4 py-3 w-8">
+                <th className="px-3 py-3 w-8">
                   <input
                     type="checkbox"
                     checked={allSelected}
@@ -310,14 +319,12 @@ export function AdminPedidos() {
                     className="rounded border-zinc-600 bg-zinc-800 text-emerald-500 focus:ring-emerald-500"
                   />
                 </th>
-                <th className="px-4 py-3 text-left font-medium text-zinc-500">#</th>
-                <th className="px-4 py-3 text-left font-medium text-zinc-500">Solicitante</th>
-                <th className="px-4 py-3 text-left font-medium text-zinc-500">Órgão Vinculante</th>
-                <th className="px-4 py-3 text-left font-medium text-zinc-500">Com quem está</th>
-                <th className="px-4 py-3 text-left font-medium text-zinc-500">Status</th>
-                <th className="px-4 py-3 text-left font-medium text-zinc-500">Data sol. Entrega</th>
-                <th className="px-4 py-3 text-left font-medium text-zinc-500">Criado em</th>
-                <th className="px-4 py-3 text-left font-medium text-zinc-500">Ações</th>
+                <th className="px-3 py-3 text-left font-medium text-zinc-500 text-xs uppercase tracking-wide w-16">Prio / ID</th>
+                <th className="px-3 py-3 text-left font-medium text-zinc-500 text-xs uppercase tracking-wide">Solicitante</th>
+                <th className="px-3 py-3 text-left font-medium text-zinc-500 text-xs uppercase tracking-wide hidden lg:table-cell">Produtos</th>
+                <th className="px-3 py-3 text-left font-medium text-zinc-500 text-xs uppercase tracking-wide">Status</th>
+                <th className="px-3 py-3 text-left font-medium text-zinc-500 text-xs uppercase tracking-wide hidden md:table-cell">Entrega</th>
+                <th className="px-3 py-3 text-left font-medium text-zinc-500 text-xs uppercase tracking-wide">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
@@ -328,7 +335,7 @@ export function AdminPedidos() {
                     className={`hover:bg-white/5 transition-colors cursor-pointer ${selected.has(p.id) ? 'bg-emerald-500/5' : ''}`}
                     onClick={() => setExpanded(expanded === p.id ? null : p.id)}
                   >
-                    <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                    <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
                       <input
                         type="checkbox"
                         checked={selected.has(p.id)}
@@ -336,22 +343,56 @@ export function AdminPedidos() {
                         className="rounded border-zinc-600 bg-zinc-800 text-emerald-500 focus:ring-emerald-500"
                       />
                     </td>
-                    <td className="px-4 py-3 font-bold text-emerald-400">#{p.id}</td>
-                    <td className="px-4 py-3 text-zinc-200">{p.usuario_nome ?? '—'}</td>
-                    <td className="px-4 py-3 text-zinc-400">{p.orgao_vinculante}</td>
-                    <td className="px-4 py-3">
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-zinc-800 border border-white/5 text-zinc-300">
-                        {STATUS_RESPONSAVEL[p.status] ?? p.status}
-                      </span>
+                    {/* Prioridade / ID */}
+                    <td className="px-3 py-3">
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-[10px] text-zinc-600 font-medium">P{p.prioridade ?? '—'}</span>
+                        <span className="font-mono font-bold text-emerald-400 text-sm">#{p.id}</span>
+                      </div>
                     </td>
-                    <td className="px-4 py-3"><StatusBadge status={p.status} /></td>
-                    <td className="px-4 py-3 text-zinc-400 text-xs">
+                    {/* Solicitante */}
+                    <td className="px-3 py-3">
+                      {(() => {
+                        const nome = formatNomeComPosto(p.usuario_nome ?? '', p.usuario_posto_graduacao, p.usuario_nome_de_guerra) || '—'
+                        const temImpressao = p.impressao_solicitada || p.itens.some(i => i.impressao_quantidade)
+                        return (
+                          <div>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="text-sm font-medium text-zinc-200 leading-snug">{nome}</span>
+                              {p.usuario_om && <span className="text-xs text-zinc-500">{p.usuario_om}</span>}
+                              {p.orgao_vinculante === 'COTER' && p.regiao_militar ? (
+                                <>
+                                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20 shrink-0">{p.regiao_militar}</span>
+                                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 shrink-0">COTER</span>
+                                </>
+                              ) : p.orgao_vinculante ? (
+                                <span className={`text-[10px] px-1.5 py-0.5 rounded border shrink-0 ${ORG_CLS[p.orgao_vinculante] ?? 'bg-zinc-700/50 text-zinc-400 border-zinc-600/30'}`}>{p.orgao_vinculante}</span>
+                              ) : null}
+                              {temImpressao && (
+                                <span className="inline-flex items-center gap-0.5 text-[10px] text-violet-400 shrink-0">
+                                  <Printer className="h-3 w-3" /> Imp.
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-[10px] text-zinc-600 mt-0.5">{STATUS_RESPONSAVEL[p.status] ?? ''}</p>
+                          </div>
+                        )
+                      })()}
+                    </td>
+                    {/* Produtos */}
+                    <td className="px-3 py-3 hidden lg:table-cell">
+                      <div>
+                        <p className="text-xs text-zinc-400">
+                          {[...new Set(p.itens.map(i => TIPO_PRODUTO_LABELS[i.tipo_produto]))].join(' · ') || '—'}
+                        </p>
+                        <p className="text-[10px] text-zinc-600 mt-0.5">{p.itens.length} item(ns)</p>
+                      </div>
+                    </td>
+                    <td className="px-3 py-3"><StatusBadge status={p.status} /></td>
+                    <td className="px-3 py-3 text-zinc-400 text-xs hidden md:table-cell">
                       {format(new Date(p.data_entrega + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR })}
                     </td>
-                    <td className="px-4 py-3 text-zinc-500 text-xs">
-                      {format(new Date(p.criado_em), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
-                    </td>
-                    <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                    <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center gap-1">
                         {/* Expand */}
                         <button
@@ -402,7 +443,7 @@ export function AdminPedidos() {
 
                   {expanded === p.id && (
                     <tr key={`${p.id}-detail`}>
-                      <td colSpan={9} className="px-6 py-4 bg-zinc-800/40">
+                      <td colSpan={7} className="px-6 py-4 bg-zinc-800/40">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
                           {/* Itens */}
                           <div>

@@ -14,26 +14,15 @@ import { PedidosMap } from '../../components/map/PedidosMap'
 import type { Pedido } from '../../types/pedido'
 import { TIPO_PRODUTO_LABELS } from '../../types/pedido'
 import { useExportRelatorio } from '../../hooks/useExportRelatorio'
+import { formatNomeComPosto } from '../../data/postos'
 
-const PERFIL_LABELS: Record<string, string> = {
-  SOLICITANTE:         'OMDS',
-  SUPERVISOR_CMP:      'Supervisor CMP',
-  SUPERVISOR_CML:      'Supervisor CML',
-  SUPERVISOR_CMS:      'Supervisor CMS',
-  SUPERVISOR_CMO:      'Supervisor CMO',
-  SUPERVISOR_CMAO:     'Supervisor CMAO',
-  SUPERVISOR_CMA:      'Supervisor CMA',
-  SUPERVISOR_CMNE:     'Supervisor CMNE',
-  SUPERVISOR_CMSE:     'Supervisor CMSE',
-  SUPERVISOR:          'Supervisor',
-  CONSOLIDADOR_COTER:  'Consolidador COTER',
-  CONSOLIDADOR_DSG:    'Consolidador DSG',
-  CONSOLIDADOR_DEC:    'Consolidador DEC',
-  CONSOLIDADOR_COLOG:  'Consolidador COLOG',
-  CONSOLIDADOR_DECEX:  'Consolidador DECEx',
-  CONSOLIDADOR:        'Consolidador',
-  GESTOR_CARTOGRAFICO: 'DSG',
-  ANALISTA_CGEO:       'CGEO',
+/** Cores por órgão vinculante */
+const ORG_CLS: Record<string, string> = {
+  COTER: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+  DEC:   'bg-amber-500/10 text-amber-400 border-amber-500/20',
+  COLOG: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
+  DECEx: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
+  DSG:   'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
 }
 
 // ─── Pedido Card ──────────────────────────────────────────────────────────────
@@ -46,8 +35,7 @@ interface PedidoCardProps {
 
 function PedidoCard({ pedido: p, rank, isExpanded, onToggleExpand }: PedidoCardProps) {
   const tipos = [...new Set(p.itens.map(i => TIPO_PRODUTO_LABELS[i.tipo_produto]))].join(' · ') || '—'
-  const escalas = [...new Set(p.itens.map(i => i.escala))].join(', ')
-  const perfilLabel = PERFIL_LABELS[p.usuario_perfil ?? ''] ?? p.usuario_perfil ?? '—'
+  const temImpressao = p.impressao_solicitada || p.itens.some(i => i.impressao_quantidade)
 
   const descricao = p.finalidade_geo
     ? p.finalidade_geo
@@ -61,7 +49,11 @@ function PedidoCard({ pedido: p, rank, isExpanded, onToggleExpand }: PedidoCardP
     ? format(new Date(p.data_entrega + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR })
     : null
 
-  const nomeCompleto = [p.usuario_posto_graduacao, p.usuario_nome].filter(Boolean).join(' ') || '—'
+  const nomeDisplay = formatNomeComPosto(
+    p.usuario_nome ?? '',
+    p.usuario_posto_graduacao,
+    p.usuario_nome_de_guerra,
+  ) || '—'
 
   return (
     <div className="bg-zinc-900 border border-white/10 rounded-xl overflow-hidden">
@@ -79,28 +71,35 @@ function PedidoCard({ pedido: p, rank, isExpanded, onToggleExpand }: PedidoCardP
           onClick={() => onToggleExpand(p.id)}
           className="flex-1 min-w-0 text-left"
         >
-          {/* Solicitante */}
-          <div className="flex items-center gap-2 flex-wrap min-w-0">
-            <span className="text-sm font-semibold text-zinc-100 leading-tight truncate">{nomeCompleto}</span>
+          {/* Solicitante — posto + NG + OM + subordinação */}
+          <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+            <span className="text-sm font-semibold text-zinc-100 leading-tight truncate">{nomeDisplay}</span>
             {p.usuario_om && (
-              <span className="text-xs text-zinc-400 font-medium truncate">{p.usuario_om}</span>
+              <span className="text-xs text-zinc-500 truncate">{p.usuario_om}</span>
             )}
-            {p.usuario_perfil && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-700/60 text-zinc-400 border border-zinc-600/30 shrink-0">
-                {perfilLabel}
-              </span>
-            )}
+            {p.orgao_vinculante === 'COTER' && p.regiao_militar ? (
+              <>
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20 shrink-0 font-medium">{p.regiao_militar}</span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 shrink-0">COTER</span>
+              </>
+            ) : p.orgao_vinculante ? (
+              <span className={`text-[10px] px-1.5 py-0.5 rounded border shrink-0 font-medium ${ORG_CLS[p.orgao_vinculante] ?? 'bg-zinc-700/50 text-zinc-400 border-zinc-600/30'}`}>{p.orgao_vinculante}</span>
+            ) : null}
           </div>
           {/* Finalidade / operação */}
           {descricao && (
             <p className="text-xs text-zinc-500 mt-0.5 truncate leading-snug">{descricao}</p>
           )}
-          {/* Produtos + escalas + quantidade */}
+          {/* Produtos + itens + impressão */}
           <div className="flex items-center gap-1.5 mt-1 flex-wrap">
             <span className="text-[11px] text-zinc-500">{tipos}</span>
-            {escalas && <><span className="text-zinc-700">·</span><span className="text-[11px] text-zinc-600">{escalas}</span></>}
             <span className="text-zinc-700">·</span>
             <span className="text-[11px] text-zinc-600">{p.itens.length} item(ns)</span>
+            {temImpressao && (
+              <span className="inline-flex items-center gap-0.5 text-[10px] text-violet-400 shrink-0">
+                <Printer className="h-3 w-3" /> Impressão
+              </span>
+            )}
           </div>
         </button>
 

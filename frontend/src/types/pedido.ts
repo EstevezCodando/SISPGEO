@@ -138,6 +138,7 @@ export interface Pedido {
   usuario_secao_om?: string | null
   usuario_perfil?: string | null
   usuario_posto_graduacao?: string | null
+  usuario_nome_de_guerra?: string | null
   cadeia_aprovacao: string[]
   impressao_solicitada?: boolean
   impressao_quantidade?: number | null

@@ -88,6 +88,7 @@ class PedidoOut(BaseModel):
     usuario_secao_om: str | None = None
     usuario_perfil: str | None = None
     usuario_posto_graduacao: str | None = None
+    usuario_nome_de_guerra: str | None = None
     # Impressão
     impressao_solicitada: bool = False
     impressao_quantidade: int | None = None

@@ -1,4 +1,5 @@
 from app.config import settings
+from app.utils.postos import abrev_posto as _abrev_posto
 
 # ── Prazos de expiração ───────────────────────────────────────────────────────
 # Devem coincidir com as constantes homônimas em app/services/auth_service.py.
@@ -380,7 +381,7 @@ def pedido_submetido(
         _info_row("Inf. Complementar", finalidade)
         if finalidade else ""
     )
-    _saudacao = f"{posto_graduacao} {nome}".strip() if posto_graduacao else nome
+    _saudacao = f"{_abrev_posto(posto_graduacao)} {nome}".strip() if posto_graduacao else nome
 
     subject = f"SisPGeo — Pedido #{pedido_id} submetido com sucesso"
     body = f"""
@@ -576,7 +577,7 @@ def notificar_gestor(
     else:
         origem_cadeia = f"Solicitante — {om}"
 
-    _solicitante_display = f"{posto_graduacao} {nome_usuario}".strip() if posto_graduacao else nome_usuario
+    _solicitante_display = f"{_abrev_posto(posto_graduacao)} {nome_usuario}".strip() if posto_graduacao else nome_usuario
     _finalidade_html = (
         f'<strong style="color:#2a4010">{finalidade_geo}</strong>'
         if finalidade_geo
