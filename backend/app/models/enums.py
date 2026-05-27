@@ -4,7 +4,7 @@ import enum
 class PerfilEnum(str, enum.Enum):
     SOLICITANTE          = "SOLICITANTE"
 
-    # Supervisores regionais — um por Comando Militar de Área (CMilA)
+    # Supervisores regionais - um por Comando Militar de Área (CMilA)
     SUPERVISOR_CMP  = "SUPERVISOR_CMP"    # Comando Militar do Planalto
     SUPERVISOR_CML  = "SUPERVISOR_CML"    # Comando Militar do Leste
     SUPERVISOR_CMS  = "SUPERVISOR_CMS"    # Comando Militar do Sul
@@ -24,7 +24,7 @@ class PerfilEnum(str, enum.Enum):
     GESTOR_CARTOGRAFICO  = "GESTOR_CARTOGRAFICO"
     ANALISTA_CGEO        = "ANALISTA_CGEO"
 
-    # Legados — mantidos para compatibilidade com dados existentes no banco.
+    # Legados - mantidos para compatibilidade com dados existentes no banco.
     # Não devem ser atribuídos a novos usuários. Admin deve migrar para os específicos.
     SUPERVISOR   = "SUPERVISOR"
     CONSOLIDADOR = "CONSOLIDADOR"
@@ -56,7 +56,7 @@ CONSOLIDADOR_PROFILES: frozenset["PerfilEnum"] = frozenset({
 
 class OrgaoVinculanteEnum(str, enum.Enum):
     DSG   = "DSG"
-    DCT   = "DCT"   # legado — não mostrar na UI de cadastro, mas mantido no banco
+    DCT   = "DCT"   # legado - não mostrar na UI de cadastro, mas mantido no banco
     COTER = "COTER"
     DEC   = "DEC"
     COLOG = "COLOG"
@@ -67,7 +67,7 @@ class StatusPedidoEnum(str, enum.Enum):
     RASCUNHO = "RASCUNHO"
     AGUARDANDO_SUPERVISOR = "AGUARDANDO_SUPERVISOR"
     AGUARDANDO_CONSOLIDADOR = "AGUARDANDO_CONSOLIDADOR"
-    # DEVOLVIDO removido do fluxo — mantido apenas para compatibilidade com registros históricos no BD
+    # DEVOLVIDO removido do fluxo - mantido apenas para compatibilidade com registros históricos no BD
     DEVOLVIDO = "DEVOLVIDO"
     AGUARDANDO_CARTOGRAFICO = "AGUARDANDO_CARTOGRAFICO"
     ATRIBUIDO_CGEO = "ATRIBUIDO_CGEO"
@@ -86,7 +86,7 @@ class TipoProdutoEnum(str, enum.Enum):
     CDGV              = "CDGV"
     IMPRESSAO_CT      = "IMPRESSAO_CT"    # Impressão de Carta Topográfica
     IMPRESSAO_COI     = "IMPRESSAO_COI"   # Impressão de Carta Ortoimagem
-    IMPRESSAO         = "IMPRESSAO"       # Legado — mantido para compatibilidade
+    IMPRESSAO         = "IMPRESSAO"       # Legado - mantido para compatibilidade
 
 
 class EscalaEnum(str, enum.Enum):
@@ -106,11 +106,6 @@ class TipoJanelaEnum(str, enum.Enum):
 
 
 class PostoGraduacaoEnum(str, enum.Enum):
-    CIVIL              = "Civil"
-    MOT                = "Mão de Obra Temporária"
-    SOLDADO_EV         = "Soldado EV"
-    SOLDADO_EP         = "Soldado EP"
-    CABO               = "Cabo"
     TERCEIRO_SGT       = "Terceiro Sargento"
     SEGUNDO_SGT        = "Segundo Sargento"
     PRIMEIRO_SGT       = "Primeiro Sargento"
@@ -122,6 +117,3 @@ class PostoGraduacaoEnum(str, enum.Enum):
     MAJOR              = "Major"
     TENENTE_CEL        = "Tenente Coronel"
     CORONEL            = "Coronel"
-    GEN_BRIGADA        = "General de Brigada"
-    GEN_DIVISAO        = "General de Divisão"
-    GEN_EXERCITO       = "General de Exército"

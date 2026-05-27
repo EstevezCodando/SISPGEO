@@ -1,11 +1,6 @@
 """Abreviaturas de posto/graduação - espelha PostoGraduacaoEnum."""
 
 POSTO_ABREV: dict[str, str] = {
-    "Civil":                  "Civ",
-    "Mão de Obra Temporária": "MOT",
-    "Soldado EV":             "Sd EV",
-    "Soldado EP":             "Sd EP",
-    "Cabo":                   "Cb",
     "Terceiro Sargento":      "3º Sgt",
     "Segundo Sargento":       "2º Sgt",
     "Primeiro Sargento":      "1º Sgt",
@@ -17,9 +12,6 @@ POSTO_ABREV: dict[str, str] = {
     "Major":                  "Maj",
     "Tenente Coronel":        "TC",
     "Coronel":                "Cel",
-    "General de Brigada":     "Gen Bda",
-    "General de Divisão":     "Gen Div",
-    "General de Exército":    "Gen Ex",
 }
 
 
