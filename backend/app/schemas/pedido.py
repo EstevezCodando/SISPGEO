@@ -105,9 +105,9 @@ class ReviewPedidoRequest(BaseModel):
     acao: Literal["aprovar", "editar", "reprovar"]
     """Ação a executar no pedido.
 
-    - ``"aprovar"`` — avança o pedido no fluxo.
-    - ``"editar"`` — devolve ao solicitante para ajustes.
-    - ``"reprovar"`` — cancela o pedido.
+    - ``"aprovar"`` - avança o pedido no fluxo.
+    - ``"editar"`` - devolve ao solicitante para ajustes.
+    - ``"reprovar"`` - cancela o pedido.
     """
     motivo: str | None = None
     observacoes: str | None = None
@@ -125,9 +125,9 @@ class CGEOReviewRequest(BaseModel):
     acao: Literal["aprovar", "reprovar", "pronto"]
     """Ação do CGEO.
 
-    - ``"aprovar"`` — confirma o atendimento (ATRIBUIDO_CGEO → APROVADO).
-    - ``"reprovar"`` — registra inviabilidade de produção.
-    - ``"pronto"`` — entrega concluída, dados disponíveis no BDGEx (APROVADO → PRODUZIDO).
+    - ``"aprovar"`` - confirma o atendimento (ATRIBUIDO_CGEO → APROVADO).
+    - ``"reprovar"`` - registra inviabilidade de produção.
+    - ``"pronto"`` - entrega concluída, dados disponíveis no BDGEx (APROVADO → PRODUZIDO).
     """
     motivo: str | None = None
     link_bdgex: str | None = None

@@ -1,5 +1,5 @@
 """
-Router: /oms — OMs customizadas pelos usuários.
+Router: /oms - OMs customizadas pelos usuários.
 
 GET  /oms/{cmila}    → lista OMs customizadas para o comando de área
 POST /oms            → salva nova OM (ignora duplicatas)

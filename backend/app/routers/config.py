@@ -1,4 +1,4 @@
-"""Configuração global do sistema — data base de entrega e prazos mínimos por produto."""
+"""Configuração global do sistema - data base de entrega e prazos mínimos por produto."""
 from datetime import date, datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException

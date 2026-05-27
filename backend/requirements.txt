@@ -6,7 +6,7 @@ alembic==1.14.1
 pydantic==2.9.2
 pydantic-settings==2.6.1
 bcrypt==4.2.1
-# PyJWT substitui python-jose (CVE-2024-33663 — algorithm confusion)
+# PyJWT substitui python-jose (CVE-2024-33663 - algorithm confusion)
 PyJWT[cryptography]==2.10.1
 resend==2.10.0
 aiosmtplib==3.0.1

@@ -615,6 +615,122 @@ function PedidoCard({
   )
 }
 
+// ─── Encaminhar Lote Modal ────────────────────────────────────────────────────
+interface EncaminharLoteModalProps {
+  pedidos: Pedido[]
+  label: string
+  onConfirm: () => void
+  onCancel: () => void
+}
+
+function EncaminharLoteModal({ pedidos: ps, label, onConfirm, onCancel }: EncaminharLoteModalProps) {
+  const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set())
+  const toggle = (id: number) =>
+    setExpandedIds(prev => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next })
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+      <div className="bg-zinc-900 border border-white/10 rounded-2xl shadow-2xl w-full max-w-lg flex flex-col max-h-[85vh]">
+        {/* Header */}
+        <div className="flex items-center gap-3 p-5 border-b border-white/10 shrink-0">
+          <div className="p-2 bg-amber-500/10 rounded-lg">
+            <AlertTriangle className="h-5 w-5 text-amber-400" />
+          </div>
+          <div>
+            <h2 className="text-base font-semibold text-zinc-100">{label}</h2>
+            <p className="text-xs text-zinc-500 mt-0.5">
+              {ps.length} pedido{ps.length !== 1 ? 's' : ''} serão encaminhados ao próximo escalão
+            </p>
+          </div>
+          <button onClick={onCancel} className="ml-auto text-zinc-500 hover:text-zinc-300 transition-colors">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        {/* Warning banner */}
+        <div className="mx-5 mt-4 shrink-0 flex items-start gap-2 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl">
+          <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+          <p className="text-xs text-amber-300 leading-relaxed">
+            Após o encaminhamento não será possível editar ou cancelar os pedidos.
+            Expanda cada pedido para revisar seus itens antes de confirmar.
+          </p>
+        </div>
+
+        {/* Pedidos list */}
+        <div className="overflow-y-auto flex-1 p-5 space-y-2">
+          {ps.map((p, idx) => {
+            const nomeDisplay = formatNomeComPosto(
+              p.usuario_nome ?? '',
+              p.usuario_posto_graduacao,
+              p.usuario_nome_de_guerra,
+            ) || '—'
+            const tipos = [...new Set(p.itens.map(i => TIPO_PRODUTO_LABELS[i.tipo_produto]))].join(' · ') || '—'
+            const isExp = expandedIds.has(p.id)
+            return (
+              <div key={p.id} className="bg-zinc-800/50 border border-zinc-700/40 rounded-xl overflow-hidden">
+                {/* Row */}
+                <button
+                  type="button"
+                  onClick={() => toggle(p.id)}
+                  className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left hover:bg-white/5 transition-colors"
+                >
+                  <span className="text-zinc-600 text-[10px] font-bold w-4 text-center shrink-0">{idx + 1}</span>
+                  <span className="font-mono font-semibold text-emerald-400 text-sm shrink-0">#{p.id}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-zinc-100 truncate">{nomeDisplay}</p>
+                    <p className="text-[11px] text-zinc-500 truncate">{tipos} · {p.itens.length} item(ns)</p>
+                  </div>
+                  {isExp
+                    ? <ChevronUp className="h-4 w-4 text-zinc-400 shrink-0" />
+                    : <ChevronDown className="h-4 w-4 text-zinc-500 shrink-0" />}
+                </button>
+
+                {/* Expanded items */}
+                {isExp && (
+                  <div className="border-t border-zinc-700/40 px-3 py-2.5 space-y-1.5">
+                    {[...p.itens].sort((a, b) => a.prioridade - b.prioridade).map((item, i) => (
+                      <div
+                        key={item.id}
+                        className="flex items-center flex-wrap gap-x-2 gap-y-0.5 text-xs text-zinc-400 bg-zinc-800/60 border border-zinc-700/30 rounded-lg px-3 py-1.5"
+                      >
+                        <span className="text-zinc-600 w-4 text-center shrink-0">{i + 1}</span>
+                        <span className="text-emerald-400 font-mono shrink-0 font-medium">{item.inom}</span>
+                        {item.mi && <span className="text-zinc-500 font-mono shrink-0">MI: {item.mi}</span>}
+                        <span className="shrink-0 text-zinc-300">{TIPO_PRODUTO_LABELS[item.tipo_produto]}</span>
+                        <span className="text-zinc-600 shrink-0">·</span>
+                        <span className="shrink-0">{item.escala}</span>
+                        {item.disponivel_bdgex && (
+                          <span className="text-emerald-500 shrink-0 text-[10px]">✓ BDGEx</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+
+        {/* Footer */}
+        <div className="flex gap-2 p-5 pt-0 shrink-0">
+          <button
+            onClick={onCancel}
+            className="flex-1 px-4 py-2 rounded-lg border border-white/10 text-zinc-400 text-sm hover:bg-white/5 transition-colors"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={onConfirm}
+            className="flex-1 px-4 py-2 rounded-lg bg-emerald-500 text-white text-sm font-medium hover:bg-emerald-400 transition-colors"
+          >
+            {label} ({ps.length})
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── Pending Action State ─────────────────────────────────────────────────────
 type PendingAction =
   | { type: 'encaminhar'; id: number }
@@ -901,11 +1017,9 @@ export function GestorDashboard() {
       {/* ── Modais de confirmação ── */}
 
       {pendingAction?.type === 'encaminhar-lote' && (
-        <ConfirmModal
-          title={consolidateLabel}
-          message={`Você está prestes a encaminhar ${pendingAction.ids.length} pedido(s) para o próximo escalão. Esta ação não pode ser desfeita.`}
-          confirmLabel="Encaminhar"
-          confirmClass="bg-emerald-500 hover:bg-emerald-400"
+        <EncaminharLoteModal
+          pedidos={pedidos.filter(p => (pendingAction as { type: 'encaminhar-lote'; ids: number[] }).ids.includes(p.id))}
+          label={consolidateLabel}
           onConfirm={confirmEncaminhar}
           onCancel={() => setPendingAction(null)}
         />

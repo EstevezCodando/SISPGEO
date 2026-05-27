@@ -33,7 +33,7 @@ async def registrar_historico(
 ) -> None:
     """Cria um registro imutável de mudança de status no pedido.
 
-    Deve ser chamada antes de ``db.commit()`` — o registro faz parte da
+    Deve ser chamada antes de ``db.commit()`` - o registro faz parte da
     mesma transação que a mudança de status, garantindo consistência.
 
     Args:
@@ -57,6 +57,6 @@ async def registrar_historico(
     logger.debug(
         "historico enfileirado → pedido_id=%d  acao=%s  %s → %s",
         pedido.id, acao,
-        status_anterior.value if status_anterior else "—",
+        status_anterior.value if status_anterior else "-",
         pedido.status.value,
     )

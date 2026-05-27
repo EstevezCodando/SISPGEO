@@ -9,7 +9,7 @@ import {
   Search, Filter,
 } from 'lucide-react'
 import {
-  pedidosApi, type DuplicateItem, type AdminUpdatePayload,
+  pedidosApi, type DuplicateItem, type BDGExAgeItem, type AdminUpdatePayload,
 } from '../../api/pedidos'
 import { StatusBadge } from '../../components/shared/StatusBadge'
 import { LoadingSpinner } from '../../components/shared/LoadingSpinner'
@@ -391,6 +391,153 @@ function DuplicatesPanel({ open, onToggle }: DuplicatesPanelProps) {
   )
 }
 
+// ─── BDGEx Age Panel ─────────────────────────────────────────────────────────
+interface BDGExAgePanelProps {
+  open: boolean
+  onToggle: () => void
+}
+function BDGExAgePanel({ open, onToggle }: BDGExAgePanelProps) {
+  const [anos, setAnos] = useState(5)
+  const [items, setItems] = useState<BDGExAgeItem[]>([])
+  const [loading, setLoading] = useState(false)
+  const [loaded, setLoaded] = useState(false)
+  const [lastAnos, setLastAnos] = useState<number | null>(null)
+
+  const loadItems = async () => {
+    setLoading(true)
+    try {
+      const res = await pedidosApi.getProdutosRecentes(anos)
+      setItems(res.data)
+      setLastAnos(anos)
+      setLoaded(true)
+    } catch {
+      toast.error('Erro ao verificar produtos recentes no BDGEx')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const ageColorCls = (idade: number) => {
+    if (idade < 1) return 'text-red-400 bg-red-500/10 border-red-500/20'
+    if (idade < 2) return 'text-orange-400 bg-orange-500/10 border-orange-500/20'
+    if (idade < 4) return 'text-amber-400 bg-amber-500/10 border-amber-500/20'
+    return 'text-sky-400 bg-sky-500/10 border-sky-500/20'
+  }
+
+  const ageLabel = (idade: number): string => {
+    if (idade < 1) return `${Math.round(idade * 12)} meses`
+    const a = Math.floor(idade)
+    const m = Math.round((idade - a) * 12)
+    if (m === 0) return `${a} ano${a !== 1 ? 's' : ''}`
+    return `${a}a ${m}m`
+  }
+
+  return (
+    <div className="bg-zinc-900 border border-white/10 rounded-xl overflow-hidden">
+      <button
+        onClick={onToggle}
+        className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-white/5 transition-colors"
+      >
+        <div className="flex items-center gap-2">
+          <CalendarClock className={`h-4 w-4 ${loaded && items.length > 0 ? 'text-sky-400' : 'text-zinc-400'}`} />
+          <span className="text-sm font-semibold text-zinc-100">Produtos Recentes no BDGEx</span>
+          {loaded && lastAnos !== null && (
+            <span className={`text-xs px-2 py-0.5 rounded border ${
+              items.length > 0
+                ? 'bg-sky-500/10 text-sky-400 border-sky-500/20'
+                : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+            }`}>
+              {items.length > 0
+                ? `${items.length} produto(s) < ${lastAnos} ano${lastAnos !== 1 ? 's' : ''}`
+                : `Nenhum < ${lastAnos} ano${lastAnos !== 1 ? 's' : ''}`}
+            </span>
+          )}
+          {loading && <Loader2 className="h-3.5 w-3.5 animate-spin text-zinc-500" />}
+        </div>
+        {open ? <ChevronUp className="h-4 w-4 text-zinc-500" /> : <ChevronDown className="h-4 w-4 text-zinc-500" />}
+      </button>
+
+      {open && (
+        <div className="px-5 pb-5 space-y-3 border-t border-white/10 pt-4">
+          {/* Controls */}
+          <div className="flex items-center gap-3 flex-wrap">
+            <span className="text-xs text-zinc-400">Produtos com menos de</span>
+            <input
+              type="number"
+              min={1}
+              max={50}
+              value={anos}
+              onChange={e => setAnos(Math.max(1, Math.min(50, Number(e.target.value) || 1)))}
+              className="w-16 text-center bg-zinc-800 border border-zinc-700 rounded-lg px-2 py-1 text-sm text-zinc-200 focus:outline-none focus:ring-1 focus:ring-sky-500"
+            />
+            <span className="text-xs text-zinc-400">ano(s) no BDGEx</span>
+            <button
+              onClick={loadItems}
+              disabled={loading}
+              className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-600/20 border border-sky-500/30 text-xs font-medium text-sky-300 hover:bg-sky-600/30 transition-colors disabled:opacity-50"
+            >
+              {loading
+                ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                : <CalendarClock className="h-3.5 w-3.5" />}
+              {loading ? 'Verificando…' : loaded ? 'Reverificar' : 'Verificar'}
+            </button>
+          </div>
+
+          {/* Results */}
+          {!loaded ? (
+            <p className="text-xs text-zinc-600 text-center py-4">
+              Defina o limite em anos e clique em Verificar.
+            </p>
+          ) : items.length === 0 ? (
+            <p className="text-sm text-zinc-500 text-center py-4">
+              Nenhum produto com menos de {lastAnos} ano{lastAnos !== 1 ? 's' : ''} nos pedidos ativos.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {items.map((item, idx) => (
+                <div key={idx} className="bg-zinc-800/60 border border-sky-500/20 rounded-lg p-4">
+                  {/* Product header */}
+                  <div className="flex items-start gap-2 mb-3 flex-wrap">
+                    <span className="text-xs font-semibold text-emerald-400 font-mono">{item.inom}</span>
+                    {item.mi && <span className="text-xs text-zinc-500">MI {item.mi}</span>}
+                    <span className="text-zinc-600">·</span>
+                    <span className="text-xs text-zinc-300">
+                      {TIPO_PRODUTO_LABELS[item.tipo_produto as keyof typeof TIPO_PRODUTO_LABELS] ?? item.tipo_produto}
+                    </span>
+                    <span className="text-zinc-600">·</span>
+                    <span className="text-xs text-zinc-400">{item.escala}</span>
+
+                    <div className="ml-auto flex items-center gap-2 shrink-0">
+                      <span className="text-xs text-zinc-500">
+                        {format(new Date(item.data_producao_bdgex + 'T00:00:00'), "dd/MM/yyyy", { locale: ptBR })}
+                      </span>
+                      <span className={`text-xs px-2 py-0.5 rounded border font-semibold ${ageColorCls(item.idade_anos)}`}>
+                        {ageLabel(item.idade_anos)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Pedidos list */}
+                  <div className="space-y-1.5">
+                    {item.pedidos.map((p) => (
+                      <div key={p.pedido_id} className="flex items-center gap-3 text-xs">
+                        <span className="text-emerald-400 font-semibold font-mono w-10">#{p.pedido_id}</span>
+                        <span className="text-zinc-300 flex-1 truncate">{p.usuario_nome || '—'}</span>
+                        {p.om && <span className="text-zinc-500 shrink-0 truncate max-w-[120px]">{p.om}</span>}
+                        <StatusBadge status={p.status as Parameters<typeof StatusBadge>[0]['status']} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── Pedido DSG Card ──────────────────────────────────────────────────────────
 interface PedidoDSGCardProps {
   pedido: Pedido
@@ -760,6 +907,7 @@ export function DSGDashboard() {
   const [loading, setLoading] = useState(true)
   const [exporting, setExporting] = useState(false)
   const [showDuplicates, setShowDuplicates] = useState(false)
+  const [showBDGExAge, setShowBDGExAge] = useState(false)
 
   // Filters
   const [filterStatus, setFilterStatus] = useState('')
@@ -882,6 +1030,14 @@ export function DSGDashboard() {
           </button>
 
           <button
+            onClick={() => setShowBDGExAge(v => !v)}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-zinc-800 border border-zinc-700 text-sm text-zinc-300 hover:bg-zinc-700 transition-colors"
+          >
+            <CalendarClock className="h-4 w-4" />
+            Recentes BDGEx
+          </button>
+
+          <button
             onClick={handleExport}
             disabled={exporting}
             className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-500 text-white text-sm font-medium hover:bg-emerald-400 disabled:opacity-60 transition-colors"
@@ -934,6 +1090,9 @@ export function DSGDashboard() {
 
       {/* ── Duplicatas ── */}
       <DuplicatesPanel open={showDuplicates} onToggle={() => setShowDuplicates(v => !v)} />
+
+      {/* ── Produtos Recentes BDGEx ── */}
+      <BDGExAgePanel open={showBDGExAge} onToggle={() => setShowBDGExAge(v => !v)} />
 
       {/* ── Lista de pedidos ── */}
       {paginated.length === 0 ? (

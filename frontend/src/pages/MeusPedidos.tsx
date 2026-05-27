@@ -77,6 +77,18 @@ function GeoJSONLayer({ geojson }: { geojson: FeatureCollection }) {
         if (p.tipo_produto)
           tip += `<br>${TIPO_PRODUTO_LABELS[p.tipo_produto as keyof typeof TIPO_PRODUTO_LABELS] ?? p.tipo_produto}`;
         if (p.escala) tip += `<br>${p.escala}`;
+        // BDGEx availability
+        if (p.disponivel_bdgex === true) {
+          const idadeAnos: number | null = p.idade_anos ?? null;
+          const ageStr = idadeAnos != null
+            ? (idadeAnos < 1
+                ? `${Math.round(idadeAnos * 12)} meses`
+                : `${idadeAnos} ano${idadeAnos !== 1 ? "s" : ""}`)
+            : null;
+          tip += `<br><span style="color:#10b981">BDGEx: Sim${ageStr ? ` &middot; Produto com ${ageStr}` : ""}</span>`;
+        } else if (p.disponivel_bdgex === false) {
+          tip += `<br><span style="color:#71717a">BDGEx: Não disponível</span>`;
+        }
         lyr.bindTooltip(tip, {
           sticky: true,
           className: "leaflet-dark-tooltip",
@@ -674,13 +686,41 @@ function EnviarPedidosModal({
   onEnviado,
 }: EnviarPedidosModalProps) {
   const { user } = useAuthStore();
-  const [step, setStep] = useState<"confirm" | "contato">("confirm");
+  const [step, setStep] = useState<"select" | "contato">("select");
   const [sending, setSending] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(
+    new Set(rascunhos.map((p) => p.id)),
+  );
+  const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
+
+  const toggleSelect = (id: number) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleExpand = (id: number) => {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    if (selectedIds.size === rascunhos.length) setSelectedIds(new Set());
+    else setSelectedIds(new Set(rascunhos.map((p) => p.id)));
+  };
 
   const handleEnviar = async () => {
     setSending(true);
     try {
-      const res = await pedidosApi.enviarLote(false);
+      const ids = [...selectedIds];
+      const res = await pedidosApi.enviarLote(false, ids);
       toast.success(
         `${res.data.length} pedido${res.data.length !== 1 ? "s" : ""} enviado${res.data.length !== 1 ? "s" : ""} com sucesso!`,
       );
@@ -695,12 +735,12 @@ function EnviarPedidosModal({
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-      <div className="bg-zinc-900 border border-white/10 rounded-2xl shadow-2xl w-full max-w-md">
+      <div className="bg-zinc-900 border border-white/10 rounded-2xl shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-white/10 shrink-0">
           <h2 className="text-base font-semibold text-zinc-100 flex items-center gap-2">
             <Send className="h-4 w-4 text-emerald-400" />
-            Enviar Pedidos
+            {step === "select" ? "Selecionar Pedidos para Envio" : "Confirmar Envio"}
           </h2>
           <button
             onClick={onClose}
@@ -710,53 +750,99 @@ function EnviarPedidosModal({
           </button>
         </div>
 
-        {step === "confirm" ? (
+        {step === "select" ? (
           <>
-            <div className="p-6 space-y-4">
-              {/* Alerta */}
-              <div className="flex items-start gap-3 p-4 bg-amber-500/10 border border-amber-500/25 rounded-xl">
-                <AlertTriangle className="h-5 w-5 text-amber-400 shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-sm font-semibold text-amber-200">
-                    Tem certeza que deseja enviar todos os pedidos?
-                  </p>
-                  <p className="text-xs text-amber-300/80 mt-1 leading-relaxed">
-                    Após o envio não será possível realizar alterações. Os{" "}
-                    {rascunhos.length} pedido{rascunhos.length !== 1 ? "s" : ""}{" "}
-                    em rascunho serão encaminhados para análise.
-                  </p>
-                </div>
+            {/* Scrollable body */}
+            <div className="flex-1 overflow-y-auto min-h-0 p-5 space-y-3">
+              {/* Warning */}
+              <div className="flex items-start gap-2.5 p-3 bg-amber-500/10 border border-amber-500/25 rounded-xl">
+                <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+                <p className="text-xs text-amber-300/80 leading-relaxed">
+                  Após o envio não será possível realizar alterações. Selecione os pedidos que deseja encaminhar agora.
+                </p>
               </div>
 
-              {/* Lista resumida */}
-              <div className="space-y-1 max-h-48 overflow-y-auto">
+              {/* Select-all toggle */}
+              <div className="flex items-center justify-between text-xs px-0.5">
+                <span className="text-zinc-500">
+                  {selectedIds.size} de {rascunhos.length} selecionado{selectedIds.size !== 1 ? "s" : ""}
+                </span>
+                <button
+                  onClick={toggleAll}
+                  className="text-emerald-400 hover:text-emerald-300 transition-colors font-medium"
+                >
+                  {selectedIds.size === rascunhos.length ? "Desmarcar todos" : "Selecionar todos"}
+                </button>
+              </div>
+
+              {/* Pedido rows */}
+              <div className="space-y-1.5">
                 {rascunhos.map((p, i) => {
                   const tipos = [
-                    ...new Set(
-                      p.itens.map((it) => TIPO_PRODUTO_LABELS[it.tipo_produto]),
-                    ),
+                    ...new Set(p.itens.map((it) => TIPO_PRODUTO_LABELS[it.tipo_produto])),
                   ].join(", ");
+                  const isSelected = selectedIds.has(p.id);
+                  const isExpanded = expandedIds.has(p.id);
                   return (
                     <div
                       key={p.id}
-                      className="flex items-center gap-3 text-xs bg-zinc-800/50 rounded-lg px-3 py-2"
+                      className={`rounded-lg border transition-colors ${
+                        isSelected
+                          ? "border-emerald-500/30 bg-zinc-800/60"
+                          : "border-zinc-700/40 bg-zinc-800/30"
+                      }`}
                     >
-                      <span className="text-zinc-500 w-4 shrink-0">
-                        {i + 1}º
-                      </span>
-                      <span className="font-mono text-emerald-400 shrink-0">
-                        #{p.id}
-                      </span>
-                      <span className="text-zinc-300 truncate">{tipos}</span>
-                      <span className="text-zinc-600 ml-auto shrink-0">
-                        {p.itens.length} prod.
-                      </span>
+                      {/* Row header */}
+                      <div className="flex items-center gap-2.5 px-3 py-2.5">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleSelect(p.id)}
+                          className="h-4 w-4 rounded border-zinc-600 bg-zinc-800 text-emerald-500 cursor-pointer accent-emerald-500 shrink-0"
+                        />
+                        <span className="text-zinc-500 text-xs w-5 shrink-0">{i + 1}º</span>
+                        <span className="font-mono text-emerald-400 text-xs shrink-0">#{p.id}</span>
+                        <span className="text-zinc-300 text-xs flex-1 truncate">{tipos}</span>
+                        <span className="text-zinc-600 text-xs shrink-0">{p.itens.length} prod.</span>
+                        <button
+                          onClick={() => toggleExpand(p.id)}
+                          title={isExpanded ? "Recolher" : "Ver itens"}
+                          className="text-zinc-500 hover:text-zinc-300 transition-colors shrink-0"
+                        >
+                          {isExpanded
+                            ? <ChevronDown className="h-3.5 w-3.5" />
+                            : <ChevronRight className="h-3.5 w-3.5" />}
+                        </button>
+                      </div>
+
+                      {/* Expanded items */}
+                      {isExpanded && (
+                        <div className="px-3 pb-2.5 space-y-1 border-t border-white/5">
+                          {p.itens.map((item) => (
+                            <div
+                              key={item.id}
+                              className="flex items-center gap-2 text-xs text-zinc-400 pl-7 py-0.5"
+                            >
+                              <span className="text-emerald-400/80 font-mono">{item.inom}</span>
+                              {item.mi && (
+                                <span className="text-zinc-600">MI {item.mi}</span>
+                              )}
+                              <span className="text-zinc-600">·</span>
+                              <span>{TIPO_PRODUTO_LABELS[item.tipo_produto]}</span>
+                              <span className="text-zinc-600">·</span>
+                              <span>{item.escala}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
               </div>
             </div>
-            <div className="flex gap-2 px-6 pb-6">
+
+            {/* Footer */}
+            <div className="flex gap-2 px-5 py-4 border-t border-white/10 shrink-0">
               <button
                 onClick={onClose}
                 className="flex-1 py-2.5 rounded-lg border border-white/10 text-zinc-400 text-sm hover:bg-white/5 transition-colors"
@@ -765,25 +851,23 @@ function EnviarPedidosModal({
               </button>
               <button
                 onClick={() => setStep("contato")}
-                className="flex-1 py-2.5 rounded-lg bg-emerald-500 text-white text-sm font-semibold hover:bg-emerald-400 transition-colors flex items-center justify-center gap-2"
+                disabled={selectedIds.size === 0}
+                className="flex-1 py-2.5 rounded-lg bg-emerald-500 text-white text-sm font-semibold hover:bg-emerald-400 disabled:opacity-40 transition-colors"
               >
-                Continuar
+                Continuar ({selectedIds.size})
               </button>
             </div>
           </>
         ) : (
           <>
-            <div className="p-6 space-y-4">
+            <div className="p-5 space-y-4">
               <p className="text-xs text-zinc-400">
-                Confirme seus dados de contato antes de enviar. Eles serão
-                visíveis ao supervisor.
+                Confirme seus dados de contato antes de enviar. Eles serão visíveis ao supervisor.
               </p>
               <div className="bg-zinc-800/50 border border-zinc-700/50 rounded-xl p-4 space-y-3">
                 <div className="flex items-center gap-2.5 text-sm">
                   <User className="h-4 w-4 text-zinc-500 shrink-0" />
-                  <span className="text-zinc-200 font-medium">
-                    {user?.nome ?? "—"}
-                  </span>
+                  <span className="text-zinc-200 font-medium">{user?.nome ?? "—"}</span>
                 </div>
                 <div className="flex items-center gap-2.5 text-sm">
                   <Building2 className="h-4 w-4 text-zinc-500 shrink-0" />
@@ -803,14 +887,13 @@ function EnviarPedidosModal({
               <div className="flex items-center gap-2 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
                 <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
                 <p className="text-xs text-emerald-300/80">
-                  {rascunhos.length} pedido{rascunhos.length !== 1 ? "s" : ""}{" "}
-                  pronto{rascunhos.length !== 1 ? "s" : ""} para envio
+                  {selectedIds.size} pedido{selectedIds.size !== 1 ? "s" : ""} selecionado{selectedIds.size !== 1 ? "s" : ""} para envio
                 </p>
               </div>
             </div>
-            <div className="flex gap-2 px-6 pb-6">
+            <div className="flex gap-2 px-5 py-4 border-t border-white/10">
               <button
-                onClick={() => setStep("confirm")}
+                onClick={() => setStep("select")}
                 className="flex-1 py-2.5 rounded-lg border border-white/10 text-zinc-400 text-sm hover:bg-white/5 transition-colors"
               >
                 Voltar
@@ -1503,7 +1586,7 @@ export function MeusPedidos() {
                     {janelaFechada
                       ? "Novos pedidos, edições e cancelamentos estão bloqueados. Os pedidos já enviados continuam em análise."
                       : semJanela
-                        ? "Nenhum período de solicitações foi definido para o seu perfil. Aguarde a abertura do próximo período ou entre em contato com seu supervisor."
+                        ? "Nenhum período de solicitações foi definido para o seu perfil. Aguarde a abertura do próximo período ou entre em contato com a DSG."
                         : janelaAtiva
                           ? "A janela de solicitações é o período durante o qual sua OM pode encaminhar pedidos de Geoinformação. Novos pedidos não podem ser criados ou enviados fora desta janela."
                           : "O próximo período de solicitações ainda não foi aberto. Assim que a janela for ativada, você poderá criar e enviar pedidos de produtos cartográficos."}

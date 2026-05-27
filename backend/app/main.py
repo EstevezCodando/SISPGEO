@@ -1,4 +1,4 @@
-# SisPGeo — Sistema de Pedidos de Geoinformação
+# SisPGeo - Sistema de Pedidos de Geoinformação
 # © 2026 2º Sgt Estevez Alvarez <alvarez.jean@eb.mil.br>  ·  Software Engineer
 # Regras de negócio e contratos: Cap Perrut <perrut.raphael@eb.mil.br>  ·  Cartographic Engineer
 # Revisão técnica do projeto: Cel Azeredo <azeredo.marcio@eb.mil.br>  ·  Cartographic Engineer
@@ -54,13 +54,13 @@ async def _create_admin():
 async def _run_migrations():
     """Aplica migrações de esquema para colunas adicionadas após a criação inicial.
 
-    Usa ``ADD COLUMN IF NOT EXISTS`` (PostgreSQL ≥ 9.6) — seguro para re-execução.
+    Usa ``ADD COLUMN IF NOT EXISTS`` (PostgreSQL ≥ 9.6) - seguro para re-execução.
 
     Migrações DDL de enum (ALTER TYPE ADD VALUE) são executadas em modo AUTOCOMMIT
     separado, pois o PostgreSQL não permite esse comando dentro de blocos de
     transação que já contêm outros statements.
     """
-    # ── Migrações transacionais — cada uma em transação própria ────────────────
+    # ── Migrações transacionais - cada uma em transação própria ────────────────
     # IMPORTANTE: rodar em transações isoladas garante que um RENAME que já foi
     # aplicado (e falha) não coloca toda a sessão PostgreSQL em estado de erro,
     # o que silenciaria as migrações subsequentes.
@@ -77,7 +77,7 @@ async def _run_migrations():
         "ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS pedidos_transferidos_em TIMESTAMPTZ",
         # 2026-05: ampliar regiao_militar para acomodar "12ª RM" (6 chars UTF-8)
         "ALTER TABLE usuarios ALTER COLUMN regiao_militar TYPE VARCHAR(20)",
-        # 2026-05: regiao_militar em pedidos — roteamento para supervisor intermediário (C. Mil. A)
+        # 2026-05: regiao_militar em pedidos - roteamento para supervisor intermediário (C. Mil. A)
         "ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS regiao_militar VARCHAR(20)",
         # backfill: preenche regiao_militar a partir do usuario que criou o pedido
         "UPDATE pedidos p SET regiao_militar = u.regiao_militar FROM usuarios u WHERE u.id = p.criador_id AND p.regiao_militar IS NULL",
@@ -95,7 +95,7 @@ async def _run_migrations():
         "ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS auto_submitted BOOLEAN DEFAULT FALSE",
         # 2026-05: posto/graduação do militar (Civil, Sd EV, Cb, Cap, TC, Cel...)
         "ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS posto_graduacao VARCHAR(50)",
-        # 2026-05: nome de guerra — exibido no lugar do nome completo nas referências do sistema
+        # 2026-05: nome de guerra - exibido no lugar do nome completo nas referências do sistema
         "ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS nome_de_guerra VARCHAR(100)",
         # 2026-05: configuração global de data base de entrega (singleton id=1)
         """CREATE TABLE IF NOT EXISTS config_entrega (
@@ -106,11 +106,11 @@ async def _run_migrations():
         )""",
         # Seed da configuração inicial (não sobrescreve se já existir)
         "INSERT INTO config_entrega (id, data_base) VALUES (1, '2026-11-18') ON CONFLICT (id) DO NOTHING",
-        # 2026-05: impressão do pedido — quantidade de cópias e tipo de material (nível pedido — legado)
+        # 2026-05: impressão do pedido - quantidade de cópias e tipo de material (nível pedido - legado)
         "ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS impressao_solicitada BOOLEAN DEFAULT FALSE",
         "ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS impressao_quantidade SMALLINT",
         "ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS impressao_tipo_material VARCHAR(20)",
-        # 2026-05: impressão per-item — quantidade e material por célula selecionada
+        # 2026-05: impressão per-item - quantidade e material por célula selecionada
         "ALTER TABLE itens_pedido ADD COLUMN IF NOT EXISTS impressao_quantidade SMALLINT",
         "ALTER TABLE itens_pedido ADD COLUMN IF NOT EXISTS impressao_tipo_material VARCHAR(20)",
         # 2026-05: finalidade da geoinformação (dropdown) separado da informação complementar (textarea)
@@ -126,7 +126,7 @@ async def _run_migrations():
         except Exception as exc:
             logger.warning("Migration skipped (%s): %s", stmt[:40], exc)
 
-    # ── Migrações de enum — exigem AUTOCOMMIT (fora de bloco de transação) ────
+    # ── Migrações de enum - exigem AUTOCOMMIT (fora de bloco de transação) ────
     enum_migrations = [
         "ALTER TYPE tipo_janela_enum ADD VALUE IF NOT EXISTS 'SUPERVISOR'",
         # 2026-05: supervisores regionais por CMilA
@@ -166,13 +166,13 @@ async def _create_test_users():
     testes de integração possam fazer login sem depender do fluxo de e-mail.
 
     Usuários criados:
-        - gustavo@eb.mil.br      / Gustavo@1234      — SOLICITANTE, OM=22º B I (CMP)
-        - joao@eb.mil.br         / Joao@1234         — SOLICITANTE, OM=22º B I (CMP, herdeiro)
-        - supervisor.cmilA@eb.mil.br / Supervisor@1234 — SUPERVISOR, OM=CMDO C M P
-        - consolidador.coter@eb.mil.br / Consolidador@1234 — CONSOLIDADOR, OM=COTER
-        - analista.cgeo@eb.mil.br / AnalistaCGEO@1234 — ANALISTA_CGEO, OM=DSG
+        - gustavo@eb.mil.br      / Gustavo@1234      - SOLICITANTE, OM=22º B I (CMP)
+        - joao@eb.mil.br         / Joao@1234         - SOLICITANTE, OM=22º B I (CMP, herdeiro)
+        - supervisor.cmilA@eb.mil.br / Supervisor@1234 - SUPERVISOR, OM=CMDO C M P
+        - consolidador.coter@eb.mil.br / Consolidador@1234 - CONSOLIDADOR, OM=COTER
+        - analista.cgeo@eb.mil.br / AnalistaCGEO@1234 - ANALISTA_CGEO, OM=DSG
     """
-    # Dupla guarda: BDGEX_MOCK E não-produção — nunca criar usuários de teste em prod
+    # Dupla guarda: BDGEX_MOCK E não-produção - nunca criar usuários de teste em prod
     if not settings.BDGEX_MOCK or settings.ENV == "production":
         return
 
@@ -181,7 +181,7 @@ async def _create_test_users():
     from app.utils.security import get_password_hash
 
     test_users = [
-        # Solicitante OMDS — 22º B I (CMP - Comando Militar do Planalto)
+        # Solicitante OMDS - 22º B I (CMP - Comando Militar do Planalto)
         dict(
             nome="Gustavo Silva",
             nome_de_guerra="Silva",
@@ -279,13 +279,13 @@ async def _create_test_users():
                 )
                 db.add(user)
         await db.commit()
-    logger.info("✓ Usuários de teste sincronizados (gustavo / joao / supervisor / consolidador / analista_cgeo) — BDGEX_MOCK=true")
+    logger.info("✓ Usuários de teste sincronizados (gustavo / joao / supervisor / consolidador / analista_cgeo) - BDGEX_MOCK=true")
 
 
 async def _create_test_janelas():
     """Cria as janelas do ciclo 2026 quando BDGEX_MOCK=true (ambiente de CI/dev).
 
-    Janelas criadas (idempotente — não recria se já existirem):
+    Janelas criadas (idempotente - não recria se já existirem):
         SOLICITANTE  : 20/05/2026 – 30/06/2026
         SUPERVISOR   : 02/07/2026 – 31/07/2026
         CONSOLIDADOR : 02/08/2026 – 31/08/2026
@@ -332,7 +332,7 @@ async def _create_test_janelas():
         from app.models.user import Usuario
         admin = await db.scalar(select(Usuario).where(Usuario.email == "admin@eb.mil.br"))
         if not admin:
-            logger.warning("Admin não encontrado — janelas de teste não criadas")
+            logger.warning("Admin não encontrado - janelas de teste não criadas")
             return
 
         for cfg in janelas_config:
@@ -366,14 +366,14 @@ async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     await _run_migrations()
-    # asyncpg cacheia tipos enum na conexão — descartar o pool força reconexão
+    # asyncpg cacheia tipos enum na conexão - descartar o pool força reconexão
     # com o cache atualizado após qualquer ALTER TYPE executado acima.
     await engine.dispose()
     await _create_admin()
     await _create_test_users()
     await _create_test_janelas()
 
-    # Pré-aquece caches de grade em background — servidor sobe imediatamente.
+    # Pré-aquece caches de grade em background - servidor sobe imediatamente.
     # Na 1ª execução: constrói os .gz a partir dos GeoJSONs e salva em disco.
     # Reinicializações: lê os .gz do disco em < 1 s por arquivo.
     asyncio.create_task(preload_caches())
@@ -382,7 +382,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="SisPGeo — Sistema de Pedidos de Geoinformação",
+    title="SisPGeo - Sistema de Pedidos de Geoinformação",
     version="0.1.0",
     docs_url="/api/docs" if settings.ENV == "development" else None,
     redoc_url="/api/redoc" if settings.ENV == "development" else None,
@@ -397,7 +397,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Middleware de métricas — deve ser adicionado APÓS o CORS
+# Middleware de métricas - deve ser adicionado APÓS o CORS
 app.middleware("http")(metrics_middleware)
 
 app.include_router(auth.router, prefix="/api/v1")

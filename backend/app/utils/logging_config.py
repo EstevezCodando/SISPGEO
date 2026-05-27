@@ -12,7 +12,7 @@ import logging
 import sys
 from app.config import settings
 
-_LOG_FORMAT = "%(asctime)s [%(levelname)s] %(name)s — %(message)s"
+_LOG_FORMAT = "%(asctime)s [%(levelname)s] %(name)s - %(message)s"
 _DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 _LEVEL_MAP: dict[str, int] = {
@@ -55,7 +55,7 @@ def setup_logging(level: str | None = None) -> None:
     logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
     logging.getLogger("aiosmtplib").setLevel(logging.WARNING)
 
-    logging.getLogger(__name__).debug("Logging configurado — nível: %s", level.upper())
+    logging.getLogger(__name__).debug("Logging configurado - nível: %s", level.upper())
 
 
 def get_logger(name: str) -> logging.Logger:

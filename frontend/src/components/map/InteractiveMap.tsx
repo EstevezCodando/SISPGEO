@@ -114,11 +114,15 @@ export function InteractiveMap({ inomGrid, showData = true, basemap = 'osm', som
         let tip = mi
           ? `<b style="color:#34d399">${mi}</b><br><span style="color:#a1a1aa;font-size:11px">${inom}</span>`
           : `<b>${inom}</b>`
-        if (bloqueada) {
-          tip += '<br><span style="color:#71717a">Não disponível no BDGEx</span>'
+        if (disponivel) {
+          const ageStr = (idade_anos !== undefined && idade_anos !== null)
+            ? (idade_anos < 1
+                ? `${Math.round(idade_anos * 12)} meses`
+                : `${idade_anos} ano${idade_anos !== 1 ? 's' : ''}`)
+            : null
+          tip += `<br><span style="color:#10b981">BDGEx: Sim${ageStr ? ` &middot; Produto com ${ageStr}` : ''}</span>`
         } else {
-          if (data_conclusao) tip += `<br>Publicação: ${data_conclusao.split('-').reverse().join('/')}`
-          if (idade_anos !== undefined && idade_anos !== null) tip += `<br>Idade: ${idade_anos} ano${idade_anos !== 1 ? 's' : ''}`
+          tip += `<br><span style="color:#71717a">BDGEx: Não disponível${bloqueada ? ' (bloqueado)' : ''}</span>`
         }
         layer.bindTooltip(tip, { sticky: true })
 

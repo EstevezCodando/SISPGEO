@@ -9,6 +9,16 @@ export interface DuplicateItem {
   pedidos: Array<{ id: number; usuario_nome: string | null; status: string }>
 }
 
+export interface BDGExAgeItem {
+  inom: string
+  mi: string | null
+  tipo_produto: string
+  escala: string
+  data_producao_bdgex: string   // ISO date string
+  idade_anos: number
+  pedidos: Array<{ pedido_id: number; usuario_nome: string; status: string; om: string | null }>
+}
+
 export interface ExportRequest {
   pedido_ids?: number[]
   status_filter?: string[]
@@ -61,6 +71,9 @@ export const pedidosApi = {
     api.put(`/pedidos/${pedidoId}/items/reorder`, { ordered_ids }),
   // Duplicates
   getDuplicatas: () => api.get<DuplicateItem[]>('/pedidos/duplicatas'),
+  // BDGEx age validator — products newer than N years
+  getProdutosRecentes: (anos: number) =>
+    api.get<BDGExAgeItem[]>('/pedidos/admin/produtos-recentes', { params: { anos } }),
   // Relatório: ZIP com CSV + GeoJSONs por escala + LEIA-ME (SOLICITANTE / SUPERVISOR / CONSOLIDADOR)
   exportRelatorio: () => api.get('/pedidos/relatorio', { responseType: 'blob' }),
   // Export (DSG) — legacy ZIP export
@@ -73,7 +86,7 @@ export const pedidosApi = {
     api.delete(`/pedidos/${pedidoId}/items/${itemId}`),
   // Pedidos já encaminhados além da fila atual (SUPERVISOR/CONSOLIDADOR)
   listHomologados: () => api.get<Pedido[]>('/pedidos/homologados'),
-  // Submete todos os pedidos RASCUNHO do usuário em lote (fim da janela de solicitações)
-  enviarLote: (auto_submitted = false) =>
-    api.post<import('../types/pedido').Pedido[]>('/pedidos/enviar-lote', { auto_submitted }),
+  // Submete pedidos RASCUNHO do usuário em lote; pedido_ids=undefined → todos
+  enviarLote: (auto_submitted = false, pedido_ids?: number[]) =>
+    api.post<import('../types/pedido').Pedido[]>('/pedidos/enviar-lote', { auto_submitted, pedido_ids }),
 }

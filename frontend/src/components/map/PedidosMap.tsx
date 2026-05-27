@@ -96,6 +96,18 @@ export function PedidosMap({ className = '' }: PedidosMapProps) {
               const dataFmt = e.data_entrega
                 ? format(new Date((e.data_entrega as string) + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR })
                 : '—'
+              const dispBdgex = e.disponivel_bdgex as boolean | undefined
+              const idadeAnos  = e.idade_anos  as number | null | undefined
+              const ageStr = idadeAnos != null
+                ? (idadeAnos < 1
+                    ? `${Math.round(idadeAnos * 12)} meses`
+                    : `${idadeAnos} ano${idadeAnos !== 1 ? 's' : ''}`)
+                : null
+              const bdgexRow = dispBdgex === true
+                ? `<div style="font-size:10px"><span style="color:#71717a">BDGEx:</span> <span style="color:#10b981">Sim${ageStr ? ` &middot; Produto com ${ageStr}` : ''}</span></div>`
+                : dispBdgex === false
+                  ? `<div style="font-size:10px"><span style="color:#71717a">BDGEx:</span> <span style="color:#71717a">Não disponível</span></div>`
+                  : ''
               return `
                 <div style="min-width:160px${bordered ? ';border-left:1px solid #3f3f46;padding-left:10px' : ''}">
                   <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px">
@@ -110,6 +122,7 @@ export function PedidosMap({ className = '' }: PedidosMapProps) {
                   <div style="font-size:10px"><span style="color:#71717a">Entrega:</span> ${dataFmt}</div>
                   <div style="font-size:10px"><span style="color:#71717a">Solicitante:</span> ${(e.usuario_nome as string) ?? '—'}</div>
                   ${e.operacao_nome ? `<div style="font-size:10px"><span style="color:#71717a">Operação:</span> ${e.operacao_nome as string}</div>` : ''}
+                  ${bdgexRow}
                 </div>
               `
             }

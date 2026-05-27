@@ -2,9 +2,9 @@
 Endpoints de consulta ao histórico de herança/transferência de pedidos.
 
 Acessos permitidos:
-  - ``GET /transferencias/minhas`` — usuário vê suas próprias transferências (cedidas ou herdadas)
-  - ``GET /transferencias/usuario/{user_id}`` — GESTOR_CARTOGRAFICO vê transferências de qualquer usuário
-  - ``GET /transferencias`` — GESTOR_CARTOGRAFICO lista todas as transferências do sistema
+  - ``GET /transferencias/minhas`` - usuário vê suas próprias transferências (cedidas ou herdadas)
+  - ``GET /transferencias/usuario/{user_id}`` - GESTOR_CARTOGRAFICO vê transferências de qualquer usuário
+  - ``GET /transferencias`` - GESTOR_CARTOGRAFICO lista todas as transferências do sistema
 """
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-step0.py — Gerador de credenciais iniciais do SisPGeo
+step0.py - Gerador de credenciais iniciais do SisPGeo
 ======================================================
 Gera SECRET_KEY, DB_PASSWORD e ADMIN_PASSWORD e salva em 'senhas_fortes.txt'
 com instruções de onde colar cada valor.
@@ -23,7 +23,7 @@ from pathlib import Path
 ROOT        = Path(__file__).resolve().parent
 OUTPUT_FILE = ROOT / "senhas_fortes.txt"
 
-# Regex de complexidade — mesmas regras do backend (config.py)
+# Regex de complexidade - mesmas regras do backend (config.py)
 _PASS_RE = re.compile(r'^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$')
 
 
@@ -76,7 +76,7 @@ def _build_output(secret_key: str, db_password: str, admin_password: str) -> str
     now = datetime.now().strftime("%d/%m/%Y %H:%M")
     return f"""\
 ╔══════════════════════════════════════════════════════════════╗
-║           SisPGeo — Credenciais Geradas  ({now})       ║
+║           SisPGeo - Credenciais Geradas  ({now})       ║
 ╚══════════════════════════════════════════════════════════════╝
 
 ⚠  ATENÇÃO
@@ -85,7 +85,7 @@ def _build_output(secret_key: str, db_password: str, admin_password: str) -> str
    • Nunca compartilhe estas informações
 
 ──────────────────────────────────────────────────────────────
- PASSO 1 — Edite o arquivo  .env  na raiz do projeto
+ PASSO 1 - Edite o arquivo  .env  na raiz do projeto
 ──────────────────────────────────────────────────────────────
 
  Localize as linhas abaixo no .env e substitua pelos valores:
@@ -97,7 +97,7 @@ def _build_output(secret_key: str, db_password: str, admin_password: str) -> str
  Caso as linhas não existam, adicione-as ao final do arquivo.
 
 ──────────────────────────────────────────────────────────────
- PASSO 2 — O docker-compose.yml NÃO precisa ser editado
+ PASSO 2 - O docker-compose.yml NÃO precisa ser editado
 ──────────────────────────────────────────────────────────────
 
  O docker-compose.yml já lê as variáveis automaticamente do .env:
@@ -109,13 +109,13 @@ def _build_output(secret_key: str, db_password: str, admin_password: str) -> str
  Nenhuma alteração manual no docker-compose.yml é necessária.
 
 ──────────────────────────────────────────────────────────────
- PASSO 3 — Suba o sistema
+ PASSO 3 - Suba o sistema
 ──────────────────────────────────────────────────────────────
 
    docker compose up --build -d
 
 ──────────────────────────────────────────────────────────────
- PASSO 4 — Delete este arquivo
+ PASSO 4 - Delete este arquivo
 ──────────────────────────────────────────────────────────────
 
  Após confirmar que o sistema subiu corretamente, delete:
@@ -132,24 +132,24 @@ def _build_output(secret_key: str, db_password: str, admin_password: str) -> str
 def main() -> None:
     print()
     print("  ╔══════════════════════════════════════════════════╗")
-    print("  ║   SisPGeo — Gerador de Credenciais (step0.py)  ║")
+    print("  ║   SisPGeo - Gerador de Credenciais (step0.py)  ║")
     print("  ╚══════════════════════════════════════════════════╝")
     print()
     print("  As credenciais geradas serão salvas em 'senhas_fortes.txt'.")
     print("  O .env e o docker-compose.yml NÃO serão alterados.")
 
-    # 1. SECRET_KEY — geração automática
+    # 1. SECRET_KEY - geração automática
     _sep("1/3  SECRET_KEY  (gerada automaticamente)")
     secret_key = secrets.token_hex(32)   # 256 bits → 64 chars hex
     _ok(f"Gerada: {secret_key[:16]}···{secret_key[-8:]}  ({len(secret_key)} chars)")
 
-    # 2. DB_PASSWORD — interativo
+    # 2. DB_PASSWORD - interativo
     _sep("2/3  DB_PASSWORD  (senha do PostgreSQL)")
     print("  Defina uma senha para o banco de dados (mín. 8 caracteres).")
     db_password = _ask_password("DB_PASSWORD")
     _ok("Recebida.")
 
-    # 3. ADMIN_PASSWORD — interativo + validação
+    # 3. ADMIN_PASSWORD - interativo + validação
     _sep("3/3  ADMIN_PASSWORD  (senha do usuário admin@eb.mil.br)")
     print("  Requisitos: mín. 8 chars | maiúscula | minúscula | número | símbolo")
     print("  Exemplo válido: MinhaSenh@2026")

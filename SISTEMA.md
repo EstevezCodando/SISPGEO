@@ -1,9 +1,10 @@
-# SISGEO — Sistema Integrado de Solicitações de Geoinformação
+# SISGEO - Sistema Integrado de Solicitações de Geoinformação
+
 ## Documento de Funcionamento e Finalidade
 
 **Órgão:** Diretoria de Serviço Geográfico do Exército Brasileiro (DSG/EB)  
 **Versão:** 1.0  
-**Classificação:** Uso interno — DSG/EB
+**Classificação:** Uso interno - DSG/EB
 
 ---
 
@@ -11,7 +12,7 @@
 
 O **SISGEO** é a plataforma oficial da DSG/EB para o gerenciamento centralizado das solicitações anuais de produtos geoinformacionais do Exército Brasileiro.
 
-O sistema permite que Organizações Militares (OM) de todo o País solicitem eletronicamente produtos cartográficos e geoespaciais — cartas topográficas, ortoimagens, modelos digitais de terreno, entre outros — substituindo o processo manual baseado em ofícios e planilhas por um fluxo digital, rastreável e com janelas temporais controladas.
+O sistema permite que Organizações Militares (OM) de todo o País solicitem eletronicamente produtos cartográficos e geoespaciais - cartas topográficas, ortoimagens, modelos digitais de terreno, entre outros - substituindo o processo manual baseado em ofícios e planilhas por um fluxo digital, rastreável e com janelas temporais controladas.
 
 ---
 
@@ -36,29 +37,29 @@ OM Solicitante
 
 O sistema possui **7 perfis** com permissões distintas:
 
-| Perfil | Sigla | Papel no fluxo |
-|--------|-------|----------------|
-| **Usuário OMDS** | `USUARIO_OMDS` | Cria e submete pedidos de produtos geoinformacionais |
-| **Gestor de Brigada** | `GESTOR_BRIGADA` | Revisa e consolida pedidos das OM subordinadas e encaminha ao C Mil. A |
-| **Gestor de Divisão** | `GESTOR_DIVISAO` | Idêntico ao Gestor de Brigada — para estruturas de divisão |
-| **Gestor C Mil. A** | `GESTOR_CMA` | Consolida pedidos da área e encaminha ao COTER |
-| **Gestor Demandante (COTER)** | `GESTOR_DEMANDANTE` | Recebe os pedidos, consolida e encaminha à DSG |
-| **Gestor DSG** | `GESTOR_DSG` | Administra o sistema, controla janelas, atribui pedidos aos CGEOs |
-| **Gestor CGEO** | `GESTOR_CGEO` | Analisa viabilidade de produção e registra o atendimento ou inviabilidade |
+| Perfil                        | Sigla               | Papel no fluxo                                                            |
+| ----------------------------- | ------------------- | ------------------------------------------------------------------------- |
+| **Usuário OMDS**              | `USUARIO_OMDS`      | Cria e submete pedidos de produtos geoinformacionais                      |
+| **Gestor de Brigada**         | `GESTOR_BRIGADA`    | Revisa e consolida pedidos das OM subordinadas e encaminha ao C Mil. A    |
+| **Gestor de Divisão**         | `GESTOR_DIVISAO`    | Idêntico ao Gestor de Brigada - para estruturas de divisão                |
+| **Gestor C Mil. A**           | `GESTOR_CMA`        | Consolida pedidos da área e encaminha ao COTER                            |
+| **Gestor Demandante (COTER)** | `GESTOR_DEMANDANTE` | Recebe os pedidos, consolida e encaminha à DSG                            |
+| **Gestor DSG**                | `GESTOR_DSG`        | Administra o sistema, controla janelas, atribui pedidos aos CGEOs         |
+| **Gestor CGEO**               | `GESTOR_CGEO`       | Analisa viabilidade de produção e registra o atendimento ou inviabilidade |
 
 ---
 
 ## 4. Produtos disponíveis para solicitação
 
-| Produto | Escalas disponíveis |
-|---------|-------------------|
-| Carta Topográfica | 1:25.000 · 1:50.000 · 1:100.000 · 1:250.000 |
-| Carta Ortoimagem | 1:25.000 · 1:50.000 |
-| Ortoimagem | 1:25.000 · 1:50.000 |
-| Modelo Digital de Terreno (MDT) | 1:25.000 · 1:50.000 |
-| Modelo Digital de Superfície (MDS) | 1:25.000 · 1:50.000 |
-| CDGV (Conjunto de Dados Geoespaciais Vetoriais) | 1:25.000 · 1:50.000 |
-| Impressão de Produto Geoespacial | — |
+| Produto                                         | Escalas disponíveis                         |
+| ----------------------------------------------- | ------------------------------------------- |
+| Carta Topográfica                               | 1:25.000 · 1:50.000 · 1:100.000 · 1:250.000 |
+| Carta Ortoimagem                                | 1:25.000 · 1:50.000                         |
+| Ortoimagem                                      | 1:25.000 · 1:50.000                         |
+| Modelo Digital de Terreno (MDT)                 | 1:25.000 · 1:50.000                         |
+| Modelo Digital de Superfície (MDS)              | 1:25.000 · 1:50.000                         |
+| CDGV (Conjunto de Dados Geoespaciais Vetoriais) | 1:25.000 · 1:50.000                         |
+| Impressão de Produto Geoespacial                | -                                           |
 
 Cada item de pedido é identificado pela **nomenclatura INOM** (Índice de Nomenclatura) e pelo **número MI** (Mapa Índice), que correspondem às folhas da cartografia sistemática brasileira.
 
@@ -70,13 +71,13 @@ Cada item de pedido é identificado pela **nomenclatura INOM** (Índice de Nomen
 
 O ciclo de solicitações segue janelas temporais configuradas pelo Gestor DSG:
 
-| Período | Quem age | O que acontece |
-|---------|----------|----------------|
-| **Fevereiro – Março** | OM (USUARIO_OMDS) | Criação e submissão de pedidos |
-| **Março – Abril** | Brigadas e C Mil. A | Revisão e consolidação |
-| **Junho – Julho** | COTER | Recebimento e encaminhamento à DSG |
-| **Agosto** | DSG | Recebimento, análise e atribuição aos CGEOs |
-| **Agosto** | CGEOs | Análise de viabilidade e resposta final |
+| Período               | Quem age            | O que acontece                              |
+| --------------------- | ------------------- | ------------------------------------------- |
+| **Fevereiro – Março** | OM (USUARIO_OMDS)   | Criação e submissão de pedidos              |
+| **Março – Abril**     | Brigadas e C Mil. A | Revisão e consolidação                      |
+| **Junho – Julho**     | COTER               | Recebimento e encaminhamento à DSG          |
+| **Agosto**            | DSG                 | Recebimento, análise e atribuição aos CGEOs |
+| **Agosto**            | CGEOs               | Análise de viabilidade e resposta final     |
 
 ### 5.2 Passo a passo do fluxo
 
@@ -116,47 +117,52 @@ O ciclo de solicitações segue janelas temporais configuradas pelo Gestor DSG:
 
 ### 5.3 Status do pedido
 
-| Status | Significado |
-|--------|-------------|
-| `Rascunho` | Pedido criado, não enviado |
-| `Aguardando Brigada` | Enviado ao gestor de brigada |
-| `Aguardando C Mil. A` | Consolidado pela brigada, aguarda C Mil. A |
-| `Aguardando COTER` | Consolidado pelo C Mil. A, aguarda COTER |
-| `Aguardando DSG` | Enviado à DSG |
-| `Em Análise CGEO` | Atribuído ao CGEO, em análise de viabilidade |
-| `Em Atendimento` | CGEO confirmou o atendimento |
-| `Inviável` | CGEO registrou inviabilidade de produção |
-| `Alterado pelo Gestor` | Gestor solicitou ajustes — aguarda nova submissão |
-| `Cancelado` | Pedido cancelado pelo solicitante |
+| Status                 | Significado                                       |
+| ---------------------- | ------------------------------------------------- |
+| `Rascunho`             | Pedido criado, não enviado                        |
+| `Aguardando Brigada`   | Enviado ao gestor de brigada                      |
+| `Aguardando C Mil. A`  | Consolidado pela brigada, aguarda C Mil. A        |
+| `Aguardando COTER`     | Consolidado pelo C Mil. A, aguarda COTER          |
+| `Aguardando DSG`       | Enviado à DSG                                     |
+| `Em Análise CGEO`      | Atribuído ao CGEO, em análise de viabilidade      |
+| `Em Atendimento`       | CGEO confirmou o atendimento                      |
+| `Inviável`             | CGEO registrou inviabilidade de produção          |
+| `Alterado pelo Gestor` | Gestor solicitou ajustes - aguarda nova submissão |
+| `Cancelado`            | Pedido cancelado pelo solicitante                 |
 
 ---
 
 ## 6. Funcionalidades principais
 
 ### Mapa interativo
+
 - Grade INOM oficial 1:50.000 carregada a partir do shapefile `asc_mi_50k.shp` da DSG
 - Coloração por idade dos dados disponíveis no BDGEx (verde = recente, vermelho = desatualizado)
 - Clique nas células para adicionar ao carrinho de pedidos
 - Visualização de pedidos existentes sobrepostos ao mapa
 
 ### Janelas temporais
+
 - O Gestor DSG configura 5 janelas por ano (OMs, Brigadas/C Mil. A, COTER, DSG, CGEO)
 - Cada perfil visualiza apenas o prazo relevante ao seu papel
 - Banner de prazo visível em todas as telas: verde (aberto), vermelho (urgente), cinza (encerrado)
 - Usuários podem solicitar prorrogação de prazo ao escalão superior com justificativa
 
 ### Notificações
+
 - E-mail automático ao solicitante: confirmação de submissão, aprovação e resultado final
 - E-mail ao gestor: novos pedidos aguardando revisão
 - Notificação interna no sistema (sininho) para cada movimentação relevante
 
 ### Administração (Gestor DSG)
+
 - Gerenciar todos os usuários: perfil, demandante, ativação/desativação
 - Visualizar e excluir qualquer pedido do sistema
 - Controlar janelas temporais de cada grupo
 - Atribuir pedidos recebidos aos CGEOs
 
 ### Meus Pedidos (solicitante)
+
 - Expandir cada pedido para ver todos os detalhes e itens
 - Editar pedidos em rascunho
 - Cancelar pedidos antes de serem encaminhados além da Brigada
@@ -167,15 +173,15 @@ O ciclo de solicitações segue janelas temporais configuradas pelo Gestor DSG:
 
 ## 7. Arquitetura técnica
 
-| Camada | Tecnologia |
-|--------|-----------|
-| **Frontend** | React 18 · TypeScript · Vite · Tailwind CSS · React-Leaflet |
-| **Backend** | FastAPI (Python 3.12) · SQLAlchemy (async) · Pydantic v2 |
-| **Banco de dados** | PostgreSQL 16 com extensão PostGIS |
-| **Autenticação** | JWT (Bearer Token) · bcrypt para senhas |
-| **E-mail** | SMTP via MailHog (dev) ou servidor SMTP configurável (prod) |
-| **Mapa** | Leaflet.js · OpenStreetMap · Shapefile DSG (pyshp) |
-| **Infraestrutura** | Docker Compose · Nginx (proxy reverso) |
+| Camada             | Tecnologia                                                  |
+| ------------------ | ----------------------------------------------------------- |
+| **Frontend**       | React 18 · TypeScript · Vite · Tailwind CSS · React-Leaflet |
+| **Backend**        | FastAPI (Python 3.12) · SQLAlchemy (async) · Pydantic v2    |
+| **Banco de dados** | PostgreSQL 16 com extensão PostGIS                          |
+| **Autenticação**   | JWT (Bearer Token) · bcrypt para senhas                     |
+| **E-mail**         | SMTP via MailHog (dev) ou servidor SMTP configurável (prod) |
+| **Mapa**           | Leaflet.js · OpenStreetMap · Shapefile DSG (pyshp)          |
+| **Infraestrutura** | Docker Compose · Nginx (proxy reverso)                      |
 
 ### Diagrama de rede Docker
 
@@ -212,19 +218,19 @@ O sistema consulta o **BDGEx (Banco de Dados Geoespaciais do Exército)** para v
 
 ## 10. Glossário
 
-| Termo | Significado |
-|-------|-------------|
-| **INOM** | Índice de Nomenclatura — identificador único de uma folha cartográfica brasileira |
-| **MI** | Mapa Índice — número de referência da carta na escala 1:100.000 |
-| **BDGEx** | Banco de Dados Geoespaciais do Exército |
-| **DSG** | Diretoria de Serviço Geográfico do Exército Brasileiro |
-| **CGEO** | Centro de Geoinformação (unidade produtora subordinada à DSG) |
-| **COTER** | Comando de Operações Terrestres |
-| **C Mil. A** | Comando Militar de Área |
-| **OM** | Organização Militar |
-| **OMDS** | Organização Militar Diretamente Subordinada |
-| **Demandante** | Órgão responsável pelo conjunto de OM de uma região (ex: 1ª Brigada) |
+| Termo          | Significado                                                                       |
+| -------------- | --------------------------------------------------------------------------------- |
+| **INOM**       | Índice de Nomenclatura - identificador único de uma folha cartográfica brasileira |
+| **MI**         | Mapa Índice - número de referência da carta na escala 1:100.000                   |
+| **BDGEx**      | Banco de Dados Geoespaciais do Exército                                           |
+| **DSG**        | Diretoria de Serviço Geográfico do Exército Brasileiro                            |
+| **CGEO**       | Centro de Geoinformação (unidade produtora subordinada à DSG)                     |
+| **COTER**      | Comando de Operações Terrestres                                                   |
+| **C Mil. A**   | Comando Militar de Área                                                           |
+| **OM**         | Organização Militar                                                               |
+| **OMDS**       | Organização Militar Diretamente Subordinada                                       |
+| **Demandante** | Órgão responsável pelo conjunto de OM de uma região (ex: 1ª Brigada)              |
 
 ---
 
-*Para instruções de instalação e operação, consulte [`README.md`](README.md).*
+_Para instruções de instalação e operação, consulte [`README.md`](README.md)._

@@ -50,7 +50,7 @@ FATOR_PRAZO: dict[TipoProdutoEnum, int] = {
     TipoProdutoEnum.IMPRESSAO:          30,
 }
 
-# Perfis globais — não devem ser filtrados por orgao_vinculante nem regiao_militar.
+# Perfis globais - não devem ser filtrados por orgao_vinculante nem regiao_militar.
 _PERFIS_GLOBAIS: frozenset[PerfilEnum] = frozenset({PerfilEnum.GESTOR_CARTOGRAFICO})
 
 # CMilA → perfil de supervisor responsável
@@ -64,6 +64,11 @@ RM_TO_SUPERVISOR: dict[str, PerfilEnum] = {
     "CMNE":  PerfilEnum.SUPERVISOR_CMNE,
     "CMSE":  PerfilEnum.SUPERVISOR_CMSE,
 }
+
+# Inverso: perfil do supervisor → código da Região Militar (derivado de RM_TO_SUPERVISOR).
+# Usar este mapa em vez de user.regiao_militar para filtrar pedidos por supervisor,
+# pois o perfil é autoritativo (SUPERVISOR_CML → "CML") independente do campo no banco.
+SUPERVISOR_TO_RM: dict[PerfilEnum, str] = {v: k for k, v in RM_TO_SUPERVISOR.items()}
 
 # Órgão vinculante → perfil de consolidador responsável
 ORG_TO_CONSOLIDADOR: dict[str, PerfilEnum] = {
@@ -228,7 +233,7 @@ async def submit_pedido(db: AsyncSession, pedido: Pedido, current_user: Usuario)
     gestores = list(await db.scalars(gestor_query))
     if not gestores:
         logger.warning(
-            "submit_pedido: nenhum gestor encontrado — perfil=%s  pedido_id=%d",
+            "submit_pedido: nenhum gestor encontrado - perfil=%s  pedido_id=%d",
             notify_perfil.value, pedido.id,
         )
 
@@ -381,6 +386,18 @@ async def consolidate_pedidos(
         if not p or p.status != from_status:
             logger.debug("consolidate_pedidos: ignorando pedido_id=%d (status=%s)", pid, p.status.value if p else "N/A")
             continue
+
+        # Guarda: supervisor só pode consolidar pedidos da sua própria Região Militar
+        if gestor.perfil in SUPERVISOR_PROFILES:
+            supervisor_rm = SUPERVISOR_TO_RM.get(gestor.perfil) or gestor.regiao_militar
+            if supervisor_rm and p.regiao_militar != supervisor_rm:
+                logger.warning(
+                    "consolidate_pedidos: supervisor %s (RM=%s) tentou consolidar "
+                    "pedido_id=%d de RM=%s — ignorado",
+                    gestor.perfil.value, supervisor_rm, pid, p.regiao_militar,
+                )
+                continue
+
         p.status = to_status
         if to_status == StatusPedidoEnum.AGUARDANDO_CARTOGRAFICO:
             p.submetido_dsg_em = now
@@ -513,7 +530,7 @@ async def cgeo_review(
             # Notificação in-app ao solicitante
             await svc.notify_user(
                 usuario_id=usuario.id,
-                titulo=f"Pedido #{pedido.id} produzido — dados disponíveis no BDGEx!",
+                titulo=f"Pedido #{pedido.id} produzido - dados disponíveis no BDGEx!",
                 mensagem=(
                     f"Seus dados foram entregues pelo CGEO."
                     + (f" Acesse: {link_bdgex}" if link_bdgex else "")
@@ -534,7 +551,7 @@ async def cgeo_review(
     # Notifica Gestores Cartográficos sobre o desfecho
     await svc.notify_by_perfil(
         perfil=PerfilEnum.GESTOR_CARTOGRAFICO,
-        titulo=f"Pedido #{pedido.id} — CGEO: {acao}",
+        titulo=f"Pedido #{pedido.id} - CGEO: {acao}",
         mensagem=f"Status: {pedido.status.value}.",
         pedido_id=pedido.id,
     )
@@ -600,7 +617,7 @@ async def transferir_pedidos(
             de_usuario_id=source_user.id,
             para_usuario_id=novo_responsavel.id,
             executor_id=executor.id,
-            observacao=f"Herança de solicitações — {source_user.nome} → {novo_responsavel.nome}",
+            observacao=f"Herança de solicitações - {source_user.nome} → {novo_responsavel.nome}",
             transferido_em=now,
         ))
 

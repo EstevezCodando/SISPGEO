@@ -1,4 +1,4 @@
-# SisPGeo — Sistema de Pedidos de Geoinformação
+# SisPGeo - Sistema de Pedidos de Geoinformação
 # © 2026 2º Sgt Estevez Alvarez <alvarez.jean@eb.mil.br>  ·  Software Engineer
 # Regras de negócio e contratos: Cap Perrut <perrut.raphael@eb.mil.br>  ·  Cartographic Engineer
 # Revisão técnica do projeto: Cel Azeredo <azeredo.marcio@eb.mil.br>  ·  Cartographic Engineer
@@ -80,7 +80,7 @@ _PRODUCT_FILES: dict[tuple[str, str], str] = {
     ("IMPRESSAO",         "250k"): "SCN_Carta_Topografica_Matricial_250k.geojson",
 }
 
-# CDGV: [primário (Vetorial), secundário (EDGV 3.0)] — vence data mais recente
+# CDGV: [primário (Vetorial), secundário (EDGV 3.0)] - vence data mais recente
 _CDGV_MERGE_FILES: dict[str, list[str]] = {
     "25k":  ["SCN_Carta_Topografica_Vetorial_25k.geojson",
              "SCN_Carta_Topografica_Vetorial_EDGV_3_0_25k.geojson"],
@@ -194,7 +194,7 @@ def _load_sopegeo_ages() -> dict[str, dict[str, dict[str, date]]]:
                     produto = _SOPEGEO_TIPO_MAP.get(tipo_raw, "CARTA_TOPOGRAFICA")
                     bucket  = result.setdefault(produto, {})
 
-                    # registra pelo MI e pelo INOM — vence a data mais recente
+                    # registra pelo MI e pelo INOM - vence a data mais recente
                     for key in filter(None, (mi_raw or None, inom_raw or None)):
                         existing = bucket.get(key)
                         if existing is None or prod_date > existing:
@@ -403,9 +403,9 @@ async def preload_caches() -> None:
 
     Também popula _GEOM_CACHE por escala a partir das grades CARTA_TOPOGRAFICA,
     evitando que get_inom_geometries (usado em features-preview) tente ler os
-    GeoJSONs brutos — que não estão versionados no repositório.
+    GeoJSONs brutos - que não estão versionados no repositório.
 
-    Chamado via asyncio.create_task() no lifespan — não bloqueia o servidor.
+    Chamado via asyncio.create_task() no lifespan - não bloqueia o servidor.
     """
     os.makedirs(CACHE_DIR, exist_ok=True)
     total = len(_PRODUCT_FILES)
@@ -425,13 +425,13 @@ async def preload_caches() -> None:
                         suffix, len(_GEOM_CACHE[suffix]))
 
     logger.info(
-        "preload_caches concluído — %d combinações em memória, disco: %s",
+        "preload_caches concluído - %d combinações em memória, disco: %s",
         len(_GRID_CACHE), CACHE_DIR,
     )
 
 
 def _load_or_build(produto: str, suffix: str) -> tuple[bytes, str]:
-    """Síncrono — roda em thread separada via asyncio.to_thread."""
+    """Síncrono - roda em thread separada via asyncio.to_thread."""
     path = _cache_path(produto, suffix)
 
     # Cache em disco existe → lê direto (muito rápido)
@@ -472,14 +472,14 @@ def get_inom_geometries(scale: Optional[EscalaEnum] = None) -> dict[str, dict]:
     """Retorna {inom: geometry_dict} para a escala.  Padrão: 50k.
 
     Hierarquia de fontes (da mais rápida à mais lenta):
-      1. _GEOM_CACHE em memória  (populado por preload_caches — operação normal)
+      1. _GEOM_CACHE em memória  (populado por preload_caches - operação normal)
       2. _GRID_CACHE em memória  (CARTA_TOPOGRAFICA já aquecida → extrai geometrias)
-      3. Arquivo .gz no disco    (leitura síncrona — fallback se preload ainda não acabou)
-      4. GeoJSON bruto           (só disponível em dev com dados completos — nunca no clone)
+      3. Arquivo .gz no disco    (leitura síncrona - fallback se preload ainda não acabou)
+      4. GeoJSON bruto           (só disponível em dev com dados completos - nunca no clone)
     """
     suffix = _suffix(scale) if scale else "50k"
 
-    # 1. Cache em memória — caminho normal após preload
+    # 1. Cache em memória - caminho normal após preload
     if suffix in _GEOM_CACHE:
         return _GEOM_CACHE[suffix]
 
@@ -500,7 +500,7 @@ def get_inom_geometries(scale: Optional[EscalaEnum] = None) -> dict[str, dict]:
         logger.info("Geom cache [%s] via arquivo .gz: %d entradas", suffix, len(geoms))
         return geoms
 
-    # 4. GeoJSON bruto (dev com dados completos — ausente em clone fresco)
+    # 4. GeoJSON bruto (dev com dados completos - ausente em clone fresco)
     filename = _BASE_FILE.get(suffix, _BASE_FILE["50k"])
     feats    = _load_features(filename)
     geoms = {}
@@ -524,7 +524,7 @@ def get_grid_gz(tipo_produto: str, scale: EscalaEnum) -> tuple[bytes, str]:
         return result
 
     logger.warning(
-        "Grid cache miss [%s/%s] — preload ainda em andamento ou arquivo inexistente",
+        "Grid cache miss [%s/%s] - preload ainda em andamento ou arquivo inexistente",
         tipo_produto, suffix,
     )
     # Tenta construir sincronamente como fallback (bloqueia esta requisição apenas)

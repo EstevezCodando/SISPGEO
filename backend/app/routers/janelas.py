@@ -30,7 +30,7 @@ def _get_tipo_janela(perfil: PerfilEnum) -> TipoJanelaEnum | None:
         return TipoJanelaEnum.SUPERVISOR
     if perfil in CONSOLIDADOR_PROFILES:
         return TipoJanelaEnum.CONSOLIDADOR
-    return None  # GESTOR_CARTOGRAFICO, ANALISTA_CGEO — nunca bloqueados por janela
+    return None  # GESTOR_CARTOGRAFICO, ANALISTA_CGEO - nunca bloqueados por janela
 
 # Ordem cronológica para validação de datas entre etapas
 _ORDEM_JANELAS = [
@@ -238,7 +238,7 @@ async def solicitar_prorrogacao(
     if not superior_perfil:
         raise HTTPException(status_code=403, detail="Perfil não autorizado a solicitar prorrogação")
 
-    titulo = f"Solicitação de prorrogação de prazo — {current_user.nome} ({current_user.om})"
+    titulo = f"Solicitação de prorrogação de prazo - {current_user.nome} ({current_user.om})"
     mensagem = (
         f"O usuário {current_user.nome} ({current_user.om}) solicita prorrogação do prazo de submissão.\n\n"
         f"Justificativa: {body.justificativa}\n\n"

@@ -10,7 +10,7 @@ class BdgexCache(Base):
     """Rastreamento de disponibilidade de produto por INOM/escala no BDGEx.
 
     A geometria (geom) pode ser populada por jobs de sincronização futuros.
-    A pipeline de exibição da grade INOM usa cache em disco — não esta tabela.
+    A pipeline de exibição da grade INOM usa cache em disco - não esta tabela.
     """
     __tablename__ = "bdgex_cache"
     __table_args__ = (

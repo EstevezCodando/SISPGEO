@@ -1,4 +1,4 @@
-"""Abreviaturas de posto/graduação — espelha PostoGraduacaoEnum."""
+"""Abreviaturas de posto/graduação - espelha PostoGraduacaoEnum."""
 
 POSTO_ABREV: dict[str, str] = {
     "Civil":                  "Civ",

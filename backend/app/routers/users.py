@@ -86,7 +86,7 @@ async def get_unread_count(
     db: AsyncSession = Depends(get_db),
     current_user: Usuario = Depends(get_current_user),
 ):
-    """Retorna apenas o número de notificações não lidas — endpoint leve para polling."""
+    """Retorna apenas o número de notificações não lidas - endpoint leve para polling."""
     count = await db.scalar(
         select(func.count()).select_from(Notificacao)
         .where(Notificacao.usuario_id == current_user.id, Notificacao.lida == False)
@@ -130,7 +130,7 @@ async def list_mesma_om(
     """Retorna todos os usuários ativos da mesma OM do usuário logado (exceto ele mesmo).
 
     Usado na tela de herança de pedidos para listar candidatos a herdeiro.
-    Qualquer perfil autenticado pode acessar — filtragem por OM garante o escopo.
+    Qualquer perfil autenticado pode acessar - filtragem por OM garante o escopo.
     """
     result = await db.scalars(
         select(Usuario)
@@ -191,26 +191,26 @@ async def admin_update_dados_org(
     alteracoes: list[tuple[str, str, str]] = []
 
     if body.om and body.om.strip() != user.om:
-        alteracoes.append(("OM", user.om or "—", body.om.strip()))
+        alteracoes.append(("OM", user.om or "-", body.om.strip()))
         user.om = body.om.strip()
 
     regiao_nova = body.regiao_militar or None
     if regiao_nova != user.regiao_militar:
-        alteracoes.append(("Região Militar / C Mil A", user.regiao_militar or "—", regiao_nova or "—"))
+        alteracoes.append(("Região Militar / C Mil A", user.regiao_militar or "-", regiao_nova or "-"))
         user.regiao_militar = regiao_nova
 
     orgao_novo = body.orgao_vinculante or None
     if orgao_novo != user.orgao_vinculante:
-        alteracoes.append(("Órgão Vinculante", str(user.orgao_vinculante or "—"), str(orgao_novo or "—")))
+        alteracoes.append(("Órgão Vinculante", str(user.orgao_vinculante or "-"), str(orgao_novo or "-")))
         user.orgao_vinculante = orgao_novo
 
     if not alteracoes:
-        return user  # nada mudou — retorna sem commit
+        return user  # nada mudou - retorna sem commit
 
     await db.commit()
     await db.refresh(user)
 
-    # Notificação por e-mail (falha silenciosa — não reverte a atualização)
+    # Notificação por e-mail (falha silenciosa - não reverte a atualização)
     try:
         subject, html = tpl_dados_org(
             nome=user.nome,

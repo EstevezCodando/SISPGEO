@@ -87,7 +87,7 @@ def get_client_ip(request: Request) -> str:
     """Extrai o endereço IP real do cliente, respeitando o proxy reverso nginx.
 
     Usa ``X-Real-IP`` (definido pelo nginx com ``$remote_addr``) como fonte
-    primária — este header é definido pelo próprio nginx e não pode ser
+    primária - este header é definido pelo próprio nginx e não pode ser
     forjado pelo cliente externo.
 
     ``X-Forwarded-For`` não é usado diretamente pois pode ser injetado pelo
@@ -99,7 +99,7 @@ def get_client_ip(request: Request) -> str:
     Returns:
         Endereço IP como string (ex: ``"192.168.1.100"``).
     """
-    # X-Real-IP é definido pelo nginx como $remote_addr — confiável
+    # X-Real-IP é definido pelo nginx como $remote_addr - confiável
     real_ip = request.headers.get("X-Real-IP")
     if real_ip:
         return real_ip.strip()

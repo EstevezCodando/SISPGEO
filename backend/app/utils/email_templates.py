@@ -9,14 +9,14 @@ _CONFIRM_TOKEN_HOURS: int = 24  # EMAIL_CONFIRM_TOKEN_EXPIRY_HOURS
 
 # ── Paleta Militar Oliva ──────────────────────────────────────────────────────
 # Fundo geral:   #eae8de  (pergaminho/areia)
-# Cabeçalho:     #3a4c22  (verde oliva escuro — uniforme)
+# Cabeçalho:     #3a4c22  (verde oliva escuro - uniforme)
 # Destaque:      #5a7030  (oliva médio)
 # Botão CTA:     #4a6028  (oliva forte)
 # Rodapé:        #d6d2c4  (areia clara)
 # Borda tabela:  #b0aa90
 # ─────────────────────────────────────────────────────────────────────────────
 
-# Estilo padrão para parágrafos de corpo — alinhamento justificado
+# Estilo padrão para parágrafos de corpo - alinhamento justificado
 _P = "margin:0 0 16px 0;color:#5a5a48;font-size:13px;line-height:1.7;text-align:justify"
 _P_SMALL = "margin:0;color:#a0a090;font-size:11px;font-style:italic;text-align:justify"
 
@@ -79,7 +79,7 @@ def _base(title: str, body: str) -> str:
               Comunicação Automática de Sistema
             </p>
             <p style="margin:0;color:#8a8470;font-size:11px;line-height:1.7">
-              Não responda a este e-mail — mensagens não são monitoradas.<br>
+              Não responda a este e-mail - mensagens não são monitoradas.<br>
               Exército Brasileiro · Diretoria de Serviço Geográfico · Brasília/DF
             </p>
           </td>
@@ -127,11 +127,11 @@ def _divider() -> str:
 # ── Ativação de conta (e-mail de confirmação) ─────────────────────────────────
 
 def ativacao_conta(nome: str, token: str) -> tuple[str, str]:
-    """Enviado imediatamente após o cadastro — contém link de ativação único."""
+    """Enviado imediatamente após o cadastro - contém link de ativação único."""
     link = f"{settings.FRONTEND_URL}/ativar/{token}"
     link_ajuda = f"{settings.FRONTEND_URL}/ajuda"
     validade_h = _CONFIRM_TOKEN_HOURS
-    subject = "SisPGeo — Ative sua conta de acesso"
+    subject = "SisPGeo - Ative sua conta de acesso"
     body = f"""
 <h2 style="margin:0 0 4px 0;color:#3a4c22;font-size:18px;font-weight:700;
            letter-spacing:0.3px">Prezado(a) {nome},</h2>
@@ -218,11 +218,11 @@ def ativacao_conta(nome: str, token: str) -> tuple[str, str]:
     return subject, _base(subject, body)
 
 
-# ── Cadastro recebido (informativo — legado) ──────────────────────────────────
+# ── Cadastro recebido (informativo - legado) ──────────────────────────────────
 
 def cadastro_recebido(nome: str, email: str) -> tuple[str, str]:
-    """Legado — mantido para compatibilidade. Usar ativacao_conta() no novo fluxo."""
-    subject = "SisPGeo — Cadastro recebido"
+    """Legado - mantido para compatibilidade. Usar ativacao_conta() no novo fluxo."""
+    subject = "SisPGeo - Cadastro recebido"
     body = f"""
 <h2 style="margin:0 0 6px 0;color:#3a4c22;font-size:18px;font-weight:700">
   Cadastro recebido, {nome}.</h2>
@@ -250,7 +250,7 @@ def cadastro_recebido(nome: str, email: str) -> tuple[str, str]:
 # ── Conta ativada pelo administrador ─────────────────────────────────────────
 
 def conta_ativada(nome: str, email: str) -> tuple[str, str]:
-    subject = "SisPGeo — Acesso autorizado"
+    subject = "SisPGeo - Acesso autorizado"
     body = f"""
 <h2 style="margin:0 0 6px 0;color:#3a4c22;font-size:18px;font-weight:700">
   Acesso autorizado, {nome}.</h2>
@@ -291,10 +291,10 @@ def conta_ativada(nome: str, email: str) -> tuple[str, str]:
 def reset_senha(nome: str, token: str) -> tuple[str, str]:
     link = f"{settings.FRONTEND_URL}/redefinir-senha/{token}"
     validade_h = _RESET_TOKEN_HOURS
-    subject = "SisPGeo — Redefinição de senha solicitada"
+    subject = "SisPGeo - Redefinição de senha solicitada"
     body = f"""
 <h2 style="margin:0 0 6px 0;color:#3a4c22;font-size:18px;font-weight:700">
-  Redefinição de senha — {nome}.</h2>
+  Redefinição de senha - {nome}.</h2>
 <p style="{_P};border-bottom:1px solid #e0ddd0;padding-bottom:16px">
   Recebemos uma solicitação de <strong>redefinição de senha</strong> para esta conta no
   <strong>SisPGeo</strong>. Clique no botão abaixo para definir uma nova senha de acesso.
@@ -332,7 +332,7 @@ def reset_senha(nome: str, token: str) -> tuple[str, str]:
 # ── Confirmação de e-mail (alias legado) ─────────────────────────────────────
 
 def confirmacao_email(nome: str, token: str) -> tuple[str, str]:
-    """Alias legado — delega para ativacao_conta."""
+    """Alias legado - delega para ativacao_conta."""
     return ativacao_conta(nome, token)
 
 
@@ -366,7 +366,7 @@ def pedido_submetido(
     }
     if orgao_vinculante == "COTER" and regiao_militar:
         _cmila = _cmila_labels.get(regiao_militar, f"C Mil. A ({regiao_militar})")
-        proximo_escalao = f"Supervisor de Geoinformação — {_cmila}"
+        proximo_escalao = f"Supervisor de Geoinformação - {_cmila}"
     elif orgao_vinculante in _org_labels:
         proximo_escalao = _org_labels[orgao_vinculante]
     else:
@@ -383,7 +383,7 @@ def pedido_submetido(
     )
     _saudacao = f"{_abrev_posto(posto_graduacao)} {nome}".strip() if posto_graduacao else nome
 
-    subject = f"SisPGeo — Pedido #{pedido_id} submetido com sucesso"
+    subject = f"SisPGeo - Pedido #{pedido_id} submetido com sucesso"
     body = f"""
 <h2 style="margin:0 0 4px 0;color:#3a4c22;font-size:18px;font-weight:700">
   Pedido #{pedido_id} submetido.</h2>
@@ -421,7 +421,7 @@ def pedido_submetido(
 
 
 def pedido_aprovado(nome: str, pedido_id: int) -> tuple[str, str]:
-    subject = f"SisPGeo — Pedido #{pedido_id} aprovado"
+    subject = f"SisPGeo - Pedido #{pedido_id} aprovado"
     body = f"""
 <h2 style="margin:0 0 12px 0;color:#3a4c22;font-size:18px;font-weight:700">
   Pedido #{pedido_id} aprovado.</h2>
@@ -435,10 +435,10 @@ def pedido_aprovado(nome: str, pedido_id: int) -> tuple[str, str]:
 
 
 def pedido_reprovado(nome: str, pedido_id: int, motivo: str) -> tuple[str, str]:
-    subject = f"SisPGeo — Pedido #{pedido_id} não aprovado"
+    subject = f"SisPGeo - Pedido #{pedido_id} não aprovado"
     body = f"""
 <h2 style="margin:0 0 12px 0;color:#3a4c22;font-size:18px;font-weight:700">
-  Pedido #{pedido_id} — não aprovado.</h2>
+  Pedido #{pedido_id} - não aprovado.</h2>
 <p style="{_P}">
   {nome}, seu pedido <strong>#{pedido_id}</strong>
   <strong style="color:#8b2020">não foi aprovado</strong>.
@@ -458,7 +458,7 @@ def pedido_reprovado(nome: str, pedido_id: int, motivo: str) -> tuple[str, str]:
 
 
 def pedido_produzido(nome: str, pedido_id: int, link_bdgex: str | None) -> tuple[str, str]:
-    subject = f"SisPGeo — Pedido #{pedido_id} disponível no BDGEx"
+    subject = f"SisPGeo - Pedido #{pedido_id} disponível no BDGEx"
     link_html = (
         _btn(link_bdgex, "▶ Acessar Dados no BDGEx")
         if link_bdgex else
@@ -466,7 +466,7 @@ def pedido_produzido(nome: str, pedido_id: int, link_bdgex: str | None) -> tuple
     )
     body = f"""
 <h2 style="margin:0 0 12px 0;color:#3a4c22;font-size:18px;font-weight:700">
-  Pedido #{pedido_id} — produção concluída.</h2>
+  Pedido #{pedido_id} - produção concluída.</h2>
 <p style="{_P}">
   {nome}, seu pedido <strong>#{pedido_id}</strong> foi
   <strong style="color:#3a7030">concluído</strong> e os dados estão disponíveis no BDGEx.
@@ -478,7 +478,7 @@ def pedido_produzido(nome: str, pedido_id: int, link_bdgex: str | None) -> tuple
 
 
 def pedido_transferido(nome_novo: str, nome_anterior: str, count: int) -> tuple[str, str]:
-    subject = f"SisPGeo — {count} pedido(s) transferidos para você"
+    subject = f"SisPGeo - {count} pedido(s) transferidos para você"
     body = f"""
 <h2 style="margin:0 0 12px 0;color:#3a4c22;font-size:18px;font-weight:700">
   Transferência de pedidos.</h2>
@@ -507,7 +507,7 @@ def dados_organizacionais_atualizados(
         for campo, antes, depois in alteracoes
     )
 
-    subject = "SisPGeo — Seus dados organizacionais foram atualizados"
+    subject = "SisPGeo - Seus dados organizacionais foram atualizados"
     body = f"""
 <h2 style="margin:0 0 4px 0;color:#3a4c22;font-size:18px;font-weight:700">
   Dados organizacionais atualizados.</h2>
@@ -575,7 +575,7 @@ def notificar_gestor(
     elif orgao_vinculante:
         origem_cadeia = f"Solicitante via {orgao_vinculante}"
     else:
-        origem_cadeia = f"Solicitante — {om}"
+        origem_cadeia = f"Solicitante - {om}"
 
     _solicitante_display = f"{_abrev_posto(posto_graduacao)} {nome_usuario}".strip() if posto_graduacao else nome_usuario
     _finalidade_html = (
@@ -588,7 +588,7 @@ def notificar_gestor(
         if finalidade else ""
     )
 
-    subject = f"SisPGeo — Pedido #{pedido_id} aguardando sua revisão"
+    subject = f"SisPGeo - Pedido #{pedido_id} aguardando sua revisão"
     body = f"""
 <h2 style="margin:0 0 4px 0;color:#3a4c22;font-size:18px;font-weight:700">
   Novo pedido para análise.</h2>

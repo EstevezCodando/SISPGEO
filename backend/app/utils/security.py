@@ -26,7 +26,7 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
 
 def decode_access_token(token: str) -> dict | None:
     try:
-        # algorithms=[...] obrigatório — rejeita alg=none e qualquer outro não listado
+        # algorithms=[...] obrigatório - rejeita alg=none e qualquer outro não listado
         return jwt.decode(
             token,
             settings.SECRET_KEY,

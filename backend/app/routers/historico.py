@@ -1,12 +1,12 @@
 """
 Router de histórico de pedidos do SISGEO.
 
-Expõe o audit trail completo de cada pedido — cada transição de status,
+Expõe o audit trail completo de cada pedido - cada transição de status,
 quem a executou e quando.
 
 Endpoints:
-- ``GET /pedidos/{id}/historico`` — histórico de um pedido específico.
-- ``GET /historico``             — histórico global, apenas para Gestor DSG.
+- ``GET /pedidos/{id}/historico`` - histórico de um pedido específico.
+- ``GET /historico``             - histórico global, apenas para Gestor DSG.
 """
 
 import logging

@@ -6,7 +6,7 @@ Roteamento (em ordem de prioridade):
   2. SMTP_USER + SMTP_PASSWORD configurados → usa Zimbra via SMTP (STARTTLS 587).
   3. Sem credenciais (dev sem SMTP) → Mailpit (captura local em http://localhost:8025).
 
-O valor de ENV não interfere mais no roteamento — as credenciais é que definem
+O valor de ENV não interfere mais no roteamento - as credenciais é que definem
 o canal. Isso permite usar o Zimbra real mesmo em ambiente de desenvolvimento,
 bastando preencher SMTP_USER e SMTP_PASSWORD no .env.
 

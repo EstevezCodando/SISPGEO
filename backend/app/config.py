@@ -3,12 +3,12 @@ from pydantic_settings import BaseSettings
 from pydantic import model_validator
 from typing import Literal
 
-# Valor sentinela — nunca deve chegar a produção
+# Valor sentinela - nunca deve chegar a produção
 _INSECURE_KEY = "changeme_super_secret_key_minimum_32_chars"
 
 
 class Settings(BaseSettings):
-    # Componentes individuais do banco — usados para construir DATABASE_URL com
+    # Componentes individuais do banco - usados para construir DATABASE_URL com
     # encoding correto de caracteres especiais na senha (ex.: @, #, %).
     DB_HOST: str = "db"
     DB_PORT: int = 5432
@@ -21,15 +21,15 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 480
 
-    # Senha do usuário admin inicial — DEVE ser sobrescrita via .env em produção
+    # Senha do usuário admin inicial - DEVE ser sobrescrita via .env em produção
     ADMIN_PASSWORD: str = "Admin@1234"
 
-    # Resend — deixe vazio para usar SMTP
+    # Resend - deixe vazio para usar SMTP
     # NUNCA coloque o valor real aqui; use variável de ambiente RESEND_API_KEY
     RESEND_API_KEY: str = ""
     RESEND_FROM: str = "noreply@sispgeo.br"
 
-    # SMTP — Zimbra em produção (ignorado quando RESEND_API_KEY estiver definido)
+    # SMTP - Zimbra em produção (ignorado quando RESEND_API_KEY estiver definido)
     SMTP_HOST: str = "smtp.webmail.eb.mil.br"
     SMTP_PORT: int = 587
     SMTP_FROM: str = "sispgeo@sispgeo.br"
@@ -37,12 +37,12 @@ class Settings(BaseSettings):
     SMTP_USER: str = ""
     SMTP_PASSWORD: str = ""
 
-    # Mailpit — captura de e-mails em development
+    # Mailpit - captura de e-mails em development
     MAILPIT_HOST: str = "mailpit"
     MAILPIT_PORT: int = 1025
 
     BDGEX_API_URL: str = "http://bdgex.eb.mil.br/api"
-    # CRÍTICO: manter False em produção — True cria usuários de teste com senhas conhecidas
+    # CRÍTICO: manter False em produção - True cria usuários de teste com senhas conhecidas
     BDGEX_MOCK: bool = False
 
     FRONTEND_URL: str = "http://localhost"

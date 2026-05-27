@@ -5,9 +5,9 @@ Disponibiliza dados agregados sobre o uso da API e sobre os pedidos,
 exclusivamente para o Gestor Cartográfico (DSG).
 
 Endpoints:
-- ``GET /metricas/resumo``  — dashboard unificado (cards + série temporal).
-- ``GET /metricas/api``     — breakdown por endpoint com latência e erros.
-- ``GET /metricas/pedidos`` — distribuição e evolução dos pedidos.
+- ``GET /metricas/resumo``  - dashboard unificado (cards + série temporal).
+- ``GET /metricas/api``     - breakdown por endpoint com latência e erros.
+- ``GET /metricas/pedidos`` - distribuição e evolução dos pedidos.
 """
 
 import logging
@@ -111,7 +111,7 @@ async def resumo_metricas(
         .order_by(desc("cnt"))
     )
     pedidos_por_orgao_vinculante = [
-        OrgaoVinculanteCountOut(orgao_vinculante=r.orgao_vinculante.value if r.orgao_vinculante else "—", count=r.cnt)
+        OrgaoVinculanteCountOut(orgao_vinculante=r.orgao_vinculante.value if r.orgao_vinculante else "-", count=r.cnt)
         for r in ov_rows
     ]
 
@@ -209,7 +209,7 @@ async def metricas_pedidos(
     )
     pedidos_por_orgao_vinculante = [
         OrgaoVinculanteCountOut(
-            orgao_vinculante=r.orgao_vinculante.value if r.orgao_vinculante else "—",
+            orgao_vinculante=r.orgao_vinculante.value if r.orgao_vinculante else "-",
             count=r.cnt
         )
         for r in ov_rows

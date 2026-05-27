@@ -29,6 +29,7 @@ from app.schemas.pedido import (
 )
 from app.services import pedido_service
 from app.utils.postos import abrev_posto as _abrev_posto
+from app.services.pedido_service import SUPERVISOR_TO_RM as _SUPERVISOR_TO_RM, RM_TO_SUPERVISOR as _RM_TO_SUPERVISOR
 
 
 class ExportRequest(BaseModel):
@@ -151,6 +152,17 @@ GESTOR_PROFILES = tuple(SUPERVISOR_PROFILES | CONSOLIDADOR_PROFILES)
 _GESTORES_POR_RM = SUPERVISOR_PROFILES
 
 
+def _rm_do_supervisor(user: Usuario) -> str | None:
+    """Retorna o código da Região Militar de um supervisor derivado do seu **perfil**.
+
+    Usar o perfil (e.g. SUPERVISOR_CML → "CML") é mais robusto do que usar
+    ``user.regiao_militar``, que pode estar NULL ou incorretamente configurado no banco.
+    Para o perfil SUPERVISOR legado (sem RM codificada), cai para ``user.regiao_militar``.
+    """
+    rm = _SUPERVISOR_TO_RM.get(user.perfil)
+    return rm if rm is not None else user.regiao_militar
+
+
 
 @router.post("/", response_model=PedidoOut, status_code=201)
 async def create_pedido(
@@ -233,10 +245,10 @@ async def list_pedidos(
             .order_by(Pedido.criado_em.desc())
         )
     elif current_user.perfil in _GESTORES_POR_RM:
-        # Supervisor (C. Mil. A) — roteado por Região Militar
+        # Supervisor (C. Mil. A) — roteado pela RM derivada do perfil
         result = await db.scalars(
             select(Pedido)
-            .where(Pedido.regiao_militar == current_user.regiao_militar)
+            .where(Pedido.regiao_militar == _rm_do_supervisor(current_user))
             .order_by(Pedido.criado_em.desc())
         )
     elif current_user.perfil in CONSOLIDADOR_PROFILES:
@@ -272,7 +284,7 @@ async def list_pending(
             select(Pedido)
             .where(
                 Pedido.status == StatusPedidoEnum.AGUARDANDO_SUPERVISOR,
-                Pedido.regiao_militar == current_user.regiao_militar,
+                Pedido.regiao_militar == _rm_do_supervisor(current_user),
             )
             .order_by(Pedido.submetido_gestor_em.asc())
         )
@@ -318,7 +330,7 @@ async def get_map_features(
     elif current_user.perfil == PerfilEnum.ANALISTA_CGEO:
         q = select(Pedido).where(Pedido.cgeo_id == current_user.cgeo_id)
     elif current_user.perfil in _GESTORES_POR_RM:
-        q = select(Pedido).where(Pedido.regiao_militar == current_user.regiao_militar)
+        q = select(Pedido).where(Pedido.regiao_militar == _rm_do_supervisor(current_user))
     elif current_user.perfil in CONSOLIDADOR_PROFILES:
         q = select(Pedido).where(Pedido.orgao_vinculante == current_user.orgao_vinculante)
     else:
@@ -356,6 +368,10 @@ async def get_map_features(
                     "operacao_nome": p.operacao_nome,
                     "status": p.status.value,
                     "finalidade": p.finalidade,
+                    # BDGEx availability
+                    "disponivel_bdgex": item.disponivel_bdgex,
+                    "data_producao_bdgex": item.data_producao_bdgex.isoformat() if item.data_producao_bdgex else None,
+                    "idade_anos": (date.today() - item.data_producao_bdgex).days // 365 if item.data_producao_bdgex else None,
                 },
             })
     return {"type": "FeatureCollection", "features": features}
@@ -374,7 +390,7 @@ async def listar_duplicatas(
     if current_user.perfil in SUPERVISOR_PROFILES:
         q = select(Pedido).where(
             Pedido.status == StatusPedidoEnum.AGUARDANDO_SUPERVISOR,
-            Pedido.regiao_militar == current_user.regiao_militar,
+            Pedido.regiao_militar == _rm_do_supervisor(current_user),
         )
     elif current_user.perfil in CONSOLIDADOR_PROFILES:
         q = select(Pedido).where(
@@ -458,7 +474,7 @@ async def exportar_relatorio(
 
     elif current_user.perfil in SUPERVISOR_PROFILES:
         q = select(Pedido).where(
-            Pedido.regiao_militar == current_user.regiao_militar,
+            Pedido.regiao_militar == _rm_do_supervisor(current_user),
             Pedido.status.notin_([StatusPedidoEnum.RASCUNHO, StatusPedidoEnum.CANCELADO]),
         ).order_by(Pedido.prioridade.asc(), Pedido.criado_em.asc())
 
@@ -1246,7 +1262,7 @@ async def delete_item(
     is_supervisor = (
         current_user.perfil in SUPERVISOR_PROFILES
         and pedido.status == StatusPedidoEnum.AGUARDANDO_SUPERVISOR
-        and pedido.regiao_militar == current_user.regiao_militar
+        and pedido.regiao_militar == _rm_do_supervisor(current_user)
     )
     is_consolidador = (
         current_user.perfil in CONSOLIDADOR_PROFILES
@@ -1300,7 +1316,7 @@ async def list_homologados(
             select(Pedido)
             .where(
                 Pedido.status.in_(forwarded),
-                Pedido.regiao_militar == current_user.regiao_militar,
+                Pedido.regiao_militar == _rm_do_supervisor(current_user),
             )
             .order_by(Pedido.atualizado_em.desc())
         )
@@ -1340,6 +1356,7 @@ async def get_pedido(
 
 class EnviarLoteRequest(BaseModel):
     auto_submitted: bool = False
+    pedido_ids: list[int] | None = None  # None = todos os rascunhos do usuário
 
 
 @router.post("/enviar-lote", response_model=list[PedidoOut])
@@ -1358,12 +1375,16 @@ async def enviar_lote(
       - orgao_vinculante == COTER  → AGUARDANDO_SUPERVISOR (pelo C Mil A do usuário)
       - orgao_vinculante == DEC/COLOG/DECEx/DSG → AGUARDANDO_CONSOLIDADOR
     """
-    result = await db.execute(
+    stmt = (
         select(Pedido)
         .where(Pedido.usuario_id == current_user.id)
         .where(Pedido.status == StatusPedidoEnum.RASCUNHO)
         .order_by(Pedido.prioridade)
     )
+    if body.pedido_ids:
+        stmt = stmt.where(Pedido.id.in_(body.pedido_ids))
+
+    result = await db.execute(stmt)
     pedidos = list(result.scalars().all())
 
     if not pedidos:
@@ -1467,6 +1488,72 @@ async def cgeo_list_atendimento(
         .order_by(Pedido.aprovado_em.asc())
     )
     return await _enrich(db, list(result))
+
+
+@router.get("/admin/produtos-recentes")
+async def admin_produtos_recentes_bdgex(
+    anos: int = Query(default=5, ge=1, le=50),
+    db: AsyncSession = Depends(get_db),
+    _: Usuario = Depends(require_profiles(PerfilEnum.GESTOR_CARTOGRAFICO)),
+):
+    """Retorna itens de pedidos ativos com produto BDGEx mais novo que N anos.
+    Itens sem data_producao_bdgex são ignorados.
+    Agrupados por (inom, tipo_produto, escala), ordenados do mais recente ao mais antigo.
+    """
+    from collections import defaultdict
+
+    q = select(Pedido).where(
+        Pedido.status.in_([
+            StatusPedidoEnum.AGUARDANDO_CARTOGRAFICO,
+            StatusPedidoEnum.ATRIBUIDO_CGEO,
+            StatusPedidoEnum.APROVADO,
+        ])
+    )
+    pedidos = list(await db.scalars(q))
+    if not pedidos:
+        return []
+
+    enriched = await _enrich(db, pedidos)
+    hoje = date.today()
+
+    grupos: dict[tuple, dict] = {}
+    pedidos_por_grupo: dict[tuple, list] = defaultdict(list)
+
+    for p in enriched:
+        for item in p.itens:
+            if item.data_producao_bdgex is None:
+                continue
+            idade_dias = (hoje - item.data_producao_bdgex).days
+            idade_anos = idade_dias / 365.25
+            if idade_anos >= anos:
+                continue
+            key = (item.inom, item.tipo_produto.value, item.escala.value)
+            if key not in grupos:
+                grupos[key] = {
+                    "inom":                item.inom,
+                    "mi":                  item.mi,
+                    "tipo_produto":        item.tipo_produto.value,
+                    "escala":              item.escala.value,
+                    "data_producao_bdgex": item.data_producao_bdgex.isoformat(),
+                    "idade_anos":          round(idade_anos, 1),
+                }
+            _display_nome = p.usuario_nome_de_guerra or p.usuario_nome or "—"
+            _display_full = (
+                f"{_abrev_posto(p.usuario_posto_graduacao)} {_display_nome}".strip()
+                if p.usuario_posto_graduacao else _display_nome
+            )
+            pedidos_por_grupo[key].append({
+                "pedido_id":   p.id,
+                "usuario_nome": _display_full,
+                "status":      p.status.value,
+                "om":          p.usuario_om,
+            })
+
+    result = [
+        {**grupo, "pedidos": pedidos_por_grupo[key]}
+        for key, grupo in grupos.items()
+    ]
+    return sorted(result, key=lambda x: x["idade_anos"])
 
 
 @router.get("/admin/all", response_model=list[PedidoOut])
@@ -1704,14 +1791,22 @@ async def solicitar_remocao(
             detail="Remoção só pode ser solicitada enquanto o pedido aguarda revisão do Supervisor (C. Mil. A)",
         )
 
-    # Busca supervisores pela Região Militar do pedido (todos os perfis de supervisor)
-    gestores = await db.scalars(
-        select(Usuario).where(
+    # Busca o supervisor pela Região Militar do pedido usando o perfil específico
+    # (mais robusto do que filtrar por user.regiao_militar, que pode estar NULL no banco)
+    supervisor_perfil = _RM_TO_SUPERVISOR.get(pedido.regiao_militar or "")
+    if supervisor_perfil:
+        _gestores_q = select(Usuario).where(
+            Usuario.perfil == supervisor_perfil,
+            Usuario.ativo == True,
+        )
+    else:
+        # Fallback para perfil SUPERVISOR legado ou RM não mapeada
+        _gestores_q = select(Usuario).where(
             Usuario.perfil.in_(SUPERVISOR_PROFILES),
             Usuario.regiao_militar == pedido.regiao_militar,
             Usuario.ativo == True,
         )
-    )
+    gestores = await db.scalars(_gestores_q)
     for g in list(gestores):
         db.add(Notificacao(
             usuario_id=g.id,
@@ -1764,6 +1859,10 @@ async def get_pedido_features(
                     "mi": item.mi,
                     "tipo_produto": item.tipo_produto.value,
                     "escala": item.escala.value,
+                    # BDGEx availability
+                    "disponivel_bdgex": item.disponivel_bdgex,
+                    "data_producao_bdgex": item.data_producao_bdgex.isoformat() if item.data_producao_bdgex else None,
+                    "idade_anos": (date.today() - item.data_producao_bdgex).days // 365 if item.data_producao_bdgex else None,
                 },
             })
     return {"type": "FeatureCollection", "features": features}
