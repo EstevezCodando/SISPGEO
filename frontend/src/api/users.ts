@@ -40,6 +40,8 @@ export const usersApi = {
       `/users/${userId}/transferir-pedidos`,
       { novo_responsavel_id },
     ),
+  updateDadosOrg: (userId: number, data: { om: string; regiao_militar: string | null; orgao_vinculante: string | null }) =>
+    api.put<Usuario>(`/users/${userId}/dados-organizacionais`, data),
   getMinhasTransferencias: () => api.get<Transferencia[]>('/transferencias/minhas'),
   getUsuarioTransferencias: (userId: number) =>
     api.get<Transferencia[]>(`/transferencias/usuario/${userId}`),

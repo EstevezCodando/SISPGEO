@@ -53,6 +53,13 @@ class UpdateProfileRequest(BaseModel):
     regiao_militar: str | None = None
 
 
+class AdminDadosOrgRequest(BaseModel):
+    """Campos organizacionais que o administrador pode alterar em qualquer usuário."""
+    om: str
+    regiao_militar: str | None = None
+    orgao_vinculante: OrgaoVinculanteEnum | None = None
+
+
 class NotificacaoOut(BaseModel):
     id: int
     titulo: str

@@ -6,6 +6,7 @@ import {
   ArrowRightLeft, X, History, ChevronDown, ChevronUp,
   Mail, Phone, Building2, MapPin, ShieldCheck, ShieldOff,
   AlertTriangle, Clock, CheckCircle2, XCircle, Users, Search,
+  Pencil,
 } from 'lucide-react'
 import { usersApi } from '../../api/users'
 import type { Transferencia } from '../../api/users'
@@ -15,6 +16,43 @@ import { PERFIL_LABELS } from '../../types/user'
 import { formatNomeComPosto } from '../../data/postos'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const CMILA_LABELS: Record<string, string> = {
+  CMP:  'C Mil Planalto (Brasília)',
+  CML:  'C Mil Leste (Rio de Janeiro)',
+  CMS:  'C Mil Sul (Porto Alegre)',
+  CMO:  'C Mil Oeste (Campo Grande)',
+  CMAO: 'C Mil Amazônia Ocidental (Boa Vista)',
+  CMA:  'C Mil Amazônia (Manaus)',
+  CMNE: 'C Mil Nordeste (Recife)',
+  CMSE: 'C Mil Sudeste (São Paulo)',
+}
+
+const ORGAO_LABELS: Record<string, string> = {
+  COTER: 'COTER — Comando de Operações Terrestres',
+  DEC:   'DEC — Departamento de Educação e Cultura',
+  COLOG: 'COLOG — Comando Logístico',
+  DECEx: 'DECEx — Dep. de Educação e Cultura do Exército',
+  DSG:   'DSG — Diretoria do Serviço Geográfico',
+}
+
+/** Retorna label e fluxo de subordinação idênticos ao exibido em Meus Dados. */
+function getSubordinacao(orgao: string | null, regiao: string | null): { label: string; fluxo: string } {
+  if (!orgao) return { label: '—', fluxo: '' }
+
+  if (orgao === 'COTER' && regiao) {
+    const cmila = CMILA_LABELS[regiao] ?? regiao
+    return {
+      label: cmila,
+      fluxo: 'Fluxo dos Pedidos: OM → Supervisor C Mil A → Consolidador COTER → DSG',
+    }
+  }
+
+  return {
+    label: ORGAO_LABELS[orgao] ?? orgao,
+    fluxo: `Fluxo dos Pedidos: OM → Consolidador ${orgao} → DSG`,
+  }
+}
 
 const PERFIL_GROUPS: { label: string; perfis: Perfil[] }[] = [
   { label: 'Solicitante', perfis: ['SOLICITANTE'] },
@@ -208,6 +246,152 @@ function TransferModal({ source, allUsers, onClose }: TransferModalProps) {
   )
 }
 
+// ─── Constantes de regiões e órgãos ──────────────────────────────────────────
+const REGIOES_MILITARES = [
+  { value: 'CMP',  label: 'CMP — C Mil Planalto (Brasília)' },
+  { value: 'CML',  label: 'CML — C Mil Leste (Rio de Janeiro)' },
+  { value: 'CMS',  label: 'CMS — C Mil Sul (Porto Alegre)' },
+  { value: 'CMO',  label: 'CMO — C Mil Oeste (Campo Grande)' },
+  { value: 'CMAO', label: 'CMAO — C Mil Amazônia Ocidental (Boa Vista)' },
+  { value: 'CMA',  label: 'CMA — C Mil Amazônia (Manaus)' },
+  { value: 'CMNE', label: 'CMNE — C Mil Nordeste (Recife)' },
+  { value: 'CMSE', label: 'CMSE — C Mil Sudeste (São Paulo)' },
+] as const
+
+const ORGAOS_VINCULANTES = [
+  { value: 'COTER', label: 'COTER — Comando de Operações Terrestres' },
+  { value: 'DEC',   label: 'DEC — Departamento de Educação e Cultura' },
+  { value: 'COLOG', label: 'COLOG — Comando Logístico' },
+  { value: 'DECEx', label: 'DECEx — Dep. de Educação e Cultura do Exército' },
+  { value: 'DSG',   label: 'DSG — Diretoria do Serviço Geográfico' },
+] as const
+
+// ─── Modal de edição de dados organizacionais ─────────────────────────────────
+interface EditOrgModalProps {
+  user: Usuario
+  onClose: () => void
+  onSaved: (updated: Usuario) => void
+}
+function EditOrgModal({ user, onClose, onSaved }: EditOrgModalProps) {
+  const [om, setOm] = useState(user.om ?? '')
+  const [regiao, setRegiao] = useState(user.regiao_militar ?? '')
+  const [orgao, setOrgao] = useState(user.orgao_vinculante ?? '')
+  const [saving, setSaving] = useState(false)
+
+  const handleSave = async () => {
+    if (!om.trim()) { toast.error('OM não pode ser vazia'); return }
+    setSaving(true)
+    try {
+      const res = await usersApi.updateDadosOrg(user.id, {
+        om: om.trim(),
+        regiao_militar: regiao || null,
+        orgao_vinculante: orgao || null,
+      })
+      toast.success('Dados organizacionais atualizados · e-mail enviado ao usuário')
+      onSaved(res.data)
+      onClose()
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { detail?: string } } }
+      toast.error(e.response?.data?.detail ?? 'Erro ao salvar')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const sub = getSubordinacao(orgao || null, regiao || null)
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+      <div className="bg-zinc-900 border border-white/10 rounded-2xl shadow-2xl w-full max-w-md">
+        <div className="flex items-center justify-between p-6 border-b border-white/10">
+          <div>
+            <h2 className="text-base font-semibold text-zinc-100">Editar Dados Organizacionais</h2>
+            <p className="text-xs text-zinc-500 mt-0.5">{user.nome}</p>
+          </div>
+          <button onClick={onClose} className="text-zinc-500 hover:text-zinc-300 transition-colors">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-4">
+          {/* Preview de subordinação em tempo real */}
+          {sub.label !== '—' && (
+            <div className="px-3 py-2 rounded-lg bg-blue-500/5 border border-blue-500/15">
+              <p className="text-[10px] uppercase tracking-wide text-blue-400/60 font-medium mb-0.5">Subordinação resultante</p>
+              <p className="text-xs text-blue-200/90 font-medium">{sub.label}</p>
+              {sub.fluxo && <p className="text-[10px] text-zinc-500 mt-0.5">{sub.fluxo}</p>}
+            </div>
+          )}
+
+          {/* OM */}
+          <div>
+            <label className="block text-xs font-medium text-zinc-400 mb-1.5">
+              OM <span className="text-red-400">*</span>
+            </label>
+            <input
+              type="text"
+              value={om}
+              onChange={(e) => setOm(e.target.value)}
+              placeholder="Ex.: 5º BEC, 2ª Cia E…"
+              className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+            />
+          </div>
+
+          {/* Região Militar */}
+          <div>
+            <label className="block text-xs font-medium text-zinc-400 mb-1.5">Região Militar / C Mil A</label>
+            <select
+              value={regiao}
+              onChange={(e) => setRegiao(e.target.value)}
+              className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+            >
+              <option value="">— Não informado —</option>
+              {REGIOES_MILITARES.map((r) => (
+                <option key={r.value} value={r.value}>{r.label}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Órgão Vinculante */}
+          <div>
+            <label className="block text-xs font-medium text-zinc-400 mb-1.5">Órgão Vinculante</label>
+            <select
+              value={orgao}
+              onChange={(e) => setOrgao(e.target.value)}
+              className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+            >
+              <option value="">— Não informado —</option>
+              {ORGAOS_VINCULANTES.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </div>
+
+          <p className="text-[11px] text-zinc-600">
+            Um e-mail será enviado ao usuário com as alterações realizadas.
+          </p>
+        </div>
+
+        <div className="flex gap-2 p-6 pt-0">
+          <button onClick={onClose} className="flex-1 px-4 py-2 rounded-lg border border-white/10 text-zinc-400 text-sm hover:bg-white/5 transition-colors">
+            Cancelar
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving || !om.trim()}
+            className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-500 text-white text-sm font-medium hover:bg-emerald-400 disabled:opacity-50 transition-colors"
+          >
+            {saving
+              ? <><span className="animate-spin h-4 w-4 border-2 border-white/30 border-t-white rounded-full inline-block" /> Salvando…</>
+              : <><CheckCircle2 className="h-4 w-4" /> Salvar</>
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── Painel de detalhes (linha expansível) ────────────────────────────────────
 function DetailPanel({ u }: { u: Usuario }) {
   const field = (label: string, value: React.ReactNode, icon?: React.ReactNode) => (
@@ -219,12 +403,23 @@ function DetailPanel({ u }: { u: Usuario }) {
     </div>
   )
 
+  const sub = getSubordinacao(u.orgao_vinculante, u.regiao_militar)
+
   return (
     <div className="px-4 pb-4 bg-zinc-950/60 border-t border-white/5">
-      {/* Fluxo de aprovação */}
-      <div className="mt-3 mb-3 px-3 py-2 rounded-lg bg-emerald-500/5 border border-emerald-500/15">
-        <p className="text-[10px] uppercase tracking-wide text-emerald-500/70 font-medium mb-0.5">Fluxo de aprovação</p>
-        <p className="text-xs text-emerald-300/90">{fluxoLabel(u)}</p>
+      {/* Subordinação + Fluxo */}
+      <div className="mt-3 mb-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <div className="px-3 py-2 rounded-lg bg-blue-500/5 border border-blue-500/15">
+          <p className="text-[10px] uppercase tracking-wide text-blue-400/70 font-medium mb-0.5">Subordinação</p>
+          <p className="text-xs text-blue-200/90 font-medium">{sub.label}</p>
+          {sub.fluxo && (
+            <p className="text-[10px] text-zinc-500 mt-0.5">{sub.fluxo}</p>
+          )}
+        </div>
+        <div className="px-3 py-2 rounded-lg bg-emerald-500/5 border border-emerald-500/15">
+          <p className="text-[10px] uppercase tracking-wide text-emerald-500/70 font-medium mb-0.5">Posição no fluxo</p>
+          <p className="text-xs text-emerald-300/90">{fluxoLabel(u)}</p>
+        </div>
       </div>
 
       {/* Grid de dados */}
@@ -279,10 +474,11 @@ interface UserRowProps {
   onToggleActive: () => void
   onTransfer: () => void
   onHistorico: () => void
+  onEditOrg: () => void
 }
 function UserRow({
   u, allUsers, expanded,
-  onToggleExpand, onProfileChange, onToggleActive, onTransfer, onHistorico,
+  onToggleExpand, onProfileChange, onToggleActive, onTransfer, onHistorico, onEditOrg,
 }: UserRowProps) {
   return (
     <>
@@ -308,14 +504,20 @@ function UserRow({
           </div>
         </td>
 
-        {/* OM */}
+        {/* OM / Subordinação */}
         <td className="px-3 py-3 text-xs text-zinc-400 hidden md:table-cell">
           <div>
-            <span>{u.om}</span>
+            <span className="text-zinc-300 font-medium">{u.om}</span>
             {u.regiao_militar && (
-              <span className="ml-1.5 text-zinc-600">· {u.regiao_militar}</span>
+              <span className="ml-1.5 text-zinc-500">· {u.regiao_militar}</span>
             )}
           </div>
+          {(() => {
+            const sub = getSubordinacao(u.orgao_vinculante, u.regiao_militar)
+            return sub.label !== '—' ? (
+              <p className="text-[10px] text-zinc-500 mt-0.5 leading-snug">{sub.label}</p>
+            ) : null
+          })()}
         </td>
 
         {/* Órgão — sempre visível, colorido por tipo */}
@@ -371,6 +573,11 @@ function UserRow({
               }`}>
               {u.ativo ? 'Desativar' : 'Ativar'}
             </button>
+            <button onClick={onEditOrg}
+              className="text-xs px-2 py-1 rounded-md font-medium bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 border border-blue-500/20 transition-colors flex items-center gap-1">
+              <Pencil className="h-3 w-3" />
+              <span className="hidden sm:inline">Org.</span>
+            </button>
             <button onClick={onTransfer}
               className="text-xs px-2 py-1 rounded-md font-medium bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 border border-amber-500/20 transition-colors flex items-center gap-1">
               <ArrowRightLeft className="h-3 w-3" />
@@ -404,6 +611,7 @@ export function GerenciarUsuarios() {
   const [expandedId, setExpandedId] = useState<number | null>(null)
   const [transferSource, setTransferSource] = useState<Usuario | null>(null)
   const [historicoSource, setHistoricoSource] = useState<Usuario | null>(null)
+  const [editOrgSource, setEditOrgSource] = useState<Usuario | null>(null)
   const [search, setSearch] = useState('')
 
   const load = () => {
@@ -466,7 +674,7 @@ export function GerenciarUsuarios() {
             <tr>
               <th className="px-3 py-3 w-8" />
               <th className="px-3 py-3 text-left font-medium text-zinc-400 text-xs uppercase tracking-wide">Usuário</th>
-              <th className="px-3 py-3 text-left font-medium text-zinc-400 text-xs uppercase tracking-wide hidden md:table-cell">OM / Região</th>
+              <th className="px-3 py-3 text-left font-medium text-zinc-400 text-xs uppercase tracking-wide hidden md:table-cell">OM / Subordinação</th>
               <th className="px-3 py-3 text-left font-medium text-zinc-400 text-xs uppercase tracking-wide">Órgão Vinculante</th>
               <th className="px-3 py-3 text-left font-medium text-zinc-400 text-xs uppercase tracking-wide">Perfil</th>
               <th className="px-3 py-3 text-left font-medium text-zinc-400 text-xs uppercase tracking-wide">Status</th>
@@ -489,6 +697,7 @@ export function GerenciarUsuarios() {
                 onToggleExpand={() => setExpandedId(expandedId === u.id ? null : u.id)}
                 onProfileChange={(p) => handleProfileChange(u, p)}
                 onToggleActive={() => handleToggle(u)}
+                onEditOrg={() => setEditOrgSource(u)}
                 onTransfer={() => setTransferSource(u)}
                 onHistorico={() => setHistoricoSource(u)}
               />
@@ -497,6 +706,16 @@ export function GerenciarUsuarios() {
         </table>
       </div>
 
+      {editOrgSource && (
+        <EditOrgModal
+          user={editOrgSource}
+          onClose={() => setEditOrgSource(null)}
+          onSaved={(updated) => {
+            setUsers(prev => prev.map(u => u.id === updated.id ? updated : u))
+            setEditOrgSource(null)
+          }}
+        />
+      )}
       {transferSource && (
         <TransferModal source={transferSource} allUsers={users} onClose={() => setTransferSource(null)} />
       )}

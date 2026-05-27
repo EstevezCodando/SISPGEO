@@ -9,13 +9,16 @@ from app.models.notificacao import Notificacao
 from app.models.enums import PerfilEnum
 from app.schemas.user import (
     UsuarioOut, UsuarioUpdateRequest, ChangePasswordRequest,
-    UpdateProfileRequest, NotificacaoOut
+    UpdateProfileRequest, AdminDadosOrgRequest, NotificacaoOut
 )
 from app.schemas.pedido import TransferirPedidosRequest
 from app.utils.security import verify_password, get_password_hash
 from app.services import pedido_service
 from app.services.email_service import send_email
-from app.utils.email_templates import conta_ativada as tpl_conta_ativada
+from app.utils.email_templates import (
+    conta_ativada as tpl_conta_ativada,
+    dados_organizacionais_atualizados as tpl_dados_org,
+)
 
 router = APIRouter(prefix="/users", tags=["Usuários"])
 
@@ -167,6 +170,58 @@ async def update_profile(
         user.regiao_militar = body.regiao_militar
     await db.commit()
     return {"message": "Perfil atualizado"}
+
+
+@router.put("/{user_id}/dados-organizacionais", response_model=UsuarioOut)
+async def admin_update_dados_org(
+    user_id: int,
+    body: AdminDadosOrgRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(require_profiles(PerfilEnum.GESTOR_CARTOGRAFICO)),
+):
+    """Atualiza OM, Região Militar e Órgão Vinculante de um usuário (somente DSG).
+
+    Envia e-mail de notificação ao usuário informando os campos alterados.
+    """
+    user = await db.get(Usuario, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+
+    # Rastreia apenas os campos que realmente mudam
+    alteracoes: list[tuple[str, str, str]] = []
+
+    if body.om and body.om.strip() != user.om:
+        alteracoes.append(("OM", user.om or "—", body.om.strip()))
+        user.om = body.om.strip()
+
+    regiao_nova = body.regiao_militar or None
+    if regiao_nova != user.regiao_militar:
+        alteracoes.append(("Região Militar / C Mil A", user.regiao_militar or "—", regiao_nova or "—"))
+        user.regiao_militar = regiao_nova
+
+    orgao_novo = body.orgao_vinculante or None
+    if orgao_novo != user.orgao_vinculante:
+        alteracoes.append(("Órgão Vinculante", str(user.orgao_vinculante or "—"), str(orgao_novo or "—")))
+        user.orgao_vinculante = orgao_novo
+
+    if not alteracoes:
+        return user  # nada mudou — retorna sem commit
+
+    await db.commit()
+    await db.refresh(user)
+
+    # Notificação por e-mail (falha silenciosa — não reverte a atualização)
+    try:
+        subject, html = tpl_dados_org(
+            nome=user.nome,
+            admin_nome=current_user.nome,
+            alteracoes=alteracoes,
+        )
+        await send_email(user.email, subject, html)
+    except Exception:
+        pass
+
+    return user
 
 
 @router.post("/{user_id}/transferir-pedidos")

@@ -490,6 +490,61 @@ def pedido_transferido(nome_novo: str, nome_anterior: str, count: int) -> tuple[
     return subject, _base(subject, body)
 
 
+def dados_organizacionais_atualizados(
+    nome: str,
+    admin_nome: str,
+    alteracoes: list[tuple[str, str, str]],
+) -> tuple[str, str]:
+    """Notifica o usuário que o administrador atualizou seus dados organizacionais.
+
+    alteracoes: lista de (campo, valor_antes, valor_depois)
+    Exemplo: [('OM', '7ª Cia E', '8ª Cia E'), ('Órgão', 'COTER', 'COLOG')]
+    """
+    _div = _divider()
+    rows_html = _div.join(
+        _info_row(campo, f'<span style="color:#8b6914">{antes}</span> → <strong style="color:#3a7030">{depois}</strong>')
+        for campo, antes, depois in alteracoes
+    )
+
+    subject = "SisPGeo — Seus dados organizacionais foram atualizados"
+    body = f"""
+<h2 style="margin:0 0 4px 0;color:#3a4c22;font-size:18px;font-weight:700">
+  Dados organizacionais atualizados.</h2>
+<p style="{_P};border-bottom:1px solid #e0ddd0;padding-bottom:16px">
+  {nome}, o administrador <strong>{admin_nome}</strong> atualizou seus dados
+  organizacionais no <strong>SisPGeo</strong>.
+  Verifique as alterações abaixo e acesse o sistema para confirmar que suas
+  informações estão corretas.
+</p>
+
+<table cellpadding="0" cellspacing="0"
+       style="width:100%;border-collapse:collapse;margin-bottom:24px;
+              border:1px solid #c8c4b0">
+  {_info_row("Campo alterado", "<strong>De → Para</strong>")}
+  {_divider()}
+  {rows_html}
+</table>
+
+<div style="background:#f5f8f0;border-left:4px solid #6b8040;
+            padding:12px 16px;border-radius:0 3px 3px 0;margin-bottom:20px">
+  <p style="margin:0 0 4px 0;color:#3a4c22;font-size:12px;font-weight:700;
+            text-transform:uppercase;letter-spacing:0.5px">Importante</p>
+  <p style="margin:0;color:#4a5a38;font-size:13px;line-height:1.6;text-align:justify">
+    Alterações de OM ou órgão vinculante podem afetar o fluxo de tramitação dos
+    seus pedidos. Caso haja algum equívoco, entre em contato com o administrador
+    do sistema (DSG).
+  </p>
+</div>
+
+{_btn(f"{settings.FRONTEND_URL}/meus-dados", "▶ Ver Meus Dados")}
+
+<p style="{_P_SMALL}">
+  Se você não esperava esta alteração, contate imediatamente o administrador do SisPGeo.
+</p>
+"""
+    return subject, _base(subject, body)
+
+
 def notificar_gestor(
     nome_gestor: str,
     nome_usuario: str,
