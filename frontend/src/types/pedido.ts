@@ -137,6 +137,7 @@ export interface Pedido {
   usuario_telefone_ritex?: string | null
   usuario_secao_om?: string | null
   usuario_perfil?: string | null
+  usuario_posto_graduacao?: string | null
   cadeia_aprovacao: string[]
   impressao_solicitada?: boolean
   impressao_quantidade?: number | null

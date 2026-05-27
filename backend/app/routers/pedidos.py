@@ -114,15 +114,12 @@ async def _check_janela_open(db: AsyncSession, user: Usuario) -> None:
     from app.models.janela import JanelaPedidos
     from app.models.enums import TipoJanelaEnum
 
-    _PERFIL_TO_JANELA_LOCAL: dict[PerfilEnum, TipoJanelaEnum | None] = {
-        PerfilEnum.SUPERVISOR:        TipoJanelaEnum.SUPERVISOR,
-        PerfilEnum.CONSOLIDADOR:      TipoJanelaEnum.CONSOLIDADOR,
-        PerfilEnum.GESTOR_CARTOGRAFICO: None,
-        PerfilEnum.ANALISTA_CGEO:     None,
-    }
-    tipo = _PERFIL_TO_JANELA_LOCAL.get(user.perfil)
-    if tipo is None:
-        return  # perfil irrestrito
+    if user.perfil in SUPERVISOR_PROFILES:
+        tipo = TipoJanelaEnum.SUPERVISOR
+    elif user.perfil in CONSOLIDADOR_PROFILES:
+        tipo = TipoJanelaEnum.CONSOLIDADOR
+    else:
+        return  # GESTOR_CARTOGRAFICO, ANALISTA_CGEO — sem restrição de janela
 
     now = datetime.now(timezone.utc)
     result = await db.scalars(
@@ -239,7 +236,7 @@ async def list_pedidos(
             .where(Pedido.regiao_militar == current_user.regiao_militar)
             .order_by(Pedido.criado_em.desc())
         )
-    elif current_user.perfil in CONSOLIDADOR_PROFILES or current_user.perfil == PerfilEnum.CONSOLIDADOR:
+    elif current_user.perfil in CONSOLIDADOR_PROFILES:
         # Consolidador — roteado por orgao_vinculante
         result = await db.scalars(
             select(Pedido)
@@ -276,7 +273,7 @@ async def list_pending(
             )
             .order_by(Pedido.submetido_gestor_em.asc())
         )
-    elif current_user.perfil in CONSOLIDADOR_PROFILES or current_user.perfil == PerfilEnum.CONSOLIDADOR:
+    elif current_user.perfil in CONSOLIDADOR_PROFILES:
         # Consolidador — filtro por orgao_vinculante
         result = await db.scalars(
             select(Pedido)
@@ -319,7 +316,7 @@ async def get_map_features(
         q = select(Pedido).where(Pedido.cgeo_id == current_user.cgeo_id)
     elif current_user.perfil in _GESTORES_POR_RM:
         q = select(Pedido).where(Pedido.regiao_militar == current_user.regiao_militar)
-    elif current_user.perfil in CONSOLIDADOR_PROFILES or current_user.perfil == PerfilEnum.CONSOLIDADOR:
+    elif current_user.perfil in CONSOLIDADOR_PROFILES:
         q = select(Pedido).where(Pedido.orgao_vinculante == current_user.orgao_vinculante)
     else:
         q = select(Pedido).where(Pedido.usuario_id == current_user.id)
@@ -371,12 +368,12 @@ async def listar_duplicatas(
     """Retorna grupos de itens duplicados (mesmo MI + tipo_produto + escala) em pedidos pendentes."""
     from collections import defaultdict
 
-    if current_user.perfil == PerfilEnum.SUPERVISOR:
+    if current_user.perfil in SUPERVISOR_PROFILES:
         q = select(Pedido).where(
             Pedido.status == StatusPedidoEnum.AGUARDANDO_SUPERVISOR,
             Pedido.regiao_militar == current_user.regiao_militar,
         )
-    elif current_user.perfil == PerfilEnum.CONSOLIDADOR:
+    elif current_user.perfil in CONSOLIDADOR_PROFILES:
         q = select(Pedido).where(
             Pedido.status == StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR,
             Pedido.orgao_vinculante == current_user.orgao_vinculante,
@@ -1244,12 +1241,12 @@ async def delete_item(
 
     is_owner = pedido.usuario_id == current_user.id
     is_supervisor = (
-        current_user.perfil == PerfilEnum.SUPERVISOR
+        current_user.perfil in SUPERVISOR_PROFILES
         and pedido.status == StatusPedidoEnum.AGUARDANDO_SUPERVISOR
         and pedido.regiao_militar == current_user.regiao_militar
     )
     is_consolidador = (
-        current_user.perfil == PerfilEnum.CONSOLIDADOR
+        current_user.perfil in CONSOLIDADOR_PROFILES
         and pedido.status == StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR
         and pedido.orgao_vinculante == current_user.orgao_vinculante
     )
@@ -1287,7 +1284,7 @@ async def list_homologados(
     SUPERVISOR  → pedidos da sua Região Militar em status pós-supervisor.
     CONSOLIDADOR → pedidos do seu órgão vinculante em status pós-consolidador.
     """
-    if current_user.perfil == PerfilEnum.SUPERVISOR:
+    if current_user.perfil in SUPERVISOR_PROFILES:
         forwarded = [
             StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR,
             StatusPedidoEnum.AGUARDANDO_CARTOGRAFICO,
@@ -1304,7 +1301,7 @@ async def list_homologados(
             )
             .order_by(Pedido.atualizado_em.desc())
         )
-    elif current_user.perfil == PerfilEnum.CONSOLIDADOR:
+    elif current_user.perfil in CONSOLIDADOR_PROFILES:
         forwarded = [
             StatusPedidoEnum.AGUARDANDO_CARTOGRAFICO,
             StatusPedidoEnum.ATRIBUIDO_CGEO,
@@ -1612,7 +1609,7 @@ async def reorder_pedidos(
     current_user: Usuario = Depends(get_current_user),
 ):
     """Reordena pedidos por prioridade. ordered_ids[0] = maior prioridade."""
-    allowed = {PerfilEnum.SOLICITANTE, PerfilEnum.SUPERVISOR, PerfilEnum.CONSOLIDADOR}
+    allowed = {PerfilEnum.SOLICITANTE} | SUPERVISOR_PROFILES | CONSOLIDADOR_PROFILES
     if current_user.perfil not in allowed:
         raise HTTPException(status_code=403, detail="Perfil não autorizado")
     # Busca todos de uma vez (1 query) ao invés de N db.get() individuais
@@ -1704,10 +1701,10 @@ async def solicitar_remocao(
             detail="Remoção só pode ser solicitada enquanto o pedido aguarda revisão do Supervisor (C. Mil. A)",
         )
 
-    # Busca supervisor pela Região Militar do pedido
+    # Busca supervisores pela Região Militar do pedido (todos os perfis de supervisor)
     gestores = await db.scalars(
         select(Usuario).where(
-            Usuario.perfil == PerfilEnum.SUPERVISOR,
+            Usuario.perfil.in_(SUPERVISOR_PROFILES),
             Usuario.regiao_militar == pedido.regiao_militar,
             Usuario.ativo == True,
         )

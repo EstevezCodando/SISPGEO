@@ -7,7 +7,7 @@ from app.database import get_db
 from app.dependencies import get_current_user, require_profiles
 from app.models.janela import JanelaPedidos
 from app.models.user import Usuario
-from app.models.enums import PerfilEnum, TipoJanelaEnum
+from app.models.enums import PerfilEnum, TipoJanelaEnum, SUPERVISOR_PROFILES, CONSOLIDADOR_PROFILES
 from app.services.notification_service import NotificationService
 from app.utils.logging_config import get_logger
 
@@ -22,13 +22,15 @@ _PRORROGACAO_SUPERIOR: dict[PerfilEnum, PerfilEnum] = {
 }
 
 # Mapeamento perfil → tipo de janela que controla seu acesso
-_PERFIL_TO_JANELA: dict[PerfilEnum, TipoJanelaEnum | None] = {
-    PerfilEnum.SOLICITANTE:       TipoJanelaEnum.SOLICITANTE,
-    PerfilEnum.SUPERVISOR:        TipoJanelaEnum.SUPERVISOR,
-    PerfilEnum.CONSOLIDADOR:      TipoJanelaEnum.CONSOLIDADOR,
-    PerfilEnum.GESTOR_CARTOGRAFICO: None,  # nunca bloqueado por janela
-    PerfilEnum.ANALISTA_CGEO:     None,    # nunca bloqueado por janela
-}
+def _get_tipo_janela(perfil: PerfilEnum) -> TipoJanelaEnum | None:
+    """Retorna o TipoJanela que restringe o perfil, ou None se irrestrito."""
+    if perfil == PerfilEnum.SOLICITANTE:
+        return TipoJanelaEnum.SOLICITANTE
+    if perfil in SUPERVISOR_PROFILES:
+        return TipoJanelaEnum.SUPERVISOR
+    if perfil in CONSOLIDADOR_PROFILES:
+        return TipoJanelaEnum.CONSOLIDADOR
+    return None  # GESTOR_CARTOGRAFICO, ANALISTA_CGEO — nunca bloqueados por janela
 
 # Ordem cronológica para validação de datas entre etapas
 _ORDEM_JANELAS = [
@@ -81,7 +83,7 @@ async def minha_janela(
 
     Perfis DSG/CGEO nunca são bloqueados por janela (retornam aberta=True).
     """
-    tipo_janela = _PERFIL_TO_JANELA.get(current_user.perfil)
+    tipo_janela = _get_tipo_janela(current_user.perfil)
 
     # Gestores cartográficos e analistas CGEO têm acesso irrestrito
     if tipo_janela is None:
