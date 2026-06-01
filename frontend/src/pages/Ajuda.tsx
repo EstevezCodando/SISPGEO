@@ -742,7 +742,7 @@ const FAQS: FAQ[] = [
         </div>
         <p>
           Você será notificado por e-mail em cada movimentação. Acompanhe o
-          status em <span className="text-emerald-400">"Meus Pedidos"</span>.
+          status em <span className="text-emerald-400">"Ver Pedidos"</span>.
         </p>
       </div>
     ),
@@ -793,35 +793,45 @@ const TUTORIAIS = {
   solicitar: [
     {
       n: "1",
-      title: 'Acesse "Solicitar Produtos"',
-      desc: 'No menu lateral, clique em "Solicitar Produtos". A página carregará com o formulário de seleção.',
+      title: "Acesse o Formulário de Solicitação de Produtos",
+      desc: 'No menu lateral, clique em "Solicitar Produtos" para carregar a página com o Formulário de Solicitação de Produtos.',
     },
     {
       n: "2",
-      title: "Escolha o produto e a escala",
-      desc: "Selecione o tipo de produto (ex.: Carta Topográfica) e a escala (ex.: 1:50.000). O mapa será atualizado com a grade INOM correspondente.",
+      title: "Defina a Finalidade da Geoinformação",
+      desc: "Considere as opções apresentadas. Esta informação deverá ser complementada posteriormente por ocasião da revisão do pedido.",
     },
     {
       n: "3",
-      title: "Defina a data de entrega",
-      desc: "Informe quando precisa do produto. O sistema calcula automaticamente a data mínima conforme o prazo de produção.",
+      title: "Escolha o Produto e a Escala de Representação",
+      desc: "Selecione o tipo de produto (ex. Carta Topográfica) e a escala de representação (ex. 1:50.000) que melhor atendam aos objetivos de utilização da Geoinformação (ver detalhes).",
     },
     {
       n: "4",
-      title: "Selecione folhas no mapa",
-      desc: 'Clique nas células da área de interesse. Folhas verdes já existem no BDGEx — marque "Solicitar mesmo disponível" se precisar de versão atualizada.',
+      title: "Defina a Data Sugerida de Entrega",
+      desc: "Informe a data sugerida para a entrega do produto, considerando o prazo mínimo estimado para a produção do tipo de produto selecionado (ver detalhes). Cabe ressaltar que a data efetiva de entrega dependerá de outros fatores, como por exemplo, da descentralização de recursos orçamentários e do volume total de demandas de produção.",
     },
     {
       n: "5",
-      title: "Preencha a finalidade e submeta",
-      desc: 'Informe a finalidade operacional, revise o carrinho e clique em "Submeter Pedido". O pedido entrará na fila de envio.',
+      title: "Selecione o Enquadramento dos Produtos no Mapa e Adicione ao Carrinho",
+      desc: "Clique nas células sobre o mapa correspondentes às áreas de interesse, de modo a adicionar os produtos desejados ao carrinho. Cabe ressaltar que os mesmos podem ser removidos a qualquer tempo, antes da confirmação do pedido.",
+    },
+    {
+      n: "6",
+      title: "Complemente a Finalidade e Submeta o Pedido para Revisão",
+      desc: 'Insira algumas informações adicionais acerca do pedido que possam ser consideradas no processo de homologação pelo escalão superior. Feito isso, clique no botão "Revisar Pedido".',
+    },
+    {
+      n: "7",
+      title: "Revise o Pedido",
+      desc: "Verifique se os pedidos solicitados estão listados no carrinho. Caso tenha interesse na impressão dos produtos adicionados, marcar a opção e informar a quantidade e tipo de material desejável. O Canvas e Tyvek estão condicionados à disponibilidade e podem ser eventualmente fornecidos em Sulfite.",
     },
   ],
   editar: [
     {
       n: "1",
-      title: 'Acesse "Meus Pedidos"',
-      desc: 'No menu lateral, clique em "Meus Pedidos" para ver todos os seus pedidos.',
+      title: 'Acesse "Ver Pedidos"',
+      desc: 'No menu lateral, clique em "Ver Pedidos" para ver todos os seus pedidos.',
     },
     {
       n: "2",
@@ -853,7 +863,7 @@ const TUTORIAIS = {
     {
       n: "2",
       title: "Acompanhe a contagem",
-      desc: 'Em "Meus Pedidos" o banner mostra a data de encerramento e quantos dias restam. Fique atento ao alerta vermelho de urgência.',
+      desc: 'Em "Ver Pedidos" o banner mostra a data de encerramento e quantos dias restam. Fique atento ao alerta vermelho de urgência.',
     },
     {
       n: "3",
@@ -876,96 +886,96 @@ interface JornadaGuia {
 
 const JORNADAS: JornadaGuia[] = [
   {
-    perfil: "OMDS — Solicitar Produtos",
+    perfil: "OMDS – Solicitante",
     cor: "emerald",
     passos: TUTORIAIS.solicitar,
   },
   {
-    perfil: "C Mil. A — Revisar Pedidos",
+    perfil: "C Mil A – Supervisor",
     cor: "amber",
     passos: [
       {
         n: "1",
-        title: 'Acesse "Pedidos Pendentes"',
-        desc: "Os pedidos submetidos pelas OMDS da sua região aparecem automaticamente na lista.",
+        title: "Acesse a relação de 'Pedidos Pendentes'",
+        desc: "No menu lateral, clique em 'Pedidos Pendentes' para visualizar a relação dos pedidos submetidos pelas suas OMDS e que se encontram pendentes de aprovação.",
       },
       {
         n: "2",
-        title: "Expanda e verifique os itens",
-        desc: "Clique na seta de cada pedido para ver os itens, contatos e finalidade. Remova itens desnecessários se preciso.",
+        title: "Expanda os Pedidos e Verifique os Produtos",
+        desc: "Clique no pedido para visualizar os detalhes relativos aos pedidos submetidos (dados do responsável, finalidade do pedido e lista de produtos). É possível cancelar os pedidos.",
       },
       {
         n: "3",
-        title: "Reordene por prioridade",
-        desc: "Arraste as linhas para ordenar os pedidos do mais ao menos urgente antes de encaminhar.",
+        title: "Cancele os Pedidos Não Aprovados",
+        desc: "Pedidos não aprovados podem ser eventualmente cancelados mediante justificativa prévia.",
       },
       {
         n: "4",
-        title: "Selecione e encaminhe",
-        desc: 'Marque os pedidos desejados com a caixa de seleção e clique em "Encaminhar ao COTER". Ou use o botão para encaminhar todos de uma vez.',
+        title: "Reorganize a Prioridade dos Pedidos",
+        desc: "Arraste as linhas de pacotes de pedidos para reorganizar a prioridade. Os pedidos na parte superior têm prioridade mais alta.",
       },
       {
         n: "5",
-        title: "Cancele se necessário",
-        desc: "Use o botão de cancelamento (🚫) para reprovar pedidos inviáveis informando o motivo.",
+        title: "Encaminhe os Pedidos ao Consolidador (ODOp/ODS)",
+        desc: "Marque os pedidos que serão encaminhados ao Consolidador (ODOp/ODS) e clique no botão de encaminhar. Se for o caso, é possível encaminhar todos de uma só vez.",
       },
     ],
   },
   {
-    perfil: "COTER — Consolidador",
+    perfil: "COTER – Consolidador",
     cor: "yellow",
     passos: [
       {
         n: "1",
-        title: 'Acesse "Pedidos Pendentes"',
-        desc: "Os pedidos consolidados pelos C Mil. A das regiões militares subordinadas ao COTER aparecem em sua fila.",
+        title: "Acesse a relação de 'Pedidos Pendentes'",
+        desc: "No menu lateral, clique em 'Pedidos Pendentes' para visualizar a relação dos pedidos submetidos pelos seus C Mil A subordinados e que se encontram pendentes de aprovação.",
       },
       {
         n: "2",
-        title: "Revise duplicatas",
-        desc: "O sistema alertará automaticamente sobre pedidos duplicados (mesmo INOM, produto e escala). Decida se encaminha mesmo assim.",
+        title: "Revise os Pedidos Duplicados",
+        desc: "Clique no pedido para visualizar os detalhes relativos aos pedidos submetidos (dados do responsável, finalidade do pedido e lista de produtos). O sistema alertará automaticamente sobre pedidos duplicados (mesmo Tipo de Produto e MI/MIR).",
       },
       {
         n: "3",
-        title: "Encaminhe à DSG",
-        desc: 'Selecione pedidos ou use "Enviar à DSG (todos)" para encaminhar o lote completo.',
+        title: "Encaminhe os Pedidos à DSG",
+        desc: "Marque os pedidos que serão encaminhados à DSG e clique no botão de encaminhar. Se for o caso, é possível encaminhar todos de uma só vez.",
       },
     ],
   },
   {
-    perfil: "DEC / COLOG / DECEx — Consolidador",
+    perfil: "DEC / COLOG / DECEx – Consolidador",
     cor: "orange",
     passos: [
       {
         n: "1",
-        title: 'Acesse "Pedidos Pendentes"',
-        desc: "Os pedidos encaminhados pelo Supervisor do seu órgão chegam à sua fila para consolidação final.",
+        title: "Acesse a relação de 'Pedidos Pendentes'",
+        desc: "No menu lateral, clique em 'Pedidos Pendentes' para visualizar a relação dos pedidos submetidos pelas suas OMDS e que se encontram pendentes de aprovação.",
       },
       {
         n: "2",
-        title: "Revise duplicatas",
-        desc: "O sistema alertará sobre pedidos duplicados (mesmo INOM, produto e escala). Decida se encaminha mesmo assim.",
+        title: "Revise os Pedidos Duplicados",
+        desc: "Clique no pedido para visualizar os detalhes relativos aos pedidos submetidos (dados do responsável, finalidade do pedido e lista de produtos). O sistema alertará automaticamente sobre pedidos duplicados (mesmo Tipo de Produto e MI/MIR).",
       },
       {
         n: "3",
-        title: "Encaminhe à DSG",
-        desc: 'Selecione pedidos ou use "Enviar à DSG (todos)" para encaminhar o lote completo ao Gestor Cartográfico.',
+        title: "Encaminhe os Pedidos à DSG",
+        desc: "Marque os pedidos que serão encaminhados à DSG e clique no botão de encaminhar. Se for o caso, é possível encaminhar todos de uma só vez.",
       },
     ],
   },
   {
-    perfil: "DSG/CGEO — Avaliar Pedidos",
+    perfil: "DSG – Produtor",
     cor: "blue",
     passos: [
       {
         n: "1",
-        title: 'Acesse "Pedidos Pendentes"',
-        desc: "Visualize todos os pedidos recebidos da cadeia de comando (COTER, DEC, COLOG, DECEx e DSG).",
+        title: "Acesse a relação de 'Pedidos Pendentes'",
+        desc: "No menu lateral, clique em 'Pedidos Pendentes' para visualizar a relação dos pedidos submetidos para produção pelo ODOp e ODS, ainda com a produção pendente de aprovação.",
       },
       {
         n: "2",
-        title: "Atribua ao CGEO",
-        desc: "Encaminhe pedidos para análise e produção pelo CGEO executor.",
+        title: "Distribua os Pedidos aos Centros de Geoinformação",
+        desc: "Encaminhe os pedidos para análise e produção pelo CGEO executor.",
       },
       {
         n: "3",

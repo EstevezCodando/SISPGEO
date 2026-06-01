@@ -88,7 +88,7 @@ function ErrorBlock({ error, email, onResend, reenvioLoading }: ErrorBlockProps)
       body: (
         <span className="text-zinc-400">
           Sua conta foi cadastrada mas ainda não foi ativada pelo administrador do sistema.
-          Entre em contato com a DSG para solicitar a ativação.
+          Entre em contato com a DSG no telefone (61) 3415-5237 ou 860-5237 (RITEx).
         </span>
       ),
     },
@@ -262,10 +262,9 @@ export function Login() {
             />
           )}
 
-          <p className="text-center text-sm text-zinc-500 mt-6">
-            Não tem conta?{' '}
+          <p className="text-center text-sm mt-6">
             <Link to="/cadastro" className="text-emerald-400 font-medium hover:text-emerald-300 transition-colors">
-              Cadastre-se
+              Novo Cadastro de Usuário
             </Link>
           </p>
         </div>

@@ -1446,7 +1446,7 @@ export function MeusPedidos() {
       <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="text-xl font-semibold text-zinc-100 tracking-tight">
-            Meus Pedidos
+            Ver Pedidos
           </h1>
         </div>
         <div className="flex items-center gap-2">

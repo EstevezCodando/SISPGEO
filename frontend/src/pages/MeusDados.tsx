@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Eye, EyeOff } from "lucide-react";
 import toast from "react-hot-toast";
 import { usersApi } from "../api/users";
 import { POSTOS, formatNomeComPosto } from "../data/postos";
@@ -10,7 +9,7 @@ const CMILA_LABELS: Record<string, string> = {
   CML: "C Mil Leste (Rio de Janeiro)",
   CMS: "C Mil Sul (Porto Alegre)",
   CMO: "C Mil Oeste (Campo Grande)",
-  CMAO: "C Mil Amazônia Ocidental (Boa Vista)",
+  CMAO: "C Mil Amazônia Oriental (Boa Vista)",
   CMA: "C Mil Amazônia (Manaus)",
   CMNE: "C Mil Nordeste (Recife)",
   CMSE: "C Mil Sudeste (São Paulo)",
@@ -37,14 +36,14 @@ function getSubordinacao(
     return {
       label: cmila,
       fluxo:
-        "Fluxo dos Pedidos: OM → Supervisor C Mil A → Consolidador COTER → DSG",
+        "Fluxo do Pedido: OM → Supervisor C Mil A → Consolidador COTER → DSG",
     };
   }
 
   // Vinculado a outro órgão (sem supervisor C Mil A intermediário)
   return {
     label: ORGAO_LABELS[orgao] ?? orgao,
-    fluxo: `Fluxo dos Pedidos: OM → Consolidador ${orgao} → DSG`,
+    fluxo: `Fluxo do Pedido: OM → Consolidador ${orgao} → DSG`,
   };
 }
 
@@ -58,11 +57,6 @@ export function MeusDados() {
   const [secao, setSecao] = useState(user?.secao_om ?? "");
   const [posto, setPosto] = useState(user?.posto_graduacao ?? "");
   const [saving, setSaving] = useState(false);
-  const [senhaAtual, setSenhaAtual] = useState("");
-  const [novaSenha, setNovaSenha] = useState("");
-  const [savingPwd, setSavingPwd] = useState(false);
-  const [mostrarSenhaAtual, setMostrarSenhaAtual] = useState(false);
-  const [mostrarNovaSenha, setMostrarNovaSenha] = useState(false);
 
   const handleSaveData = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,21 +76,6 @@ export function MeusDados() {
     }
   };
 
-  const handleSavePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSavingPwd(true);
-    try {
-      await usersApi.changePassword(senhaAtual, novaSenha);
-      toast.success("Senha alterada com sucesso");
-      setSenhaAtual("");
-      setNovaSenha("");
-    } catch (err: unknown) {
-      const e = err as { response?: { data?: { detail?: string } } };
-      toast.error(e.response?.data?.detail ?? "Erro ao alterar senha");
-    } finally {
-      setSavingPwd(false);
-    }
-  };
 
   if (!user) return null;
 
@@ -208,61 +187,6 @@ export function MeusDados() {
         </form>
       </div>
 
-      {/* Alterar senha */}
-      <div className="bg-zinc-900 border border-white/10 rounded-xl p-6">
-        <h2 className="font-medium text-zinc-200 mb-4">Alterar Senha</h2>
-        <form onSubmit={handleSavePassword} className="space-y-3">
-          <div>
-            <label className={labelCls}>Senha Atual</label>
-            <div className="relative">
-              <input
-                type={mostrarSenhaAtual ? "text" : "password"}
-                value={senhaAtual}
-                onChange={(e) => setSenhaAtual(e.target.value)}
-                required
-                className={inputCls + " pr-10"}
-              />
-              <button
-                type="button"
-                onClick={() => setMostrarSenhaAtual((v) => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors"
-                tabIndex={-1}
-                aria-label={mostrarSenhaAtual ? "Ocultar senha" : "Mostrar senha"}
-              >
-                {mostrarSenhaAtual ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            </div>
-          </div>
-          <div>
-            <label className={labelCls}>Nova Senha</label>
-            <div className="relative">
-              <input
-                type={mostrarNovaSenha ? "text" : "password"}
-                value={novaSenha}
-                onChange={(e) => setNovaSenha(e.target.value)}
-                required
-                className={inputCls + " pr-10"}
-              />
-              <button
-                type="button"
-                onClick={() => setMostrarNovaSenha((v) => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors"
-                tabIndex={-1}
-                aria-label={mostrarNovaSenha ? "Ocultar senha" : "Mostrar senha"}
-              >
-                {mostrarNovaSenha ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            </div>
-          </div>
-          <button
-            type="submit"
-            disabled={savingPwd}
-            className="bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-400 transition-colors disabled:opacity-60"
-          >
-            {savingPwd ? "Salvando…" : "Alterar Senha"}
-          </button>
-        </form>
-      </div>
     </div>
   );
 }

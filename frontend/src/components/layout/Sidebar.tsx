@@ -24,7 +24,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   // ── SOLICITANTE (OMDS) ────────────────────────────────────────
   { to: '/solicitar-produtos', label: 'Solicitar Produtos',  icon: <PlusSquare className="h-4 w-4" />, profiles: SOLICITANTE },
-  { to: '/meus-pedidos',       label: 'Meus Pedidos',        icon: <FileText    className="h-4 w-4" />, profiles: SOLICITANTE },
+  { to: '/meus-pedidos',       label: 'Ver Pedidos',          icon: <FileText    className="h-4 w-4" />, profiles: SOLICITANTE },
   { to: '/ajuda',              label: 'Guia de Solicitação', icon: <HelpCircle  className="h-4 w-4" />, profiles: SOLICITANTE },
 
   // ── Gestores intermediários (Supervisor e Consolidador) ──────
@@ -45,7 +45,7 @@ const navItems: NavItem[] = [
   { to: '/cgeo/pedidos', label: 'Análise CGEO', icon: <ClipboardCheck className="h-4 w-4" />, profiles: CGEO },
 
   // ── Comum a gestores e CGEO ───────────────────────────────────
-  { to: '/ajuda', label: 'Ajuda', icon: <HelpCircle className="h-4 w-4" />, profiles: NAO_SOLICITANTE },
+  { to: '/ajuda', label: 'Guia de Solicitação', icon: <HelpCircle className="h-4 w-4" />, profiles: NAO_SOLICITANTE },
 ]
 
 export function Sidebar() {
