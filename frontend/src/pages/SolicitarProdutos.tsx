@@ -690,7 +690,7 @@ export function SolicitarProdutos() {
     }
     if (!user?.orgao_vinculante) {
       toast.error(
-        "Seu perfil não tem órgão vinculante configurado. Contate o Gestor Cartográfico (DSG).",
+        "Seu perfil não tem órgão vinculante configurado. Contate o Gestor Cartográfico (DSG) pelo telefone (61) 3415-5237 ou 860-5237 (RITEx).",
       );
       return;
     }

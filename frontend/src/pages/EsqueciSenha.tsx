@@ -76,7 +76,7 @@ export function EsqueciSenha() {
                   Caso não receba o e-mail para mudança de senha, entre em
                   contato com a{" "}
                   <span className="text-zinc-400 font-medium">DSG</span> no
-                  telefone (61) 3415-5237 ou 860-5237 (RITEx.
+                  telefone (61) 3415-5237 ou 860-5237 (RITEx).
                 </p>
               </div>
               <Link

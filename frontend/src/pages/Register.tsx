@@ -140,6 +140,19 @@ export function Register() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // Validações na ordem de apresentação dos campos no formulário
+    if (!form.email.endsWith("@eb.mil.br")) {
+      toast.error("Somente emails @eb.mil.br são aceitos");
+      return;
+    }
+    if (!phoneValid) {
+      toast.error("Informe um telefone válido com DDD – ex: (61) 99999-9999");
+      return;
+    }
+    if (!form.om.trim()) {
+      toast.error("Informe a Organização Militar");
+      return;
+    }
     const erroSenhaAtual = validarSenha(form.senha);
     if (erroSenhaAtual) {
       toast.error(erroSenhaAtual);
@@ -147,18 +160,6 @@ export function Register() {
     }
     if (form.senha !== form.confirmar_senha) {
       toast.error("As senhas não coincidem");
-      return;
-    }
-    if (!form.email.endsWith("@eb.mil.br")) {
-      toast.error("Somente emails @eb.mil.br são aceitos");
-      return;
-    }
-    if (!form.om.trim()) {
-      toast.error("Informe a Organização Militar");
-      return;
-    }
-    if (!phoneValid) {
-      toast.error("Informe um telefone válido com DDD – ex: (61) 99999-9999");
       return;
     }
 
@@ -275,9 +276,9 @@ export function Register() {
             </div>
 
             {/* Nota de expiração */}
-            <p className="text-center text-xs text-zinc-400 mb-6">
+            <p className="text-center text-xs text-zinc-300 mb-6">
               O link de ativação é válido por{" "}
-              <span className="text-zinc-300">24 horas</span>. Caso não encontre
+              <span className="text-zinc-100 font-medium">24 horas</span>. Caso não encontre
               o e-mail, verifique a pasta de spam.
             </p>
 
@@ -496,7 +497,7 @@ export function Register() {
                     disabled={!form.regiao_militar}
                     placeholder={
                       form.regiao_militar
-                        ? "Escolha ou digite a OM"
+                        ? "Digite a sigla da OM"
                         : "Selecione o C Mil A Enquadrante primeiro"
                     }
                     className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
