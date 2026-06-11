@@ -355,8 +355,7 @@ function RevisaoModal({
                           </div>
                           <button
                             onClick={() => onRemoveItem(item)}
-                            disabled={items.length <= 1}
-                            className="text-zinc-600 hover:text-red-400 disabled:opacity-30 disabled:cursor-not-allowed transition-colors mt-0.5 shrink-0"
+                            className="text-zinc-600 hover:text-red-400 transition-colors mt-0.5 shrink-0"
                             title="Remover item"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
@@ -364,7 +363,7 @@ function RevisaoModal({
                         </div>
 
                         {/* Impressão por item */}
-                        {isImpressao ? (
+                        {TIPOS_IMPRESSAO.has(item.tipo_produto) ? (
                           // Produto de impressão: campos obrigatórios
                           <div className="grid grid-cols-2 gap-1.5 pt-1 border-t border-white/5">
                             <div>
@@ -675,12 +674,13 @@ export function SolicitarProdutos() {
     }
     if (finalidade.trim().length < 10) {
       toast.error(
-        "Preencha a Informação Complementar no final da lista de produtos.",
+        "Favor preencher a Informação Complementar.",
       );
       return;
     }
-    if (isImpressao) {
-      const semImpressao = items.filter((i) => !impressoes[cartKey(i)]);
+    const itensImpressao = items.filter((i) => TIPOS_IMPRESSAO.has(i.tipo_produto));
+    if (itensImpressao.length > 0) {
+      const semImpressao = itensImpressao.filter((i) => !impressoes[cartKey(i)]);
       if (semImpressao.length > 0) {
         toast.error(
           `Configure quantidade e material para ${semImpressao.length} item(ns) de impressão`,
@@ -910,7 +910,7 @@ export function SolicitarProdutos() {
 
           {/* Escala */}
           <div>
-            <label className={labelCls}>Escala</label>
+            <label className={labelCls}>Escala de Representação</label>
             <select
               value={escala ?? ""}
               onChange={(e) => {
@@ -1180,9 +1180,10 @@ export function SolicitarProdutos() {
         <RevisaoModal
           items={items}
           impressoes={impressoes}
-          onRemoveItem={(item) =>
-            removeItem(item.inom, item.tipo_produto, item.escala)
-          }
+          onRemoveItem={(item) => {
+            removeItem(item.inom, item.tipo_produto, item.escala);
+            if (items.length === 1) setShowRevisao(false);
+          }}
           onSetItemImpressao={setItemImpressao}
           onRemoveItemImpressao={removeItemImpressao}
           onClose={() => setShowRevisao(false)}
