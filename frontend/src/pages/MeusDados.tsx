@@ -5,7 +5,7 @@ import { POSTOS, formatNomeComPosto } from "../data/postos";
 import { useAuthStore } from "../store/authStore";
 
 const CMILA_LABELS: Record<string, string> = {
-  CMP: "C Mil Planalto (Brasília)",
+  CMP: "Comando Militar do Planalto",
   CML: "C Mil Leste (Rio de Janeiro)",
   CMS: "C Mil Sul (Porto Alegre)",
   CMO: "C Mil Oeste (Campo Grande)",
@@ -20,7 +20,7 @@ const ORGAO_LABELS: Record<string, string> = {
   DEC: "DEC - Departamento de Educação e Cultura",
   COLOG: "COLOG - Comando Logístico",
   DECEx: "DECEx - Dep. de Educação e Cultura do Exército",
-  DSG: "DSG - Diretoria do Serviço Geográfico",
+  DSG: "DSG - Diretoria de Serviço Geográfico",
 };
 
 /** Retorna o rótulo de subordinação e o detalhe do fluxo para exibição. */

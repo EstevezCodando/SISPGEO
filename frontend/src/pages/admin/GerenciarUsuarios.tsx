@@ -18,7 +18,7 @@ import { formatNomeComPosto, POSTO_ABREV } from '../../data/postos'
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const CMILA_LABELS: Record<string, string> = {
-  CMP:  'C Mil Planalto (Brasília)',
+  CMP:  'Comando Militar do Planalto',
   CML:  'C Mil Leste (Rio de Janeiro)',
   CMS:  'C Mil Sul (Porto Alegre)',
   CMO:  'C Mil Oeste (Campo Grande)',
@@ -33,7 +33,7 @@ const ORGAO_LABELS: Record<string, string> = {
   DEC:   'DEC — Departamento de Educação e Cultura',
   COLOG: 'COLOG — Comando Logístico',
   DECEx: 'DECEx — Dep. de Educação e Cultura do Exército',
-  DSG:   'DSG — Diretoria do Serviço Geográfico',
+  DSG:   'DSG — Diretoria de Serviço Geográfico',
 }
 
 /** Retorna label e fluxo de subordinação idênticos ao exibido em Meus Dados. */
@@ -248,7 +248,7 @@ function TransferModal({ source, allUsers, onClose }: TransferModalProps) {
 
 // ─── Constantes de regiões e órgãos ──────────────────────────────────────────
 const REGIOES_MILITARES = [
-  { value: 'CMP',  label: 'CMP — C Mil Planalto (Brasília)' },
+  { value: 'CMP',  label: 'CMP — Comando Militar do Planalto' },
   { value: 'CML',  label: 'CML — C Mil Leste (Rio de Janeiro)' },
   { value: 'CMS',  label: 'CMS — C Mil Sul (Porto Alegre)' },
   { value: 'CMO',  label: 'CMO — C Mil Oeste (Campo Grande)' },
@@ -263,7 +263,7 @@ const ORGAOS_VINCULANTES = [
   { value: 'DEC',   label: 'DEC — Departamento de Educação e Cultura' },
   { value: 'COLOG', label: 'COLOG — Comando Logístico' },
   { value: 'DECEx', label: 'DECEx — Dep. de Educação e Cultura do Exército' },
-  { value: 'DSG',   label: 'DSG — Diretoria do Serviço Geográfico' },
+  { value: 'DSG',   label: 'DSG — Diretoria de Serviço Geográfico' },
 ] as const
 
 // ─── Modal de edição de dados organizacionais ─────────────────────────────────

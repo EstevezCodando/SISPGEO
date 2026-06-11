@@ -35,7 +35,7 @@ export const CONSOLIDADOR_PROFILES = new Set<Perfil>([
 
 export const PERFIL_LABELS: Record<Perfil, string> = {
   SOLICITANTE:         'OMDS - Solicitante',
-  SUPERVISOR_CMP:      'Supervisor - C Mil Planalto',
+  SUPERVISOR_CMP:      'Supervisor - Comando Militar do Planalto',
   SUPERVISOR_CML:      'Supervisor - C Mil Leste',
   SUPERVISOR_CMS:      'Supervisor - C Mil Sul',
   SUPERVISOR_CMO:      'Supervisor - C Mil Oeste',
