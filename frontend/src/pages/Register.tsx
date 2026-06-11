@@ -140,7 +140,19 @@ export function Register() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Validações na ordem de apresentação dos campos no formulário
+    // Validações na ordem visual dos campos do formulário
+    if (!form.posto_graduacao) {
+      toast.error("Selecione o Posto / Graduação");
+      return;
+    }
+    if (!form.nome_de_guerra.trim()) {
+      toast.error("Informe o Nome de Guerra");
+      return;
+    }
+    if (!form.nome.trim()) {
+      toast.error("Informe o Nome Completo");
+      return;
+    }
     if (!form.email.endsWith("@eb.mil.br")) {
       toast.error("Somente emails @eb.mil.br são aceitos");
       return;
@@ -149,8 +161,20 @@ export function Register() {
       toast.error("Informe um telefone válido com DDD – ex: (61) 99999-9999");
       return;
     }
+    if (!form.regiao_militar) {
+      toast.error("Selecione o Comando Militar de Área Enquadrante");
+      return;
+    }
     if (!form.om.trim()) {
-      toast.error("Informe a Organização Militar");
+      toast.error("Informe a Organização Militar (OM)");
+      return;
+    }
+    if (!form.funcao_secao.trim()) {
+      toast.error("Informe a Função / Seção");
+      return;
+    }
+    if (!form.orgao_vinculante) {
+      toast.error("Selecione o Órgão de Subordinação");
       return;
     }
     const erroSenhaAtual = validarSenha(form.senha);
@@ -340,7 +364,7 @@ export function Register() {
               type="text"
               value={form.nome_de_guerra}
               onChange={set("nome_de_guerra")}
-              placeholder="Como é chamado(a) militarmente"
+              placeholder="Digite o Nome de Guerra do Militar"
               required
             />
 
@@ -450,7 +474,7 @@ export function Register() {
                 className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2.5 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
               >
                 <option value="" className="bg-zinc-800">
-                  Escolha o C Mil A Enquadrante
+                  Selecione o Comando Militar de Área Enquadrante
                 </option>
                 {CMILITAR.map(({ code, label }) => (
                   <option key={code} value={code} className="bg-zinc-800">
@@ -544,7 +568,7 @@ export function Register() {
                 className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2.5 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
               >
                 <option value="" className="bg-zinc-800">
-                  Escolha a subordinação
+                  Selecione o Órgão de Subordinação
                 </option>
                 {SUBORDINACOES.map(({ value, label }) => (
                   <option key={value} value={value} className="bg-zinc-800">
