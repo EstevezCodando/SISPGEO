@@ -514,8 +514,11 @@ function PedidoCard({
                 return (
                   <div key={item.id} className="flex items-center flex-wrap gap-x-2 gap-y-1 text-xs text-zinc-400 group bg-zinc-800/40 border border-zinc-700/30 rounded-lg px-3 py-2">
                     <span className="text-zinc-600 w-4 text-center shrink-0">{idx + 1}</span>
-                    <span className="text-emerald-400 font-mono shrink-0 font-medium">{item.inom}</span>
-                    {item.mi && <span className="text-zinc-500 font-mono shrink-0">MI: {item.mi}</span>}
+                    {item.mi
+                      ? <span className="text-emerald-400 font-mono shrink-0 font-medium">{item.mi}</span>
+                      : <span className="text-emerald-400 font-mono shrink-0 font-medium">{item.inom}</span>
+                    }
+                    {item.mi && <span className="text-zinc-500 font-mono shrink-0 text-[10px]">({item.inom})</span>}
                     <span className="shrink-0 text-zinc-300">{TIPO_PRODUTO_LABELS[item.tipo_produto]}</span>
                     <span className="text-zinc-600 shrink-0">·</span>
                     <span className="shrink-0">{item.escala}</span>
@@ -694,8 +697,11 @@ function EncaminharLoteModal({ pedidos: ps, label, onConfirm, onCancel }: Encami
                         className="flex items-center flex-wrap gap-x-2 gap-y-0.5 text-xs text-zinc-400 bg-zinc-800/60 border border-zinc-700/30 rounded-lg px-3 py-1.5"
                       >
                         <span className="text-zinc-600 w-4 text-center shrink-0">{i + 1}</span>
-                        <span className="text-emerald-400 font-mono shrink-0 font-medium">{item.inom}</span>
-                        {item.mi && <span className="text-zinc-500 font-mono shrink-0">MI: {item.mi}</span>}
+                        {item.mi
+                          ? <span className="text-emerald-400 font-mono shrink-0 font-medium">{item.mi}</span>
+                          : <span className="text-emerald-400 font-mono shrink-0 font-medium">{item.inom}</span>
+                        }
+                        {item.mi && <span className="text-zinc-500 font-mono shrink-0 text-[10px]">({item.inom})</span>}
                         <span className="shrink-0 text-zinc-300">{TIPO_PRODUTO_LABELS[item.tipo_produto]}</span>
                         <span className="text-zinc-600 shrink-0">·</span>
                         <span className="shrink-0">{item.escala}</span>

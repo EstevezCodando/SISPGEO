@@ -451,7 +451,11 @@ export function AdminPedidos() {
                             <div className="space-y-1">
                               {p.itens.map((item) => (
                                 <div key={item.id} className="flex items-start gap-2 text-zinc-400">
-                                  <span className="font-mono text-zinc-500 shrink-0">{item.inom}</span>
+                                  {item.mi
+                                    ? <span className="font-mono text-emerald-400 font-medium shrink-0">{item.mi}</span>
+                                    : <span className="font-mono text-zinc-500 shrink-0">{item.inom}</span>
+                                  }
+                                  {item.mi && <span className="font-mono text-zinc-500 text-[10px] shrink-0">({item.inom})</span>}
                                   <span>—</span>
                                   <span>{TIPO_PRODUTO_LABELS[item.tipo_produto]}</span>
                                   <span className="text-zinc-600">({item.escala})</span>
