@@ -28,11 +28,11 @@ const PRODUTOS: Produto[] = [
     nome: "Carta Topográfica",
     imagem: "/cartatopografica.png",
     definicao:
-      "Representação planialtimétrica do terreno com símbolos e convenções cartográficas. Inclui relevo (curvas de nível), hidrografia, vegetação, edificações, vias e limites. Entregue em formato digital e/ou impresso.",
+      "Representação convencional das informações planialtimétricas do terreno por meio de símbolos e convenções cartográficas padronizadas, proporcionando identificação ágil e interpretação clara dos elementos representados. O produto é disponibilizado em formato digital e impresso.",
     usos: [
-      "Orientação e navegação no terreno",
-      "Medição de distâncias, áreas e rumos",
-      "Planejamento de operações e manobras",
+      "Orientação no terreno",
+      "Identificação e localização de feições geoespaciais",
+      "Realização de medições de distâncias, áreas e direções",
     ],
     prazo: "180 dias",
   },
@@ -41,11 +41,11 @@ const PRODUTOS: Produto[] = [
     nome: "Carta Ortoimagem",
     imagem: "/cartaortoimagem.png",
     definicao:
-      "Combinação entre ortoimagem georreferenciada e um conjunto reduzido de informações vetoriais (hidrografia, rodovias, relevo). Permite identificação visual e localização simultâneas.",
+      "Representação de um conjunto selecionado de informações planialtimétricas, tais como hidrografia, sistema viário e relevo, sobrepostas a uma Ortoimagem, favorecendo a contextualização espacial e a interpretação das feições representadas. O produto é disponibilizado em formato digital e impresso.",
     usos: [
-      "Orientação combinando imagem real e cartografia",
-      "Reconhecimento de feições e obstáculos",
-      "Verificação de dados cartográficos em campo",
+      "Orientação no terreno",
+      "Identificação e localização de feições geoespaciais",
+      "Determinação de distâncias, áreas e direções",
     ],
     prazo: "60 dias",
   },
@@ -54,11 +54,9 @@ const PRODUTOS: Produto[] = [
     nome: "Ortoimagem",
     imagem: "/ortoimagem.png",
     definicao:
-      "Imagem aérea ou orbital corrigida geometricamente (georreferenciada) sem vetores cartográficos sobrepostos. Fiel à realidade do terreno na data de aquisição.",
+      "Representação do terreno por meio de imagem georreferenciada, sem a incorporação de elementos vetoriais. O produto é disponibilizado em formato digital e impresso.",
     usos: [
-      "Identificação e localização de feições naturais e artificiais",
-      "Atualização de banco de dados cartográficos",
-      "Monitoramento de áreas de interesse",
+      "Identificação e localização de feições naturais e artificiais do terreno, sujeitas à interpretação do usuário",
     ],
     prazo: "40 dias",
   },
@@ -67,11 +65,11 @@ const PRODUTOS: Produto[] = [
     nome: "Modelo Digital do Terreno",
     imagem: "/mdt.png",
     definicao:
-      "Representação numérica contínua da altitude do terreno sem obstáculos artificiais ou vegetação (somente o chão). Formato de grade matricial.",
+      "Representação contínua das altitudes da superfície terrestre, desconsiderando a presença de obstáculos naturais e artificiais, tais como árvores e edificações. O produto é disponibilizado em formato digital.",
     usos: [
-      "Cálculo de declividade e trafegabilidade",
       "Planejamento de obras de engenharia",
-      "Modelagem hidrológica e de bacias",
+      "Determinação da declividade do terreno",
+      "Avaliação das condições de trafegabilidade",
     ],
     prazo: "40 dias",
   },
@@ -80,11 +78,11 @@ const PRODUTOS: Produto[] = [
     nome: "Modelo Digital de Superfície",
     imagem: "/mds.png",
     definicao:
-      "Similar ao MDT, porém inclui a altura de obstáculos naturais (árvores) e artificiais (edificações). Representa a superfície visível do ambiente.",
+      "Representação contínua das altitudes da superfície terrestre, contemplando a presença de obstáculos naturais e artificiais, tais como árvores e edificações. O produto é disponibilizado em formato digital.",
     usos: [
-      "Análise de visada e linha de tiro",
-      "Planejamento de telecomunicações e comunicações táticas",
-      "Determinação de cobertura vegetal e edificada",
+      "Determinação das condições de visada sobre tropas",
+      "Avaliação de trafegabilidade do terreno",
+      "Planejamento e implantação de infraestrutura de comunicações",
     ],
     prazo: "40 dias",
   },
@@ -93,11 +91,11 @@ const PRODUTOS: Produto[] = [
     nome: "Conjunto de Dados Geoespaciais Vetoriais",
     imagem: "/cdgv.png",
     definicao:
-      "Feições do terreno (naturais e artificiais) em formato vetorial — pontos, linhas e polígonos — com atributos textuais associados. Base de dados estruturada para uso em SIG.",
+      "Representação de elementos do terreno, naturais e artificiais, por meio de objetos geométricos do tipo ponto, linha e polígono, contendo seus respectivos atributos descritivos associados. O produto é disponibilizado em formato digital.",
     usos: [
-      "Integração em Sistemas de Informação Geográfica (SIG)",
-      "Simulação tática e análise de terreno automatizada",
-      "Produção derivada de outros produtos cartográficos",
+      "Utilização como base de dados para Sistemas de Informação e Simulação",
+      "Análises espaciais fundamentadas na localização e na geometria das feições",
+      "Consulta e exploração dos atributos descritivos associados às feições",
     ],
     prazo: "180 dias",
   },
@@ -813,7 +811,8 @@ const TUTORIAIS = {
     },
     {
       n: "5",
-      title: "Selecione o Enquadramento dos Produtos no Mapa e Adicione ao Carrinho",
+      title:
+        "Selecione o Enquadramento dos Produtos no Mapa e Adicione ao Carrinho",
       desc: "Clique nas células sobre o mapa correspondentes às áreas de interesse, de modo a adicionar os produtos desejados ao carrinho. Cabe ressaltar que os mesmos podem ser removidos a qualquer tempo, antes da confirmação do pedido.",
     },
     {
@@ -824,7 +823,7 @@ const TUTORIAIS = {
     {
       n: "7",
       title: "Revise o Pedido",
-      desc: "Verifique se os pedidos solicitados estão listados no carrinho. Caso tenha interesse na impressão dos produtos adicionados, marcar a opção e informar a quantidade e tipo de material desejável. O Canvas e Tyvek estão condicionados à disponibilidade e podem ser eventualmente fornecidos em Sulfite.",
+      desc: "Verifique se os pedidos solicitados estão listados no carrinho. Caso tenha interesse na impressão dos produtos adicionados, marcar a opção e informar a quantidade e tipo de material desejável. Tyvek esta condicionados à disponibilidade e podem ser eventualmente fornecidos em Sulfite.",
     },
   ],
   editar: [
@@ -1289,7 +1288,8 @@ export function Ajuda() {
           title="Produtos Disponíveis"
         />
         <p className="text-xs text-zinc-500 mb-4">
-          Clique no produto para visualizar a imagem ampliada e os respectivos detalhes.
+          Clique no produto para visualizar a imagem ampliada e os respectivos
+          detalhes.
         </p>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
           {PRODUTOS.map((p) => (
@@ -1311,28 +1311,22 @@ export function Ajuda() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {[
             {
-              nome: "Canvas",
-              icon: "🖼",
-              desc: "Tecido sintético resistente, impermeável e durável. Ideal para uso prolongado em campo, suporta dobramento repetido e umidade. Recomendado para operações de longa duração.",
-              destaque: "Alta durabilidade · Impermeável",
-            },
-            {
-              nome: "Sulfite",
+              nome: "Papel Sulfite",
               icon: "📄",
-              desc: "Papel comum (75–90 g/m²). Opção econômica para uso interno, briefings e documentação temporária. Não resiste à umidade. Adequado para ambientes controlados.",
+              desc: "Material de baixo custo de aquisição, adequado para anotações e escrita. Apresenta menor resistência mecânica, estando mais sujeito a rasgos e amassamentos. Indicado para: planejamento, instrução, reuniões de coordenação, estudos de situação, reconhecimento preliminar de áreas e atividades acadêmicas.",
               destaque: "Econômico · Uso interno",
             },
             {
-              nome: "Glossy",
+              nome: "Papel Glossy",
               icon: "✨",
-              desc: "Papel fotográfico brilhante de alta resolução. Oferece reprodução fiel de cores e detalhes, ideal para apresentações, exposições e arquivos de alta qualidade visual.",
-              destaque: "Alta resolução · Visual premium",
+              desc: "Material de custo intermediário, com acabamento de alta qualidade visual. Apresenta baixa resistência a amassamentos e pode sofrer desbotamento quando exposto prolongadamente à luz solar. Não é recomendado para escrita. Indicado para: exposição de produtos cartográficos.",
+              destaque: "Alta qualidade visual · Exposição",
             },
             {
               nome: "Tyvek",
               icon: "🏕",
-              desc: "Material sintético extremamente resistente (polietileno de alta densidade). À prova d'água, rasgo e dobramento intenso. Indicado para operações em ambientes adversos — selva, campo úmido, embarque.",
-              destaque: "Prova d'água · Máxima resistência",
+              desc: "Material de elevado custo de aquisição, que apresenta alta resistência a rasgos e à umidade. Não é recomendado para escrita. Indicado para: atividades de campo, operações militares, exercícios de adestramento, missões de reconhecimento e navegação terrestre.",
+              destaque: "Alta resistência · Operações de campo",
             },
           ].map((m) => (
             <div
@@ -1425,7 +1419,8 @@ export function Ajuda() {
         {/* Fluxo outros órgãos */}
         <div>
           <p className="text-xs font-semibold text-orange-400 uppercase tracking-wide mb-2">
-            Solicitante subordinado a Órgão de Direção Setorial (DECEX, DEC e COLOG)
+            Solicitante subordinado a Órgão de Direção Setorial (DECEX, DEC e
+            COLOG)
           </p>
           <div className="flex flex-wrap gap-2 items-center">
             {FLUXO_OUTROS.map((s, i) => (
