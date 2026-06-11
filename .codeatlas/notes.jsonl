@@ -1,0 +1,1 @@
+{"id": "decision:memory/20260602_172459::Decisao- JWT TTL", "type": "decision", "title": "Decisao: JWT TTL", "content": "Autenticacao usa JWT com expiracao de 30min", "tags": ["auth", "jwt"], "created_at": "2026-06-02T17:24:59.956634+00:00"}

@@ -1,0 +1,97 @@
+```mermaid
+flowchart TD
+
+    %% Estilos
+    classDef classNode fill:#4A90D9,stroke:#2c6fad,color:#fff
+    classDef funcNode fill:#50C878,stroke:#2d8a50,color:#fff
+    classDef methodNode fill:#90EE90,stroke:#4a8f4a,color:#000
+    classDef moduleNode fill:#9B59B6,stroke:#6c3483,color:#fff
+    classDef noteNode fill:#F4D03F,stroke:#b7950b,color:#000
+    classDef conceptNode fill:#F0A500,stroke:#b07a00,color:#000
+    classDef decisionNode fill:#E74C3C,stroke:#a93226,color:#fff
+
+    %% Nos
+    class_backend_app_config_py__backend_app_config_Settings["Settings"]:::classNode
+    class_backend_app_config_py__backend_app_config_Settings_Con["Config"]:::classNode
+    class_backend_app_database_py__backend_app_database_Base["Base"]:::classNode
+    class_backend_app_models_api_metrica_py__backend_app_models_["ApiMetrica"]:::classNode
+    class_backend_app_models_audit_log_py__backend_app_models_au["AuditLog"]:::classNode
+    class_backend_app_models_bdgex_cache_py__backend_app_models_["BdgexCache"]:::classNode
+    class_backend_app_models_config_entrega_py__backend_app_mode["ConfigEntrega"]:::classNode
+    class_backend_app_models_enums_py__backend_app_models_enums_["PerfilEnum"]:::classNode
+    class_backend_app_models_enums_py__backend_app_models_enums_["OrgaoVinculanteEnum"]:::classNode
+    class_backend_app_models_enums_py__backend_app_models_enums_["StatusPedidoEnum"]:::classNode
+    class_backend_app_models_enums_py__backend_app_models_enums_["TipoProdutoEnum"]:::classNode
+    class_backend_app_models_enums_py__backend_app_models_enums_["EscalaEnum"]:::classNode
+    class_backend_app_models_enums_py__backend_app_models_enums_["TipoJanelaEnum"]:::classNode
+    class_backend_app_models_enums_py__backend_app_models_enums_["PostoGraduacaoEnum"]:::classNode
+    class_backend_app_models_janela_py__backend_app_models_janel["JanelaPedidos"]:::classNode
+    class_backend_app_models_notificacao_py__backend_app_models_["Notificacao"]:::classNode
+    class_backend_app_models_om_customizada_py__backend_app_mode["OmCustomizada"]:::classNode
+    class_backend_app_models_operacao_py__backend_app_models_ope["Operacao"]:::classNode
+    class_backend_app_models_pedido_py__backend_app_models_pedid["Pedido"]:::classNode
+    class_backend_app_models_pedido_py__backend_app_models_pedid["ItemPedido"]:::classNode
+    class_backend_app_models_pedido_historico_py__backend_app_mo["PedidoHistorico"]:::classNode
+    class_backend_app_models_pedido_transferencia_py__backend_ap["PedidoTransferencia"]:::classNode
+    class_backend_app_models_user_py__backend_app_models_user_Us["Usuario"]:::classNode
+    class_backend_app_models_user_py__backend_app_models_user_To["TokenSenha"]:::classNode
+    class_backend_app_routers_config_py__backend_app_routers_con["ConfigEntregaOut"]:::classNode
+    class_backend_app_routers_config_py__backend_app_routers_con["ConfigEntregaUpdate"]:::classNode
+    class_backend_app_routers_janelas_py__backend_app_routers_ja["JanelaCreate"]:::classNode
+    class_backend_app_routers_janelas_py__backend_app_routers_ja["JanelaUpdate"]:::classNode
+    class_backend_app_routers_janelas_py__backend_app_routers_ja["JanelaOut"]:::classNode
+    class_backend_app_routers_janelas_py__backend_app_routers_ja["MinhaJanelaOut"]:::classNode
+    class_backend_app_routers_janelas_py__backend_app_routers_ja["ProrrogacaoRequest"]:::classNode
+    class_backend_app_routers_map_layers_py__backend_app_routers["FeaturePreviewItem"]:::classNode
+    class_backend_app_routers_oms_py__backend_app_routers_oms_Om["OmCreateRequest"]:::classNode
+    class_backend_app_routers_operacoes_py__backend_app_routers_["OperacaoCreate"]:::classNode
+    class_backend_app_routers_operacoes_py__backend_app_routers_["OperacaoOut"]:::classNode
+    class_backend_app_routers_pedidos_py__backend_app_routers_pe["ExportRequest"]:::classNode
+    class_backend_app_routers_pedidos_py__backend_app_routers_pe["AdminPedidoUpdate"]:::classNode
+    class_backend_app_routers_pedidos_py__backend_app_routers_pe["DarProntoRequest"]:::classNode
+    class_backend_app_routers_pedidos_py__backend_app_routers_pe["EnviarLoteRequest"]:::classNode
+    class_backend_app_routers_pedidos_py__backend_app_routers_pe["ConsolidateRequest"]:::classNode
+    class_backend_app_routers_pedidos_py__backend_app_routers_pe["SolicitarRemocaoRequest"]:::classNode
+    class_backend_app_routers_transferencias_py__backend_app_rou["TransferenciaOut"]:::classNode
+    class_backend_app_schemas_auth_py__backend_app_schemas_auth_["RegisterRequest"]:::classNode
+    class_backend_app_schemas_auth_py__backend_app_schemas_auth_["LoginRequest"]:::classNode
+    class_backend_app_schemas_auth_py__backend_app_schemas_auth_["TokenResponse"]:::classNode
+    class_backend_app_schemas_auth_py__backend_app_schemas_auth_["ResendActivationRequest"]:::classNode
+    class_backend_app_schemas_auth_py__backend_app_schemas_auth_["ForgotPasswordRequest"]:::classNode
+    class_backend_app_schemas_auth_py__backend_app_schemas_auth_["ResetPasswordRequest"]:::classNode
+    class_backend_app_schemas_historico_py__backend_app_schemas_["PedidoHistoricoOut"]:::classNode
+    class_backend_app_schemas_metrica_py__backend_app_schemas_me["EndpointMetricaOut"]:::classNode
+    class_backend_app_schemas_metrica_py__backend_app_schemas_me["HoraMetricaOut"]:::classNode
+    class_backend_app_schemas_metrica_py__backend_app_schemas_me["StatusCountOut"]:::classNode
+    class_backend_app_schemas_metrica_py__backend_app_schemas_me["OrgaoVinculanteCountOut"]:::classNode
+    class_backend_app_schemas_metrica_py__backend_app_schemas_me["MesCountOut"]:::classNode
+    class_backend_app_schemas_metrica_py__backend_app_schemas_me["ResumoMetricasOut"]:::classNode
+    class_backend_app_schemas_metrica_py__backend_app_schemas_me["PedidosMetricasOut"]:::classNode
+    class_backend_app_schemas_pedido_py__backend_app_schemas_ped["TransferirPedidosRequest"]:::classNode
+    class_backend_app_schemas_pedido_py__backend_app_schemas_ped["ItemPedidoCreate"]:::classNode
+    class_backend_app_schemas_pedido_py__backend_app_schemas_ped["ItemPedidoOut"]:::classNode
+    class_backend_app_schemas_pedido_py__backend_app_schemas_ped["PedidoCreate"]:::classNode
+    class_backend_app_schemas_pedido_py__backend_app_schemas_ped["PedidoUpdate"]:::classNode
+    class_backend_app_schemas_pedido_py__backend_app_schemas_ped["PedidoOut"]:::classNode
+    class_backend_app_schemas_pedido_py__backend_app_schemas_ped["ReviewPedidoRequest"]:::classNode
+    class_backend_app_schemas_pedido_py__backend_app_schemas_ped["AssignCGEORequest"]:::classNode
+    class_backend_app_schemas_pedido_py__backend_app_schemas_ped["CGEOReviewRequest"]:::classNode
+    class_backend_app_schemas_pedido_py__backend_app_schemas_ped["ReorderRequest"]:::classNode
+    class_backend_app_schemas_pedido_py__backend_app_schemas_ped["DuplicateGroup"]:::classNode
+    class_backend_app_schemas_user_py__backend_app_schemas_user_["UsuarioOut"]:::classNode
+    class_backend_app_schemas_user_py__backend_app_schemas_user_["UsuarioUpdateRequest"]:::classNode
+    class_backend_app_schemas_user_py__backend_app_schemas_user_["ChangePasswordRequest"]:::classNode
+    class_backend_app_schemas_user_py__backend_app_schemas_user_["UpdateProfileRequest"]:::classNode
+    class_backend_app_schemas_user_py__backend_app_schemas_user_["AdminDadosOrgRequest"]:::classNode
+    class_backend_app_schemas_user_py__backend_app_schemas_user_["NotificacaoOut"]:::classNode
+    class_backend_app_services_notification_service_py__backend_["NotificationService"]:::classNode
+    class_backend_tests_test_api_integration_py__backend_tests_t["TestHealth"]:::classNode
+    class_backend_tests_test_api_integration_py__backend_tests_t["TestAuthPublico"]:::classNode
+    class_backend_tests_test_api_integration_py__backend_tests_t["TestProtecaoSemToken"]:::classNode
+    class_backend_tests_test_api_integration_py__backend_tests_t["TestAdminFlow"]:::classNode
+    class_backend_tests_test_api_integration_py__backend_tests_t["TestHerancaPedidos"]:::classNode
+    class_backend_tests_test_auth_service_py__backend_tests_test["TestRegisterUser"]:::classNode
+
+    %% Arestas
+    class_backend_app_config_py__backend_app_config_Settings -->|defines| class_backend_app_config_py__backend_app_config_Settings_Con
+```

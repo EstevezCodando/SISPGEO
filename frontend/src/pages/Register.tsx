@@ -278,8 +278,8 @@ export function Register() {
             {/* Nota de expiração */}
             <p className="text-center text-xs text-zinc-300 mb-6">
               O link de ativação é válido por{" "}
-              <span className="text-zinc-100 font-medium">24 horas</span>. Caso não encontre
-              o e-mail, verifique a pasta de spam.
+              <span className="text-zinc-100 font-medium">24 horas</span>. Caso
+              não encontre o e-mail, verifique a pasta de spam.
             </p>
 
             <button
@@ -401,7 +401,7 @@ export function Register() {
             {/* Telefone Ritex (opcional) */}
             <div>
               <label className="block text-sm font-medium text-zinc-300 mb-1.5">
-                Telefone Funcional (Ritex)
+                Telefone Funcional (RITEx)
                 <span className="text-zinc-500 text-xs font-normal ml-1">
                   – opcional
                 </span>

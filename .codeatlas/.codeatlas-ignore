@@ -1,0 +1,12 @@
+# Padroes ignorados pelo scanner (sintaxe .gitignore)
+__pycache__/
+*.pyc
+.git/
+.venv/
+venv/
+env/
+node_modules/
+dist/
+build/
+.codeatlas/
+*.egg-info/

@@ -144,7 +144,7 @@ Exibido como prefixo do nome do usuário na interface.
 
 ### `MaterialImpressao` (frontend only)
 
-`'Canvas'` · `'Sulfite'` · `'Glossy'` · `'Tyvek'`
+`'Sulfite'` · `'Glossy'` · `'Tyvek'`
 Tipo de suporte físico para impressão. Armazenado como `String(20)` no banco.
 
 ---
@@ -238,22 +238,22 @@ automaticamente nas queries async).
 
 Cada registro representa **uma folha/célula** do índice cartográfico.
 
-| Coluna                       | Tipo        | Descrição                                                 |
-| ---------------------------- | ----------- | --------------------------------------------------------- |
-| `id`                         | Integer PK  |                                                           |
-| `pedido_id`                  | Integer FK  | → `pedidos.id` CASCADE DELETE                             |
-| `tipo_produto`               | SAEnum      | Produto solicitado — `TipoProdutoEnum`                    |
-| `escala`                     | SAEnum      | Escala cartográfica — `EscalaEnum`                        |
-| `inom`                       | String(50)  | Índice de Nomenclatura (ex: SF-22-X-D-IV)                 |
-| `mi`                         | String(50)? | Número MI — identificador alternativo                     |
-| `geom`                       | Geometry?   | Polígono da folha WGS-84 SRID 4326 (PostGIS)              |
-| `disponivel_bdgex`           | Boolean     | Produto existe no BDGEx no momento do pedido              |
-| `data_producao_bdgex`        | Date?       | Data de produção do dado no BDGEx                         |
-| `solicitar_mesmo_disponivel` | Boolean     | Forçar produção mesmo que já disponível                   |
-| `prioridade`                 | SmallInt    | Ordem de atendimento dentro do pedido                     |
-| `impressao_quantidade`       | SmallInt?   | Cópias para **este item** (per-item)                      |
-| `impressao_tipo_material`    | String(20)? | Material para **este item** (Canvas/Sulfite/Glossy/Tyvek) |
-| `criado_em`                  | DateTime    | Criação                                                   |
+| Coluna                       | Tipo        | Descrição                                          |
+| ---------------------------- | ----------- | -------------------------------------------------- |
+| `id`                         | Integer PK  |                                                    |
+| `pedido_id`                  | Integer FK  | → `pedidos.id` CASCADE DELETE                      |
+| `tipo_produto`               | SAEnum      | Produto solicitado — `TipoProdutoEnum`             |
+| `escala`                     | SAEnum      | Escala cartográfica — `EscalaEnum`                 |
+| `inom`                       | String(50)  | Índice de Nomenclatura (ex: SF-22-X-D-IV)          |
+| `mi`                         | String(50)? | Número MI — identificador alternativo              |
+| `geom`                       | Geometry?   | Polígono da folha WGS-84 SRID 4326 (PostGIS)       |
+| `disponivel_bdgex`           | Boolean     | Produto existe no BDGEx no momento do pedido       |
+| `data_producao_bdgex`        | Date?       | Data de produção do dado no BDGEx                  |
+| `solicitar_mesmo_disponivel` | Boolean     | Forçar produção mesmo que já disponível            |
+| `prioridade`                 | SmallInt    | Ordem de atendimento dentro do pedido              |
+| `impressao_quantidade`       | SmallInt?   | Cópias para **este item** (per-item)               |
+| `impressao_tipo_material`    | String(20)? | Material para **este item** (Sulfite/Glossy/Tyvek) |
+| `criado_em`                  | DateTime    | Criação                                            |
 
 > **Princípio de separação de responsabilidade:** `impressao_quantidade` e
 > `impressao_tipo_material` pertencem ao `ItemPedido`, não ao `Pedido`.
@@ -497,7 +497,7 @@ interface ItemImpressao {
   id: string; // == cartKey(item) — chave idêntica a produtoId
   produtoId: string; // FK → CartItem via cartKey()
   quantidade: number; // cópias solicitadas (mín. 1)
-  tipo: MaterialImpressao; // 'Canvas' | 'Sulfite' | 'Glossy' | 'Tyvek'
+  tipo: MaterialImpressao; //  'Sulfite' | 'Glossy' | 'Tyvek'
 }
 ```
 
