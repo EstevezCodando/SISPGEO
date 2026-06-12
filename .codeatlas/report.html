@@ -41,6 +41,19 @@
   .pill-warn   { border-color:var(--warn); color:var(--warn); background:rgba(230,126,34,.08); }
   .pill-info   { border-color:var(--info); color:var(--info); background:rgba(52,152,219,.08); }
 
+  /* Metrics row */
+  .metrics-row { display:flex; gap:14px; margin-top:18px; flex-wrap:wrap; }
+  .metric { flex:1; min-width:130px; background:var(--surface); border:1px solid var(--border); border-left:3px solid var(--border); border-radius:8px; padding:14px 18px; }
+  .metric-val { font-size:28px; font-weight:700; line-height:1; }
+  .metric-val span { font-size:14px; font-weight:500; color:var(--muted); }
+  .metric-lbl { font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--muted); margin-top:6px; }
+  .metric-good { border-left-color:#2ecc71; }
+  .metric-good .metric-val { color:#2ecc71; }
+  .metric-warn { border-left-color:var(--warn); }
+  .metric-warn .metric-val { color:var(--warn); }
+  .metric-bad { border-left-color:var(--crit); }
+  .metric-bad .metric-val { color:var(--crit); }
+
   /* Category */
   .category { margin-bottom:40px; }
   .cat-header { margin-bottom:16px; }
@@ -78,7 +91,7 @@
 <div class="page">
   <nav>
     <h3>Categorias</h3>
-    <ul><li><a href="#cat-complexidade">Complexidade <span class="toc-count">54</span> <span class="toc-crit">2🔴</span></a></li><li><a href="#cat-nomenclatura">Nomenclatura <span class="toc-count">4</span></a></li><li><a href="#cat-duplicidade">Duplicidade <span class="toc-count">9</span> <span class="toc-crit">9🔴</span></a></li><li><a href="#cat-documentação">Documentação <span class="toc-count">11</span></a></li><li><a href="#cat-acoplamento">Acoplamento <span class="toc-count">9</span></a></li><li><a href="#cat-coesão">Coesão <span class="toc-count">2</span></a></li></ul>
+    <ul><li><a href="#cat-complexidade">Complexidade <span class="toc-count">38</span> <span class="toc-crit">2🔴</span></a></li><li><a href="#cat-nomenclatura">Nomenclatura <span class="toc-count">1</span></a></li><li><a href="#cat-duplicidade">Duplicidade <span class="toc-count">9</span> <span class="toc-crit">8🔴</span></a></li><li><a href="#cat-documentação">Documentação <span class="toc-count">11</span></a></li><li><a href="#cat-acoplamento">Acoplamento <span class="toc-count">9</span></a></li><li><a href="#cat-coesão">Coesão <span class="toc-count">2</span></a></li><li><a href="#cat-solid">SOLID <span class="toc-count">11</span> <span class="toc-crit">3🔴</span></a></li><li><a href="#cat-tipagem">Tipagem <span class="toc-count">11</span></a></li></ul>
     <div style="padding:16px;margin-top:16px;font-size:11px;color:var(--muted);border-top:1px solid var(--border)">
       <a href="/" style="color:var(--accent)">← Voltar ao grafo</a>
     </div>
@@ -89,18 +102,19 @@
       <h1>Relatório de Qualidade</h1>
       <p>Projeto: <strong>SISPGEO</strong> &nbsp;·&nbsp; Gerado pelo CodeAtlas</p>
       <div class="summary-pills">
-        <span class="pill pill-total">89 ocorrências</span>
-        <span class="pill pill-crit">🔴 11 crítico(s)</span>
-        <span class="pill pill-warn">🟡 67 aviso(s)</span>
-        <span class="pill pill-info">🔵 11 info</span>
+        <span class="pill pill-total">92 ocorrências</span>
+        <span class="pill pill-crit">🔴 13 crítico(s)</span>
+        <span class="pill pill-warn">🟡 57 aviso(s)</span>
+        <span class="pill pill-info">🔵 22 info</span>
       </div>
+      <div class="metrics-row"><div class="metric metric-good"><div class="metric-val">79%</div><div class="metric-lbl">Reducao de tokens</div></div><div class="metric metric-good"><div class="metric-val">78<span>/100</span></div><div class="metric-lbl">AI Readiness</div></div><div class="metric metric-bad"><div class="metric-val">70<span>/100</span></div><div class="metric-lbl">Tech-Debt</div></div></div>
     </div>
 
     
 <section class="category" id="cat-complexidade">
   <div class="cat-header">
     <h2>Complexidade</h2>
-    <div class="cat-badges"><span class="sev-badge sev-critical">2 crítico(s)</span> <span class="sev-badge sev-warning">52 aviso(s)</span></div>
+    <div class="cat-badges"><span class="sev-badge sev-critical">2 crítico(s)</span> <span class="sev-badge sev-warning">36 aviso(s)</span></div>
     <p class="cat-desc">Funções longas, classes inchadas e routers com lógica de negócio</p>
   </div>
   
@@ -160,115 +174,11 @@
   <div class="issue-header">
     <span class="issue-icon">🟡</span>
     <span class="issue-id">C001</span>
-    <span class="issue-title">`_create_test_janelas` — 74 linhas</span>
-    <a class="issue-loc" href="http://localhost:3004/api/search?q=main.py" target="_blank">main.py:285</a>
-  </div>
-  <div class="issue-body">
-    <p class="issue-desc">A função `_create_test_janelas` em `main.py` tem 74 linhas. Funções longas violam o Princípio da Responsabilidade Única (SRP) e dificultam testes e revisão.</p>
-    
-    <div class="issue-suggest"><strong>Sugestão:</strong> Extraia blocos lógicos distintos em funções privadas menores (ex.: `_build_...`, `_validate_...`, `_prepare_...`). Cada função deve caber em uma tela (~30 linhas).</div>
-  </div>
-</div>
-<div class="issue issue-warning">
-  <div class="issue-header">
-    <span class="issue-icon">🟡</span>
-    <span class="issue-id">C001</span>
     <span class="issue-title">`resumo_metricas` — 79 linhas</span>
     <a class="issue-loc" href="http://localhost:3004/api/search?q=metricas.py" target="_blank">metricas.py:49</a>
   </div>
   <div class="issue-body">
     <p class="issue-desc">A função `resumo_metricas` em `metricas.py` tem 79 linhas. Funções longas violam o Princípio da Responsabilidade Única (SRP) e dificultam testes e revisão.</p>
-    
-    <div class="issue-suggest"><strong>Sugestão:</strong> Extraia blocos lógicos distintos em funções privadas menores (ex.: `_build_...`, `_validate_...`, `_prepare_...`). Cada função deve caber em uma tela (~30 linhas).</div>
-  </div>
-</div>
-<div class="issue issue-warning">
-  <div class="issue-header">
-    <span class="issue-icon">🟡</span>
-    <span class="issue-id">C001</span>
-    <span class="issue-title">`metricas_pedidos` — 64 linhas</span>
-    <a class="issue-loc" href="http://localhost:3004/api/search?q=metricas.py" target="_blank">metricas.py:185</a>
-  </div>
-  <div class="issue-body">
-    <p class="issue-desc">A função `metricas_pedidos` em `metricas.py` tem 64 linhas. Funções longas violam o Princípio da Responsabilidade Única (SRP) e dificultam testes e revisão.</p>
-    
-    <div class="issue-suggest"><strong>Sugestão:</strong> Extraia blocos lógicos distintos em funções privadas menores (ex.: `_build_...`, `_validate_...`, `_prepare_...`). Cada função deve caber em uma tela (~30 linhas).</div>
-  </div>
-</div>
-<div class="issue issue-warning">
-  <div class="issue-header">
-    <span class="issue-icon">🟡</span>
-    <span class="issue-id">C001</span>
-    <span class="issue-title">`_enrich` — 58 linhas</span>
-    <a class="issue-loc" href="http://localhost:3004/api/search?q=pedidos.py" target="_blank">pedidos.py:52</a>
-  </div>
-  <div class="issue-body">
-    <p class="issue-desc">A função `_enrich` em `pedidos.py` tem 58 linhas. Funções longas violam o Princípio da Responsabilidade Única (SRP) e dificultam testes e revisão.</p>
-    
-    <div class="issue-suggest"><strong>Sugestão:</strong> Extraia blocos lógicos distintos em funções privadas menores (ex.: `_build_...`, `_validate_...`, `_prepare_...`). Cada função deve caber em uma tela (~30 linhas).</div>
-  </div>
-</div>
-<div class="issue issue-warning">
-  <div class="issue-header">
-    <span class="issue-icon">🟡</span>
-    <span class="issue-id">C001</span>
-    <span class="issue-title">`create_pedido` — 59 linhas</span>
-    <a class="issue-loc" href="http://localhost:3004/api/search?q=pedidos.py" target="_blank">pedidos.py:168</a>
-  </div>
-  <div class="issue-body">
-    <p class="issue-desc">A função `create_pedido` em `pedidos.py` tem 59 linhas. Funções longas violam o Princípio da Responsabilidade Única (SRP) e dificultam testes e revisão.</p>
-    
-    <div class="issue-suggest"><strong>Sugestão:</strong> Extraia blocos lógicos distintos em funções privadas menores (ex.: `_build_...`, `_validate_...`, `_prepare_...`). Cada função deve caber em uma tela (~30 linhas).</div>
-  </div>
-</div>
-<div class="issue issue-warning">
-  <div class="issue-header">
-    <span class="issue-icon">🟡</span>
-    <span class="issue-id">C001</span>
-    <span class="issue-title">`get_map_features` — 58 linhas</span>
-    <a class="issue-loc" href="http://localhost:3004/api/search?q=pedidos.py" target="_blank">pedidos.py:319</a>
-  </div>
-  <div class="issue-body">
-    <p class="issue-desc">A função `get_map_features` em `pedidos.py` tem 58 linhas. Funções longas violam o Princípio da Responsabilidade Única (SRP) e dificultam testes e revisão.</p>
-    
-    <div class="issue-suggest"><strong>Sugestão:</strong> Extraia blocos lógicos distintos em funções privadas menores (ex.: `_build_...`, `_validate_...`, `_prepare_...`). Cada função deve caber em uma tela (~30 linhas).</div>
-  </div>
-</div>
-<div class="issue issue-warning">
-  <div class="issue-header">
-    <span class="issue-icon">🟡</span>
-    <span class="issue-id">C001</span>
-    <span class="issue-title">`listar_duplicatas` — 55 linhas</span>
-    <a class="issue-loc" href="http://localhost:3004/api/search?q=pedidos.py" target="_blank">pedidos.py:383</a>
-  </div>
-  <div class="issue-body">
-    <p class="issue-desc">A função `listar_duplicatas` em `pedidos.py` tem 55 linhas. Funções longas violam o Princípio da Responsabilidade Única (SRP) e dificultam testes e revisão.</p>
-    
-    <div class="issue-suggest"><strong>Sugestão:</strong> Extraia blocos lógicos distintos em funções privadas menores (ex.: `_build_...`, `_validate_...`, `_prepare_...`). Cada função deve caber em uma tela (~30 linhas).</div>
-  </div>
-</div>
-<div class="issue issue-warning">
-  <div class="issue-header">
-    <span class="issue-icon">🟡</span>
-    <span class="issue-id">C001</span>
-    <span class="issue-title">`dar_pronto` — 53 linhas</span>
-    <a class="issue-loc" href="http://localhost:3004/api/search?q=pedidos.py" target="_blank">pedidos.py:1187</a>
-  </div>
-  <div class="issue-body">
-    <p class="issue-desc">A função `dar_pronto` em `pedidos.py` tem 53 linhas. Funções longas violam o Princípio da Responsabilidade Única (SRP) e dificultam testes e revisão.</p>
-    
-    <div class="issue-suggest"><strong>Sugestão:</strong> Extraia blocos lógicos distintos em funções privadas menores (ex.: `_build_...`, `_validate_...`, `_prepare_...`). Cada função deve caber em uma tela (~30 linhas).</div>
-  </div>
-</div>
-<div class="issue issue-warning">
-  <div class="issue-header">
-    <span class="issue-icon">🟡</span>
-    <span class="issue-id">C001</span>
-    <span class="issue-title">`admin_produtos_recentes_bdgex` — 62 linhas</span>
-    <a class="issue-loc" href="http://localhost:3004/api/search?q=pedidos.py" target="_blank">pedidos.py:1494</a>
-  </div>
-  <div class="issue-body">
-    <p class="issue-desc">A função `admin_produtos_recentes_bdgex` em `pedidos.py` tem 62 linhas. Funções longas violam o Princípio da Responsabilidade Única (SRP) e dificultam testes e revisão.</p>
     
     <div class="issue-suggest"><strong>Sugestão:</strong> Extraia blocos lógicos distintos em funções privadas menores (ex.: `_build_...`, `_validate_...`, `_prepare_...`). Cada função deve caber em uma tela (~30 linhas).</div>
   </div>
@@ -303,63 +213,11 @@
   <div class="issue-header">
     <span class="issue-icon">🟡</span>
     <span class="issue-id">C001</span>
-    <span class="issue-title">`request_password_reset` — 52 linhas</span>
-    <a class="issue-loc" href="http://localhost:3004/api/search?q=auth_service.py" target="_blank">auth_service.py:275</a>
-  </div>
-  <div class="issue-body">
-    <p class="issue-desc">A função `request_password_reset` em `auth_service.py` tem 52 linhas. Funções longas violam o Princípio da Responsabilidade Única (SRP) e dificultam testes e revisão.</p>
-    
-    <div class="issue-suggest"><strong>Sugestão:</strong> Extraia blocos lógicos distintos em funções privadas menores (ex.: `_build_...`, `_validate_...`, `_prepare_...`). Cada função deve caber em uma tela (~30 linhas).</div>
-  </div>
-</div>
-<div class="issue issue-warning">
-  <div class="issue-header">
-    <span class="issue-icon">🟡</span>
-    <span class="issue-id">C001</span>
-    <span class="issue-title">`resend_activation_email` — 55 linhas</span>
-    <a class="issue-loc" href="http://localhost:3004/api/search?q=auth_service.py" target="_blank">auth_service.py:365</a>
-  </div>
-  <div class="issue-body">
-    <p class="issue-desc">A função `resend_activation_email` em `auth_service.py` tem 55 linhas. Funções longas violam o Princípio da Responsabilidade Única (SRP) e dificultam testes e revisão.</p>
-    
-    <div class="issue-suggest"><strong>Sugestão:</strong> Extraia blocos lógicos distintos em funções privadas menores (ex.: `_build_...`, `_validate_...`, `_prepare_...`). Cada função deve caber em uma tela (~30 linhas).</div>
-  </div>
-</div>
-<div class="issue issue-warning">
-  <div class="issue-header">
-    <span class="issue-icon">🟡</span>
-    <span class="issue-id">C001</span>
     <span class="issue-title">`_load_sopegeo_ages` — 77 linhas</span>
     <a class="issue-loc" href="http://localhost:3004/api/search?q=bdgex_service.py" target="_blank">bdgex_service.py:133</a>
   </div>
   <div class="issue-body">
     <p class="issue-desc">A função `_load_sopegeo_ages` em `bdgex_service.py` tem 77 linhas. Funções longas violam o Princípio da Responsabilidade Única (SRP) e dificultam testes e revisão.</p>
-    
-    <div class="issue-suggest"><strong>Sugestão:</strong> Extraia blocos lógicos distintos em funções privadas menores (ex.: `_build_...`, `_validate_...`, `_prepare_...`). Cada função deve caber em uma tela (~30 linhas).</div>
-  </div>
-</div>
-<div class="issue issue-warning">
-  <div class="issue-header">
-    <span class="issue-icon">🟡</span>
-    <span class="issue-id">C001</span>
-    <span class="issue-title">`_build_cdgv_stripped` — 50 linhas</span>
-    <a class="issue-loc" href="http://localhost:3004/api/search?q=bdgex_service.py" target="_blank">bdgex_service.py:313</a>
-  </div>
-  <div class="issue-body">
-    <p class="issue-desc">A função `_build_cdgv_stripped` em `bdgex_service.py` tem 50 linhas. Funções longas violam o Princípio da Responsabilidade Única (SRP) e dificultam testes e revisão.</p>
-    
-    <div class="issue-suggest"><strong>Sugestão:</strong> Extraia blocos lógicos distintos em funções privadas menores (ex.: `_build_...`, `_validate_...`, `_prepare_...`). Cada função deve caber em uma tela (~30 linhas).</div>
-  </div>
-</div>
-<div class="issue issue-warning">
-  <div class="issue-header">
-    <span class="issue-icon">🟡</span>
-    <span class="issue-id">C001</span>
-    <span class="issue-title">`notify_by_perfil` — 51 linhas</span>
-    <a class="issue-loc" href="http://localhost:3004/api/search?q=notification_service.py" target="_blank">notification_service.py:65</a>
-  </div>
-  <div class="issue-body">
-    <p class="issue-desc">A função `notify_by_perfil` em `notification_service.py` tem 51 linhas. Funções longas violam o Princípio da Responsabilidade Única (SRP) e dificultam testes e revisão.</p>
     
     <div class="issue-suggest"><strong>Sugestão:</strong> Extraia blocos lógicos distintos em funções privadas menores (ex.: `_build_...`, `_validate_...`, `_prepare_...`). Cada função deve caber em uma tela (~30 linhas).</div>
   </div>
@@ -394,19 +252,6 @@
   <div class="issue-header">
     <span class="issue-icon">🟡</span>
     <span class="issue-id">C001</span>
-    <span class="issue-title">`consolidate_pedidos` — 70 linhas</span>
-    <a class="issue-loc" href="http://localhost:3004/api/search?q=pedido_service.py" target="_blank">pedido_service.py:352</a>
-  </div>
-  <div class="issue-body">
-    <p class="issue-desc">A função `consolidate_pedidos` em `pedido_service.py` tem 70 linhas. Funções longas violam o Princípio da Responsabilidade Única (SRP) e dificultam testes e revisão.</p>
-    
-    <div class="issue-suggest"><strong>Sugestão:</strong> Extraia blocos lógicos distintos em funções privadas menores (ex.: `_build_...`, `_validate_...`, `_prepare_...`). Cada função deve caber em uma tela (~30 linhas).</div>
-  </div>
-</div>
-<div class="issue issue-warning">
-  <div class="issue-header">
-    <span class="issue-icon">🟡</span>
-    <span class="issue-id">C001</span>
     <span class="issue-title">`cgeo_review` — 93 linhas</span>
     <a class="issue-loc" href="http://localhost:3004/api/search?q=pedido_service.py" target="_blank">pedido_service.py:470</a>
   </div>
@@ -425,19 +270,6 @@
   </div>
   <div class="issue-body">
     <p class="issue-desc">A função `transferir_pedidos` em `pedido_service.py` tem 82 linhas. Funções longas violam o Princípio da Responsabilidade Única (SRP) e dificultam testes e revisão.</p>
-    
-    <div class="issue-suggest"><strong>Sugestão:</strong> Extraia blocos lógicos distintos em funções privadas menores (ex.: `_build_...`, `_validate_...`, `_prepare_...`). Cada função deve caber em uma tela (~30 linhas).</div>
-  </div>
-</div>
-<div class="issue issue-warning">
-  <div class="issue-header">
-    <span class="issue-icon">🟡</span>
-    <span class="issue-id">C001</span>
-    <span class="issue-title">`_base` — 69 linhas</span>
-    <a class="issue-loc" href="http://localhost:3004/api/search?q=email_templates.py" target="_blank">email_templates.py:24</a>
-  </div>
-  <div class="issue-body">
-    <p class="issue-desc">A função `_base` em `email_templates.py` tem 69 linhas. Funções longas violam o Princípio da Responsabilidade Única (SRP) e dificultam testes e revisão.</p>
     
     <div class="issue-suggest"><strong>Sugestão:</strong> Extraia blocos lógicos distintos em funções privadas menores (ex.: `_build_...`, `_validate_...`, `_prepare_...`). Cada função deve caber em uma tela (~30 linhas).</div>
   </div>
@@ -472,19 +304,6 @@
   <div class="issue-header">
     <span class="issue-icon">🟡</span>
     <span class="issue-id">C001</span>
-    <span class="issue-title">`dados_organizacionais_atualizados` — 52 linhas</span>
-    <a class="issue-loc" href="http://localhost:3004/api/search?q=email_templates.py" target="_blank">email_templates.py:494</a>
-  </div>
-  <div class="issue-body">
-    <p class="issue-desc">A função `dados_organizacionais_atualizados` em `email_templates.py` tem 52 linhas. Funções longas violam o Princípio da Responsabilidade Única (SRP) e dificultam testes e revisão.</p>
-    
-    <div class="issue-suggest"><strong>Sugestão:</strong> Extraia blocos lógicos distintos em funções privadas menores (ex.: `_build_...`, `_validate_...`, `_prepare_...`). Cada função deve caber em uma tela (~30 linhas).</div>
-  </div>
-</div>
-<div class="issue issue-warning">
-  <div class="issue-header">
-    <span class="issue-icon">🟡</span>
-    <span class="issue-id">C001</span>
     <span class="issue-title">`notificar_gestor` — 79 linhas</span>
     <a class="issue-loc" href="http://localhost:3004/api/search?q=email_templates.py" target="_blank">email_templates.py:549</a>
   </div>
@@ -503,19 +322,6 @@
   </div>
   <div class="issue-body">
     <p class="issue-desc">A função `run` em `create_hierarchy_users.py` tem 142 linhas. Funções longas violam o Princípio da Responsabilidade Única (SRP) e dificultam testes e revisão.</p>
-    
-    <div class="issue-suggest"><strong>Sugestão:</strong> Extraia blocos lógicos distintos em funções privadas menores (ex.: `_build_...`, `_validate_...`, `_prepare_...`). Cada função deve caber em uma tela (~30 linhas).</div>
-  </div>
-</div>
-<div class="issue issue-warning">
-  <div class="issue-header">
-    <span class="issue-icon">🟡</span>
-    <span class="issue-id">C001</span>
-    <span class="issue-title">`_build_output` — 52 linhas</span>
-    <a class="issue-loc" href="http://localhost:3004/api/search?q=step0.py" target="_blank">step0.py:75</a>
-  </div>
-  <div class="issue-body">
-    <p class="issue-desc">A função `_build_output` em `step0.py` tem 52 linhas. Funções longas violam o Princípio da Responsabilidade Única (SRP) e dificultam testes e revisão.</p>
     
     <div class="issue-suggest"><strong>Sugestão:</strong> Extraia blocos lógicos distintos em funções privadas menores (ex.: `_build_...`, `_validate_...`, `_prepare_...`). Cada função deve caber em uma tela (~30 linhas).</div>
   </div>
@@ -810,23 +616,10 @@
 <section class="category" id="cat-nomenclatura">
   <div class="cat-header">
     <h2>Nomenclatura</h2>
-    <div class="cat-badges"><span class="sev-badge sev-warning">4 aviso(s)</span></div>
+    <div class="cat-badges"><span class="sev-badge sev-warning">1 aviso(s)</span></div>
     <p class="cat-desc">Nomes sem significado, genéricos ou com convenção inconsistente</p>
   </div>
   
-<div class="issue issue-warning">
-  <div class="issue-header">
-    <span class="issue-icon">🟡</span>
-    <span class="issue-id">N001</span>
-    <span class="issue-title">Nome ruim: `main` em `create_admin.py`</span>
-    <a class="issue-loc" href="http://localhost:3004/api/search?q=create_admin.py" target="_blank">create_admin.py:15</a>
-  </div>
-  <div class="issue-body">
-    <p class="issue-desc">A função `main` em `create_admin.py`: nome genérico `main` — não descreve o que a função faz.</p>
-    
-    <div class="issue-suggest"><strong>Sugestão:</strong> Use nomes descritivos no formato verbo_substantivo: `calcular_preco_total`, `enviar_notificacao_pedido`, `validar_permissao_usuario`. O nome deve responder: O que esta função faz? Para quem?</div>
-  </div>
-</div>
 <div class="issue issue-warning">
   <div class="issue-header">
     <span class="issue-icon">🟡</span>
@@ -840,37 +633,11 @@
     <div class="issue-suggest"><strong>Sugestão:</strong> Use nomes descritivos no formato verbo_substantivo: `calcular_preco_total`, `enviar_notificacao_pedido`, `validar_permissao_usuario`. O nome deve responder: O que esta função faz? Para quem?</div>
   </div>
 </div>
-<div class="issue issue-warning">
-  <div class="issue-header">
-    <span class="issue-icon">🟡</span>
-    <span class="issue-id">N001</span>
-    <span class="issue-title">Nome ruim: `run` em `create_hierarchy_users.py`</span>
-    <a class="issue-loc" href="http://localhost:3004/api/search?q=create_hierarchy_users.py" target="_blank">create_hierarchy_users.py:522</a>
-  </div>
-  <div class="issue-body">
-    <p class="issue-desc">A função `run` em `create_hierarchy_users.py`: nome genérico `run` — não descreve o que a função faz.</p>
-    
-    <div class="issue-suggest"><strong>Sugestão:</strong> Use nomes descritivos no formato verbo_substantivo: `calcular_preco_total`, `enviar_notificacao_pedido`, `validar_permissao_usuario`. O nome deve responder: O que esta função faz? Para quem?</div>
-  </div>
-</div>
-<div class="issue issue-warning">
-  <div class="issue-header">
-    <span class="issue-icon">🟡</span>
-    <span class="issue-id">N001</span>
-    <span class="issue-title">Nome ruim: `main` em `step0.py`</span>
-    <a class="issue-loc" href="http://localhost:3004/api/search?q=step0.py" target="_blank">step0.py:132</a>
-  </div>
-  <div class="issue-body">
-    <p class="issue-desc">A função `main` em `step0.py`: nome genérico `main` — não descreve o que a função faz.</p>
-    
-    <div class="issue-suggest"><strong>Sugestão:</strong> Use nomes descritivos no formato verbo_substantivo: `calcular_preco_total`, `enviar_notificacao_pedido`, `validar_permissao_usuario`. O nome deve responder: O que esta função faz? Para quem?</div>
-  </div>
-</div>
 </section>
 <section class="category" id="cat-duplicidade">
   <div class="cat-header">
     <h2>Duplicidade</h2>
-    <div class="cat-badges"><span class="sev-badge sev-critical">9 crítico(s)</span></div>
+    <div class="cat-badges"><span class="sev-badge sev-critical">8 crítico(s)</span> <span class="sev-badge sev-warning">1 aviso(s)</span></div>
     <p class="cat-desc">Código duplicado entre arquivos ou operações equivalentes renomeadas</p>
   </div>
   
@@ -878,117 +645,117 @@
   <div class="issue-header">
     <span class="issue-icon">🔴</span>
     <span class="issue-id">D001</span>
-    <span class="issue-title">`confirm_email` duplicada em 2 arquivos</span>
+    <span class="issue-title">`confirm_email` duplicada em 2 arquivos de negócio</span>
     <a class="issue-loc" href="http://localhost:3004/api/search?q=auth.py" target="_blank">auth.py</a>
   </div>
   <div class="issue-body">
-    <p class="issue-desc">A função `confirm_email` existe em 2 arquivos: auth.py, auth_service.py. Código duplicado evolui de forma divergente e cria bugs silenciosos.</p>
+    <p class="issue-desc">A função `confirm_email` existe em 2 arquivos top-level: auth.py, auth_service.py. Código duplicado evolui de forma divergente.</p>
     <div class="extra-block">Arquivos: <code>auth.py</code>, <code>auth_service.py</code></div>
-    <div class="issue-suggest"><strong>Sugestão:</strong> Consolide `confirm_email` em um único local (service ou utils). Se as implementações diferem, renomeie para tornar a distinção explícita.</div>
+    <div class="issue-suggest"><strong>Sugestão:</strong> Consolide `confirm_email` em um único local. Se diverge intencionalmente, renomeie.</div>
   </div>
 </div>
 <div class="issue issue-critical">
   <div class="issue-header">
     <span class="issue-icon">🔴</span>
     <span class="issue-id">D001</span>
-    <span class="issue-title">`reset_password` duplicada em 2 arquivos</span>
+    <span class="issue-title">`reset_password` duplicada em 2 arquivos de negócio</span>
     <a class="issue-loc" href="http://localhost:3004/api/search?q=auth.py" target="_blank">auth.py</a>
   </div>
   <div class="issue-body">
-    <p class="issue-desc">A função `reset_password` existe em 2 arquivos: auth.py, auth_service.py. Código duplicado evolui de forma divergente e cria bugs silenciosos.</p>
+    <p class="issue-desc">A função `reset_password` existe em 2 arquivos top-level: auth.py, auth_service.py. Código duplicado evolui de forma divergente.</p>
     <div class="extra-block">Arquivos: <code>auth.py</code>, <code>auth_service.py</code></div>
-    <div class="issue-suggest"><strong>Sugestão:</strong> Consolide `reset_password` em um único local (service ou utils). Se as implementações diferem, renomeie para tornar a distinção explícita.</div>
+    <div class="issue-suggest"><strong>Sugestão:</strong> Consolide `reset_password` em um único local. Se diverge intencionalmente, renomeie.</div>
   </div>
 </div>
 <div class="issue issue-critical">
   <div class="issue-header">
     <span class="issue-icon">🔴</span>
     <span class="issue-id">D001</span>
-    <span class="issue-title">`_enrich` duplicada em 2 arquivos</span>
+    <span class="issue-title">`_enrich` duplicada em 2 arquivos de negócio</span>
     <a class="issue-loc" href="http://localhost:3004/api/search?q=historico.py" target="_blank">historico.py</a>
   </div>
   <div class="issue-body">
-    <p class="issue-desc">A função `_enrich` existe em 2 arquivos: historico.py, pedidos.py. Código duplicado evolui de forma divergente e cria bugs silenciosos.</p>
+    <p class="issue-desc">A função `_enrich` existe em 2 arquivos top-level: historico.py, pedidos.py. Código duplicado evolui de forma divergente.</p>
     <div class="extra-block">Arquivos: <code>historico.py</code>, <code>pedidos.py</code></div>
-    <div class="issue-suggest"><strong>Sugestão:</strong> Consolide `_enrich` em um único local (service ou utils). Se as implementações diferem, renomeie para tornar a distinção explícita.</div>
+    <div class="issue-suggest"><strong>Sugestão:</strong> Consolide `_enrich` em um único local. Se diverge intencionalmente, renomeie.</div>
   </div>
 </div>
 <div class="issue issue-critical">
   <div class="issue-header">
     <span class="issue-icon">🔴</span>
     <span class="issue-id">D001</span>
-    <span class="issue-title">`validate_nome` duplicada em 2 arquivos</span>
-    <a class="issue-loc" href="http://localhost:3004/api/search?q=operacoes.py" target="_blank">operacoes.py</a>
-  </div>
-  <div class="issue-body">
-    <p class="issue-desc">A função `validate_nome` existe em 2 arquivos: auth.py, operacoes.py. Código duplicado evolui de forma divergente e cria bugs silenciosos.</p>
-    <div class="extra-block">Arquivos: <code>auth.py</code>, <code>operacoes.py</code></div>
-    <div class="issue-suggest"><strong>Sugestão:</strong> Consolide `validate_nome` em um único local (service ou utils). Se as implementações diferem, renomeie para tornar a distinção explícita.</div>
-  </div>
-</div>
-<div class="issue issue-critical">
-  <div class="issue-header">
-    <span class="issue-icon">🔴</span>
-    <span class="issue-id">D001</span>
-    <span class="issue-title">`assign_cgeo` duplicada em 2 arquivos</span>
+    <span class="issue-title">`assign_cgeo` duplicada em 2 arquivos de negócio</span>
     <a class="issue-loc" href="http://localhost:3004/api/search?q=pedidos.py" target="_blank">pedidos.py</a>
   </div>
   <div class="issue-body">
-    <p class="issue-desc">A função `assign_cgeo` existe em 2 arquivos: pedido_service.py, pedidos.py. Código duplicado evolui de forma divergente e cria bugs silenciosos.</p>
+    <p class="issue-desc">A função `assign_cgeo` existe em 2 arquivos top-level: pedido_service.py, pedidos.py. Código duplicado evolui de forma divergente.</p>
     <div class="extra-block">Arquivos: <code>pedido_service.py</code>, <code>pedidos.py</code></div>
-    <div class="issue-suggest"><strong>Sugestão:</strong> Consolide `assign_cgeo` em um único local (service ou utils). Se as implementações diferem, renomeie para tornar a distinção explícita.</div>
+    <div class="issue-suggest"><strong>Sugestão:</strong> Consolide `assign_cgeo` em um único local. Se diverge intencionalmente, renomeie.</div>
   </div>
 </div>
 <div class="issue issue-critical">
   <div class="issue-header">
     <span class="issue-icon">🔴</span>
     <span class="issue-id">D001</span>
-    <span class="issue-title">`cgeo_review` duplicada em 2 arquivos</span>
+    <span class="issue-title">`cgeo_review` duplicada em 2 arquivos de negócio</span>
     <a class="issue-loc" href="http://localhost:3004/api/search?q=pedidos.py" target="_blank">pedidos.py</a>
   </div>
   <div class="issue-body">
-    <p class="issue-desc">A função `cgeo_review` existe em 2 arquivos: pedido_service.py, pedidos.py. Código duplicado evolui de forma divergente e cria bugs silenciosos.</p>
+    <p class="issue-desc">A função `cgeo_review` existe em 2 arquivos top-level: pedido_service.py, pedidos.py. Código duplicado evolui de forma divergente.</p>
     <div class="extra-block">Arquivos: <code>pedido_service.py</code>, <code>pedidos.py</code></div>
-    <div class="issue-suggest"><strong>Sugestão:</strong> Consolide `cgeo_review` em um único local (service ou utils). Se as implementações diferem, renomeie para tornar a distinção explícita.</div>
+    <div class="issue-suggest"><strong>Sugestão:</strong> Consolide `cgeo_review` em um único local. Se diverge intencionalmente, renomeie.</div>
   </div>
 </div>
 <div class="issue issue-critical">
   <div class="issue-header">
     <span class="issue-icon">🔴</span>
     <span class="issue-id">D001</span>
-    <span class="issue-title">`transferir_pedidos` duplicada em 2 arquivos</span>
+    <span class="issue-title">`transferir_pedidos` duplicada em 2 arquivos de negócio</span>
     <a class="issue-loc" href="http://localhost:3004/api/search?q=users.py" target="_blank">users.py</a>
   </div>
   <div class="issue-body">
-    <p class="issue-desc">A função `transferir_pedidos` existe em 2 arquivos: pedido_service.py, users.py. Código duplicado evolui de forma divergente e cria bugs silenciosos.</p>
+    <p class="issue-desc">A função `transferir_pedidos` existe em 2 arquivos top-level: pedido_service.py, users.py. Código duplicado evolui de forma divergente.</p>
     <div class="extra-block">Arquivos: <code>pedido_service.py</code>, <code>users.py</code></div>
-    <div class="issue-suggest"><strong>Sugestão:</strong> Consolide `transferir_pedidos` em um único local (service ou utils). Se as implementações diferem, renomeie para tornar a distinção explícita.</div>
+    <div class="issue-suggest"><strong>Sugestão:</strong> Consolide `transferir_pedidos` em um único local. Se diverge intencionalmente, renomeie.</div>
   </div>
 </div>
 <div class="issue issue-critical">
   <div class="issue-header">
     <span class="issue-icon">🔴</span>
     <span class="issue-id">D001</span>
-    <span class="issue-title">`register_user` duplicada em 2 arquivos</span>
+    <span class="issue-title">`register_user` duplicada em 2 arquivos de negócio</span>
     <a class="issue-loc" href="http://localhost:3004/api/search?q=auth_service.py" target="_blank">auth_service.py</a>
   </div>
   <div class="issue-body">
-    <p class="issue-desc">A função `register_user` existe em 2 arquivos: auth_service.py, create_hierarchy_users.py. Código duplicado evolui de forma divergente e cria bugs silenciosos.</p>
+    <p class="issue-desc">A função `register_user` existe em 2 arquivos top-level: auth_service.py, create_hierarchy_users.py. Código duplicado evolui de forma divergente.</p>
     <div class="extra-block">Arquivos: <code>auth_service.py</code>, <code>create_hierarchy_users.py</code></div>
-    <div class="issue-suggest"><strong>Sugestão:</strong> Consolide `register_user` em um único local (service ou utils). Se as implementações diferem, renomeie para tornar a distinção explícita.</div>
+    <div class="issue-suggest"><strong>Sugestão:</strong> Consolide `register_user` em um único local. Se diverge intencionalmente, renomeie.</div>
   </div>
 </div>
 <div class="issue issue-critical">
   <div class="issue-header">
     <span class="issue-icon">🔴</span>
     <span class="issue-id">D001</span>
-    <span class="issue-title">`main` duplicada em 2 arquivos</span>
+    <span class="issue-title">`main` duplicada em 2 arquivos de negócio</span>
     <a class="issue-loc" href="http://localhost:3004/api/search?q=create_admin.py" target="_blank">create_admin.py</a>
   </div>
   <div class="issue-body">
-    <p class="issue-desc">A função `main` existe em 2 arquivos: create_admin.py, step0.py. Código duplicado evolui de forma divergente e cria bugs silenciosos.</p>
+    <p class="issue-desc">A função `main` existe em 2 arquivos top-level: create_admin.py, step0.py. Código duplicado evolui de forma divergente.</p>
     <div class="extra-block">Arquivos: <code>create_admin.py</code>, <code>step0.py</code></div>
-    <div class="issue-suggest"><strong>Sugestão:</strong> Consolide `main` em um único local (service ou utils). Se as implementações diferem, renomeie para tornar a distinção explícita.</div>
+    <div class="issue-suggest"><strong>Sugestão:</strong> Consolide `main` em um único local. Se diverge intencionalmente, renomeie.</div>
+  </div>
+</div>
+<div class="issue issue-warning">
+  <div class="issue-header">
+    <span class="issue-icon">🟡</span>
+    <span class="issue-id">D001</span>
+    <span class="issue-title">`validate_nome` em 2 classes (verificar polimorfismo)</span>
+    <a class="issue-loc" href="http://localhost:3004/api/search?q=operacoes.py" target="_blank">operacoes.py</a>
+  </div>
+  <div class="issue-body">
+    <p class="issue-desc">O método `validate_nome` existe em 2 classes: auth.py, operacoes.py. Pode ser polimorfismo ou duplicação.</p>
+    <div class="extra-block">Arquivos: <code>auth.py</code>, <code>operacoes.py</code></div>
+    <div class="issue-suggest"><strong>Sugestão:</strong> Verifique herança. Se não houver ABC, avalie extrair `validate_nome` para um utilitário.</div>
   </div>
 </div>
 </section>
@@ -1158,9 +925,9 @@
     <a class="issue-loc" href="http://localhost:3004/api/search?q=users.py" target="_blank">users.py</a>
   </div>
   <div class="issue-body">
-    <p class="issue-desc">7 funções em `users.py` não são chamadas por nenhum outro código e não chamam nada: `get_me`, `update_me`, `confirm_data`, `get_unread_count`, `get_notifications`, `mark_read`.... Podem ser dead code ou endpoints acessados apenas externamente (não rastreáveis pelo grafo).</p>
+    <p class="issue-desc">7 funções em `users.py` não são chamadas nem chamam nada: `get_me`, `update_me`, `confirm_data`, `get_unread_count`, `get_notifications`, `mark_read`.... Podem ser dead code acumulado ao longo de refatorações.</p>
     <div class="extra-block"><code>get_me</code>, <code>update_me</code>, <code>confirm_data</code>, <code>get_unread_count</code>, <code>get_notifications</code>, <code>mark_read</code>, <code>list_mesma_om</code></div>
-    <div class="issue-suggest"><strong>Sugestão:</strong> Verifique cada função: se for dead code, remova. Se for ponto de entrada externo (CLI, webhook), adicione um comentário `# entry point: <como é invocado>`.</div>
+    <div class="issue-suggest"><strong>Sugestão:</strong> Verifique cada função: se for dead code, remova. Se for ponto de entrada externo (webhook, importação dinâmica), documente com `# entry point: <como é invocado>`.</div>
   </div>
 </div>
 <div class="issue issue-warning">
@@ -1171,9 +938,9 @@
     <a class="issue-loc" href="http://localhost:3004/api/search?q=pedidos.py" target="_blank">pedidos.py</a>
   </div>
   <div class="issue-body">
-    <p class="issue-desc">6 funções em `pedidos.py` não são chamadas por nenhum outro código e não chamam nada: `_slug`, `reorder_pedidos`, `reorder_items`, `solicitar_remocao`, `get_pedido_features`, `cancel_pedido`. Podem ser dead code ou endpoints acessados apenas externamente (não rastreáveis pelo grafo).</p>
+    <p class="issue-desc">6 funções em `pedidos.py` não são chamadas nem chamam nada: `_slug`, `reorder_pedidos`, `reorder_items`, `solicitar_remocao`, `get_pedido_features`, `cancel_pedido`. Podem ser dead code acumulado ao longo de refatorações.</p>
     <div class="extra-block"><code>_slug</code>, <code>reorder_pedidos</code>, <code>reorder_items</code>, <code>solicitar_remocao</code>, <code>get_pedido_features</code>, <code>cancel_pedido</code></div>
-    <div class="issue-suggest"><strong>Sugestão:</strong> Verifique cada função: se for dead code, remova. Se for ponto de entrada externo (CLI, webhook), adicione um comentário `# entry point: <como é invocado>`.</div>
+    <div class="issue-suggest"><strong>Sugestão:</strong> Verifique cada função: se for dead code, remova. Se for ponto de entrada externo (webhook, importação dinâmica), documente com `# entry point: <como é invocado>`.</div>
   </div>
 </div>
 <div class="issue issue-warning">
@@ -1184,9 +951,9 @@
     <a class="issue-loc" href="http://localhost:3004/api/search?q=test_api_integration.py" target="_blank">test_api_integration.py</a>
   </div>
   <div class="issue-body">
-    <p class="issue-desc">5 funções em `test_api_integration.py` não são chamadas por nenhum outro código e não chamam nada: `client`, `token`, `tokens`, `admin_token`, `pedido_id`. Podem ser dead code ou endpoints acessados apenas externamente (não rastreáveis pelo grafo).</p>
+    <p class="issue-desc">5 funções em `test_api_integration.py` não são chamadas nem chamam nada: `client`, `token`, `tokens`, `admin_token`, `pedido_id`. Podem ser dead code acumulado ao longo de refatorações.</p>
     <div class="extra-block"><code>client</code>, <code>token</code>, <code>tokens</code>, <code>admin_token</code>, <code>pedido_id</code></div>
-    <div class="issue-suggest"><strong>Sugestão:</strong> Verifique cada função: se for dead code, remova. Se for ponto de entrada externo (CLI, webhook), adicione um comentário `# entry point: <como é invocado>`.</div>
+    <div class="issue-suggest"><strong>Sugestão:</strong> Verifique cada função: se for dead code, remova. Se for ponto de entrada externo (webhook, importação dinâmica), documente com `# entry point: <como é invocado>`.</div>
   </div>
 </div>
 <div class="issue issue-warning">
@@ -1197,9 +964,9 @@
     <a class="issue-loc" href="http://localhost:3004/api/search?q=oms.py" target="_blank">oms.py</a>
   </div>
   <div class="issue-body">
-    <p class="issue-desc">4 funções em `oms.py` não são chamadas por nenhum outro código e não chamam nada: `cmila_valido`, `nome_valido`, `listar_oms_customizadas`, `criar_om_customizada`. Podem ser dead code ou endpoints acessados apenas externamente (não rastreáveis pelo grafo).</p>
+    <p class="issue-desc">4 funções em `oms.py` não são chamadas nem chamam nada: `cmila_valido`, `nome_valido`, `listar_oms_customizadas`, `criar_om_customizada`. Podem ser dead code acumulado ao longo de refatorações.</p>
     <div class="extra-block"><code>cmila_valido</code>, <code>nome_valido</code>, <code>listar_oms_customizadas</code>, <code>criar_om_customizada</code></div>
-    <div class="issue-suggest"><strong>Sugestão:</strong> Verifique cada função: se for dead code, remova. Se for ponto de entrada externo (CLI, webhook), adicione um comentário `# entry point: <como é invocado>`.</div>
+    <div class="issue-suggest"><strong>Sugestão:</strong> Verifique cada função: se for dead code, remova. Se for ponto de entrada externo (webhook, importação dinâmica), documente com `# entry point: <como é invocado>`.</div>
   </div>
 </div>
 <div class="issue issue-warning">
@@ -1210,9 +977,9 @@
     <a class="issue-loc" href="http://localhost:3004/api/search?q=auth.py" target="_blank">auth.py</a>
   </div>
   <div class="issue-body">
-    <p class="issue-desc">4 funções em `auth.py` não são chamadas por nenhum outro código e não chamam nada: `validate_email`, `validate_senha`, `validate_nome`, `validate_senha`. Podem ser dead code ou endpoints acessados apenas externamente (não rastreáveis pelo grafo).</p>
+    <p class="issue-desc">4 funções em `auth.py` não são chamadas nem chamam nada: `validate_email`, `validate_senha`, `validate_nome`, `validate_senha`. Podem ser dead code acumulado ao longo de refatorações.</p>
     <div class="extra-block"><code>validate_email</code>, <code>validate_senha</code>, <code>validate_nome</code>, <code>validate_senha</code></div>
-    <div class="issue-suggest"><strong>Sugestão:</strong> Verifique cada função: se for dead code, remova. Se for ponto de entrada externo (CLI, webhook), adicione um comentário `# entry point: <como é invocado>`.</div>
+    <div class="issue-suggest"><strong>Sugestão:</strong> Verifique cada função: se for dead code, remova. Se for ponto de entrada externo (webhook, importação dinâmica), documente com `# entry point: <como é invocado>`.</div>
   </div>
 </div>
 <div class="issue issue-warning">
@@ -1223,9 +990,9 @@
     <a class="issue-loc" href="http://localhost:3004/api/search?q=operacoes.py" target="_blank">operacoes.py</a>
   </div>
   <div class="issue-body">
-    <p class="issue-desc">3 funções em `operacoes.py` não são chamadas por nenhum outro código e não chamam nada: `validate_nome`, `list_operacoes`, `create_operacao`. Podem ser dead code ou endpoints acessados apenas externamente (não rastreáveis pelo grafo).</p>
+    <p class="issue-desc">3 funções em `operacoes.py` não são chamadas nem chamam nada: `validate_nome`, `list_operacoes`, `create_operacao`. Podem ser dead code acumulado ao longo de refatorações.</p>
     <div class="extra-block"><code>validate_nome</code>, <code>list_operacoes</code>, <code>create_operacao</code></div>
-    <div class="issue-suggest"><strong>Sugestão:</strong> Verifique cada função: se for dead code, remova. Se for ponto de entrada externo (CLI, webhook), adicione um comentário `# entry point: <como é invocado>`.</div>
+    <div class="issue-suggest"><strong>Sugestão:</strong> Verifique cada função: se for dead code, remova. Se for ponto de entrada externo (webhook, importação dinâmica), documente com `# entry point: <como é invocado>`.</div>
   </div>
 </div>
 <div class="issue issue-warning">
@@ -1236,9 +1003,9 @@
     <a class="issue-loc" href="http://localhost:3004/api/search?q=config.py" target="_blank">config.py</a>
   </div>
   <div class="issue-body">
-    <p class="issue-desc">2 funções em `config.py` não são chamadas por nenhum outro código e não chamam nada: `build_database_url`, `validate_production_secrets`. Podem ser dead code ou endpoints acessados apenas externamente (não rastreáveis pelo grafo).</p>
+    <p class="issue-desc">2 funções em `config.py` não são chamadas nem chamam nada: `build_database_url`, `validate_production_secrets`. Podem ser dead code acumulado ao longo de refatorações.</p>
     <div class="extra-block"><code>build_database_url</code>, <code>validate_production_secrets</code></div>
-    <div class="issue-suggest"><strong>Sugestão:</strong> Verifique cada função: se for dead code, remova. Se for ponto de entrada externo (CLI, webhook), adicione um comentário `# entry point: <como é invocado>`.</div>
+    <div class="issue-suggest"><strong>Sugestão:</strong> Verifique cada função: se for dead code, remova. Se for ponto de entrada externo (webhook, importação dinâmica), documente com `# entry point: <como é invocado>`.</div>
   </div>
 </div>
 <div class="issue issue-warning">
@@ -1249,9 +1016,9 @@
     <a class="issue-loc" href="http://localhost:3004/api/search?q=janelas.py" target="_blank">janelas.py</a>
   </div>
   <div class="issue-body">
-    <p class="issue-desc">2 funções em `janelas.py` não são chamadas por nenhum outro código e não chamam nada: `list_janelas`, `active_janelas`. Podem ser dead code ou endpoints acessados apenas externamente (não rastreáveis pelo grafo).</p>
+    <p class="issue-desc">2 funções em `janelas.py` não são chamadas nem chamam nada: `list_janelas`, `active_janelas`. Podem ser dead code acumulado ao longo de refatorações.</p>
     <div class="extra-block"><code>list_janelas</code>, <code>active_janelas</code></div>
-    <div class="issue-suggest"><strong>Sugestão:</strong> Verifique cada função: se for dead code, remova. Se for ponto de entrada externo (CLI, webhook), adicione um comentário `# entry point: <como é invocado>`.</div>
+    <div class="issue-suggest"><strong>Sugestão:</strong> Verifique cada função: se for dead code, remova. Se for ponto de entrada externo (webhook, importação dinâmica), documente com `# entry point: <como é invocado>`.</div>
   </div>
 </div>
 <div class="issue issue-warning">
@@ -1262,9 +1029,9 @@
     <a class="issue-loc" href="http://localhost:3004/api/search?q=logging_config.py" target="_blank">logging_config.py</a>
   </div>
   <div class="issue-body">
-    <p class="issue-desc">2 funções em `logging_config.py` não são chamadas por nenhum outro código e não chamam nada: `setup_logging`, `get_logger`. Podem ser dead code ou endpoints acessados apenas externamente (não rastreáveis pelo grafo).</p>
+    <p class="issue-desc">2 funções em `logging_config.py` não são chamadas nem chamam nada: `setup_logging`, `get_logger`. Podem ser dead code acumulado ao longo de refatorações.</p>
     <div class="extra-block"><code>setup_logging</code>, <code>get_logger</code></div>
-    <div class="issue-suggest"><strong>Sugestão:</strong> Verifique cada função: se for dead code, remova. Se for ponto de entrada externo (CLI, webhook), adicione um comentário `# entry point: <como é invocado>`.</div>
+    <div class="issue-suggest"><strong>Sugestão:</strong> Verifique cada função: se for dead code, remova. Se for ponto de entrada externo (webhook, importação dinâmica), documente com `# entry point: <como é invocado>`.</div>
   </div>
 </div>
 </section>
@@ -1299,6 +1066,308 @@
     <p class="issue-desc">`pedidos.py` é um arquivo de rotas mas contém 6 classes (schemas/requests/responses) além de 29 endpoints. Isso viola o SRP e torna o arquivo difícil de navegar.</p>
     
     <div class="issue-suggest"><strong>Sugestão:</strong> Mova as classes Pydantic para `schemas/pedidos_schemas.py` ou `models/pedidos_models.py`. O arquivo de rotas deve conter apenas as funções de endpoint.</div>
+  </div>
+</div>
+</section>
+<section class="category" id="cat-solid">
+  <div class="cat-header">
+    <h2>SOLID</h2>
+    <div class="cat-badges"><span class="sev-badge sev-critical">3 crítico(s)</span> <span class="sev-badge sev-warning">8 aviso(s)</span></div>
+    <p class="cat-desc">Excesso de parâmetros e flags booleanas (SRP / Open-Closed)</p>
+  </div>
+  
+<div class="issue issue-critical">
+  <div class="issue-header">
+    <span class="issue-icon">🔴</span>
+    <span class="issue-id">SOL002</span>
+    <span class="issue-title">`register_user` — 12 parâmetros</span>
+    <a class="issue-loc" href="http://localhost:3004/api/search?q=auth_service.py" target="_blank">auth_service.py:63</a>
+  </div>
+  <div class="issue-body">
+    <p class="issue-desc">A função `register_user` em `auth_service.py` recebe 12 parâmetros: `db`, `nome`, `email`, `telefone`, `om`, `secao_om`, `senha`, `regiao_militar`.... Listas longas de parâmetros indicam que dados relacionados deveriam ser agrupados em um objeto, violando coesão (SRP).</p>
+    
+    <div class="issue-suggest"><strong>Sugestão:</strong> Agrupe parâmetros relacionados em um dataclass / Pydantic model (ex.: `RequestParams`, `RenderOptions`). Ou use o padrão Parameter Object para reduzir a aridade.</div>
+  </div>
+</div>
+<div class="issue issue-critical">
+  <div class="issue-header">
+    <span class="issue-icon">🔴</span>
+    <span class="issue-id">SOL002</span>
+    <span class="issue-title">`notificar_gestor` — 9 parâmetros</span>
+    <a class="issue-loc" href="http://localhost:3004/api/search?q=email_templates.py" target="_blank">email_templates.py:549</a>
+  </div>
+  <div class="issue-body">
+    <p class="issue-desc">A função `notificar_gestor` em `email_templates.py` recebe 9 parâmetros: `nome_gestor`, `nome_usuario`, `pedido_id`, `om`, `finalidade_geo`, `finalidade`, `posto_graduacao`, `orgao_vinculante`.... Listas longas de parâmetros indicam que dados relacionados deveriam ser agrupados em um objeto, violando coesão (SRP).</p>
+    
+    <div class="issue-suggest"><strong>Sugestão:</strong> Agrupe parâmetros relacionados em um dataclass / Pydantic model (ex.: `RequestParams`, `RenderOptions`). Ou use o padrão Parameter Object para reduzir a aridade.</div>
+  </div>
+</div>
+<div class="issue issue-critical">
+  <div class="issue-header">
+    <span class="issue-icon">🔴</span>
+    <span class="issue-id">SOL002</span>
+    <span class="issue-title">`_u` — 12 parâmetros</span>
+    <a class="issue-loc" href="http://localhost:3004/api/search?q=create_hierarchy_users.py" target="_blank">create_hierarchy_users.py:108</a>
+  </div>
+  <div class="issue-body">
+    <p class="issue-desc">A função `_u` em `create_hierarchy_users.py` recebe 12 parâmetros: `nome`, `guerra`, `email`, `tel`, `om`, `secao`, `regiao`, `orgao`.... Listas longas de parâmetros indicam que dados relacionados deveriam ser agrupados em um objeto, violando coesão (SRP).</p>
+    
+    <div class="issue-suggest"><strong>Sugestão:</strong> Agrupe parâmetros relacionados em um dataclass / Pydantic model (ex.: `RequestParams`, `RenderOptions`). Ou use o padrão Parameter Object para reduzir a aridade.</div>
+  </div>
+</div>
+<div class="issue issue-warning">
+  <div class="issue-header">
+    <span class="issue-icon">🟡</span>
+    <span class="issue-id">SOL002</span>
+    <span class="issue-title">`_persist_metric` — 6 parâmetros</span>
+    <a class="issue-loc" href="http://localhost:3004/api/search?q=metrics.py" target="_blank">metrics.py:64</a>
+  </div>
+  <div class="issue-body">
+    <p class="issue-desc">A função `_persist_metric` em `metrics.py` recebe 6 parâmetros: `method`, `endpoint`, `status_code`, `duration_ms`, `usuario_id`, `ip_address`. Listas longas de parâmetros indicam que dados relacionados deveriam ser agrupados em um objeto, violando coesão (SRP).</p>
+    
+    <div class="issue-suggest"><strong>Sugestão:</strong> Agrupe parâmetros relacionados em um dataclass / Pydantic model (ex.: `RequestParams`, `RenderOptions`). Ou use o padrão Parameter Object para reduzir a aridade.</div>
+  </div>
+</div>
+<div class="issue issue-warning">
+  <div class="issue-header">
+    <span class="issue-icon">🟡</span>
+    <span class="issue-id">SOL002</span>
+    <span class="issue-title">`_send_via_smtp` — 8 parâmetros</span>
+    <a class="issue-loc" href="http://localhost:3004/api/search?q=email_service.py" target="_blank">email_service.py:44</a>
+  </div>
+  <div class="issue-body">
+    <p class="issue-desc">A função `_send_via_smtp` em `email_service.py` recebe 8 parâmetros: `to`, `subject`, `html_body`, `host`, `port`, `use_tls`, `username`, `password`. Listas longas de parâmetros indicam que dados relacionados deveriam ser agrupados em um objeto, violando coesão (SRP).</p>
+    
+    <div class="issue-suggest"><strong>Sugestão:</strong> Agrupe parâmetros relacionados em um dataclass / Pydantic model (ex.: `RequestParams`, `RenderOptions`). Ou use o padrão Parameter Object para reduzir a aridade.</div>
+  </div>
+</div>
+<div class="issue issue-warning">
+  <div class="issue-header">
+    <span class="issue-icon">🟡</span>
+    <span class="issue-id">SOL002</span>
+    <span class="issue-title">`registrar_historico` — 6 parâmetros</span>
+    <a class="issue-loc" href="http://localhost:3004/api/search?q=historico_service.py" target="_blank">historico_service.py:26</a>
+  </div>
+  <div class="issue-body">
+    <p class="issue-desc">A função `registrar_historico` em `historico_service.py` recebe 6 parâmetros: `db`, `pedido`, `usuario`, `acao`, `status_anterior`, `motivo`. Listas longas de parâmetros indicam que dados relacionados deveriam ser agrupados em um objeto, violando coesão (SRP).</p>
+    
+    <div class="issue-suggest"><strong>Sugestão:</strong> Agrupe parâmetros relacionados em um dataclass / Pydantic model (ex.: `RequestParams`, `RenderOptions`). Ou use o padrão Parameter Object para reduzir a aridade.</div>
+  </div>
+</div>
+<div class="issue issue-warning">
+  <div class="issue-header">
+    <span class="issue-icon">🟡</span>
+    <span class="issue-id">SOL002</span>
+    <span class="issue-title">`notify_by_perfil` — 6 parâmetros</span>
+    <a class="issue-loc" href="http://localhost:3004/api/search?q=notification_service.py" target="_blank">notification_service.py:65</a>
+  </div>
+  <div class="issue-body">
+    <p class="issue-desc">A função `notify_by_perfil` em `notification_service.py` recebe 6 parâmetros: `perfil`, `titulo`, `mensagem`, `pedido_id`, `orgao_vinculante`, `regiao_militar`. Listas longas de parâmetros indicam que dados relacionados deveriam ser agrupados em um objeto, violando coesão (SRP).</p>
+    
+    <div class="issue-suggest"><strong>Sugestão:</strong> Agrupe parâmetros relacionados em um dataclass / Pydantic model (ex.: `RequestParams`, `RenderOptions`). Ou use o padrão Parameter Object para reduzir a aridade.</div>
+  </div>
+</div>
+<div class="issue issue-warning">
+  <div class="issue-header">
+    <span class="issue-icon">🟡</span>
+    <span class="issue-id">SOL002</span>
+    <span class="issue-title">`review_pedido` — 6 parâmetros</span>
+    <a class="issue-loc" href="http://localhost:3004/api/search?q=pedido_service.py" target="_blank">pedido_service.py:270</a>
+  </div>
+  <div class="issue-body">
+    <p class="issue-desc">A função `review_pedido` em `pedido_service.py` recebe 6 parâmetros: `db`, `pedido`, `gestor`, `acao`, `motivo`, `observacoes`. Listas longas de parâmetros indicam que dados relacionados deveriam ser agrupados em um objeto, violando coesão (SRP).</p>
+    
+    <div class="issue-suggest"><strong>Sugestão:</strong> Agrupe parâmetros relacionados em um dataclass / Pydantic model (ex.: `RequestParams`, `RenderOptions`). Ou use o padrão Parameter Object para reduzir a aridade.</div>
+  </div>
+</div>
+<div class="issue issue-warning">
+  <div class="issue-header">
+    <span class="issue-icon">🟡</span>
+    <span class="issue-id">SOL002</span>
+    <span class="issue-title">`cgeo_review` — 6 parâmetros</span>
+    <a class="issue-loc" href="http://localhost:3004/api/search?q=pedido_service.py" target="_blank">pedido_service.py:470</a>
+  </div>
+  <div class="issue-body">
+    <p class="issue-desc">A função `cgeo_review` em `pedido_service.py` recebe 6 parâmetros: `db`, `pedido`, `cgeo_user`, `acao`, `motivo`, `link_bdgex`. Listas longas de parâmetros indicam que dados relacionados deveriam ser agrupados em um objeto, violando coesão (SRP).</p>
+    
+    <div class="issue-suggest"><strong>Sugestão:</strong> Agrupe parâmetros relacionados em um dataclass / Pydantic model (ex.: `RequestParams`, `RenderOptions`). Ou use o padrão Parameter Object para reduzir a aridade.</div>
+  </div>
+</div>
+<div class="issue issue-warning">
+  <div class="issue-header">
+    <span class="issue-icon">🟡</span>
+    <span class="issue-id">SOL002</span>
+    <span class="issue-title">`pedido_submetido` — 7 parâmetros</span>
+    <a class="issue-loc" href="http://localhost:3004/api/search?q=email_templates.py" target="_blank">email_templates.py:341</a>
+  </div>
+  <div class="issue-body">
+    <p class="issue-desc">A função `pedido_submetido` em `email_templates.py` recebe 7 parâmetros: `nome`, `pedido_id`, `finalidade_geo`, `finalidade`, `orgao_vinculante`, `regiao_militar`, `posto_graduacao`. Listas longas de parâmetros indicam que dados relacionados deveriam ser agrupados em um objeto, violando coesão (SRP).</p>
+    
+    <div class="issue-suggest"><strong>Sugestão:</strong> Agrupe parâmetros relacionados em um dataclass / Pydantic model (ex.: `RequestParams`, `RenderOptions`). Ou use o padrão Parameter Object para reduzir a aridade.</div>
+  </div>
+</div>
+<div class="issue issue-warning">
+  <div class="issue-header">
+    <span class="issue-icon">🟡</span>
+    <span class="issue-id">SOL002</span>
+    <span class="issue-title">`_make_user` — 6 parâmetros</span>
+    <a class="issue-loc" href="http://localhost:3004/api/search?q=conftest.py" target="_blank">conftest.py:25</a>
+  </div>
+  <div class="issue-body">
+    <p class="issue-desc">A função `_make_user` em `conftest.py` recebe 6 parâmetros: `user_id`, `email`, `perfil`, `orgao_vinculante`, `ativo`, `nome_de_guerra`. Listas longas de parâmetros indicam que dados relacionados deveriam ser agrupados em um objeto, violando coesão (SRP).</p>
+    
+    <div class="issue-suggest"><strong>Sugestão:</strong> Agrupe parâmetros relacionados em um dataclass / Pydantic model (ex.: `RequestParams`, `RenderOptions`). Ou use o padrão Parameter Object para reduzir a aridade.</div>
+  </div>
+</div>
+</section>
+<section class="category" id="cat-tipagem">
+  <div class="cat-header">
+    <h2>Tipagem</h2>
+    <div class="cat-badges"><span class="sev-badge sev-info">11 info</span></div>
+    <p class="cat-desc">Funções públicas sem type hints e uso excessivo de Any</p>
+  </div>
+  
+<div class="issue issue-info">
+  <div class="issue-header">
+    <span class="issue-icon">🔵</span>
+    <span class="issue-id">TP001</span>
+    <span class="issue-title">`capture_add` sem type hints em `test_auth_service.py`</span>
+    <a class="issue-loc" href="http://localhost:3004/api/search?q=test_auth_service.py" target="_blank">test_auth_service.py:60</a>
+  </div>
+  <div class="issue-body">
+    <p class="issue-desc">A função pública `capture_add` em `test_auth_service.py` não tem anotações de tipo nos 1 parâmetros nem no retorno. Type hints documentam o contrato e habilitam checagem estática (mypy/pyright).</p>
+    
+    <div class="issue-suggest"><strong>Sugestão:</strong> Adicione anotações: `def calcular(valor: Decimal, taxa: float) -> Decimal:`. Rode `mypy` ou `pyright` para validar a tipagem.</div>
+  </div>
+</div>
+<div class="issue issue-info">
+  <div class="issue-header">
+    <span class="issue-icon">🔵</span>
+    <span class="issue-id">TP001</span>
+    <span class="issue-title">`is_na` sem type hints em `rebuild_cache.py`</span>
+    <a class="issue-loc" href="http://localhost:3004/api/search?q=rebuild_cache.py" target="_blank">rebuild_cache.py:14</a>
+  </div>
+  <div class="issue-body">
+    <p class="issue-desc">A função pública `is_na` em `rebuild_cache.py` não tem anotações de tipo nos 1 parâmetros nem no retorno. Type hints documentam o contrato e habilitam checagem estática (mypy/pyright).</p>
+    
+    <div class="issue-suggest"><strong>Sugestão:</strong> Adicione anotações: `def calcular(valor: Decimal, taxa: float) -> Decimal:`. Rode `mypy` ou `pyright` para validar a tipagem.</div>
+  </div>
+</div>
+<div class="issue issue-info">
+  <div class="issue-header">
+    <span class="issue-icon">🔵</span>
+    <span class="issue-id">TP001</span>
+    <span class="issue-title">`parse_date` sem type hints em `rebuild_cache.py`</span>
+    <a class="issue-loc" href="http://localhost:3004/api/search?q=rebuild_cache.py" target="_blank">rebuild_cache.py:17</a>
+  </div>
+  <div class="issue-body">
+    <p class="issue-desc">A função pública `parse_date` em `rebuild_cache.py` não tem anotações de tipo nos 1 parâmetros nem no retorno. Type hints documentam o contrato e habilitam checagem estática (mypy/pyright).</p>
+    
+    <div class="issue-suggest"><strong>Sugestão:</strong> Adicione anotações: `def calcular(valor: Decimal, taxa: float) -> Decimal:`. Rode `mypy` ou `pyright` para validar a tipagem.</div>
+  </div>
+</div>
+<div class="issue issue-info">
+  <div class="issue-header">
+    <span class="issue-icon">🔵</span>
+    <span class="issue-id">TP001</span>
+    <span class="issue-title">`age_years` sem type hints em `rebuild_cache.py`</span>
+    <a class="issue-loc" href="http://localhost:3004/api/search?q=rebuild_cache.py" target="_blank">rebuild_cache.py:25</a>
+  </div>
+  <div class="issue-body">
+    <p class="issue-desc">A função pública `age_years` em `rebuild_cache.py` não tem anotações de tipo nos 1 parâmetros nem no retorno. Type hints documentam o contrato e habilitam checagem estática (mypy/pyright).</p>
+    
+    <div class="issue-suggest"><strong>Sugestão:</strong> Adicione anotações: `def calcular(valor: Decimal, taxa: float) -> Decimal:`. Rode `mypy` ou `pyright` para validar a tipagem.</div>
+  </div>
+</div>
+<div class="issue issue-info">
+  <div class="issue-header">
+    <span class="issue-icon">🔵</span>
+    <span class="issue-id">TP001</span>
+    <span class="issue-title">`strip_z` sem type hints em `rebuild_cache.py`</span>
+    <a class="issue-loc" href="http://localhost:3004/api/search?q=rebuild_cache.py" target="_blank">rebuild_cache.py:28</a>
+  </div>
+  <div class="issue-body">
+    <p class="issue-desc">A função pública `strip_z` em `rebuild_cache.py` não tem anotações de tipo nos 1 parâmetros nem no retorno. Type hints documentam o contrato e habilitam checagem estática (mypy/pyright).</p>
+    
+    <div class="issue-suggest"><strong>Sugestão:</strong> Adicione anotações: `def calcular(valor: Decimal, taxa: float) -> Decimal:`. Rode `mypy` ou `pyright` para validar a tipagem.</div>
+  </div>
+</div>
+<div class="issue issue-info">
+  <div class="issue-header">
+    <span class="issue-icon">🔵</span>
+    <span class="issue-id">TP001</span>
+    <span class="issue-title">`trim` sem type hints em `rebuild_cache.py`</span>
+    <a class="issue-loc" href="http://localhost:3004/api/search?q=rebuild_cache.py" target="_blank">rebuild_cache.py:30</a>
+  </div>
+  <div class="issue-body">
+    <p class="issue-desc">A função pública `trim` em `rebuild_cache.py` não tem anotações de tipo nos 2 parâmetros nem no retorno. Type hints documentam o contrato e habilitam checagem estática (mypy/pyright).</p>
+    
+    <div class="issue-suggest"><strong>Sugestão:</strong> Adicione anotações: `def calcular(valor: Decimal, taxa: float) -> Decimal:`. Rode `mypy` ou `pyright` para validar a tipagem.</div>
+  </div>
+</div>
+<div class="issue issue-info">
+  <div class="issue-header">
+    <span class="issue-icon">🔵</span>
+    <span class="issue-id">TP001</span>
+    <span class="issue-title">`load_feats` sem type hints em `rebuild_cache.py`</span>
+    <a class="issue-loc" href="http://localhost:3004/api/search?q=rebuild_cache.py" target="_blank">rebuild_cache.py:116</a>
+  </div>
+  <div class="issue-body">
+    <p class="issue-desc">A função pública `load_feats` em `rebuild_cache.py` não tem anotações de tipo nos 1 parâmetros nem no retorno. Type hints documentam o contrato e habilitam checagem estática (mypy/pyright).</p>
+    
+    <div class="issue-suggest"><strong>Sugestão:</strong> Adicione anotações: `def calcular(valor: Decimal, taxa: float) -> Decimal:`. Rode `mypy` ou `pyright` para validar a tipagem.</div>
+  </div>
+</div>
+<div class="issue issue-info">
+  <div class="issue-header">
+    <span class="issue-icon">🔵</span>
+    <span class="issue-id">TP001</span>
+    <span class="issue-title">`enrich` sem type hints em `rebuild_cache.py`</span>
+    <a class="issue-loc" href="http://localhost:3004/api/search?q=rebuild_cache.py" target="_blank">rebuild_cache.py:123</a>
+  </div>
+  <div class="issue-body">
+    <p class="issue-desc">A função pública `enrich` em `rebuild_cache.py` não tem anotações de tipo nos 3 parâmetros nem no retorno. Type hints documentam o contrato e habilitam checagem estática (mypy/pyright).</p>
+    
+    <div class="issue-suggest"><strong>Sugestão:</strong> Adicione anotações: `def calcular(valor: Decimal, taxa: float) -> Decimal:`. Rode `mypy` ou `pyright` para validar a tipagem.</div>
+  </div>
+</div>
+<div class="issue issue-info">
+  <div class="issue-header">
+    <span class="issue-icon">🔵</span>
+    <span class="issue-id">TP001</span>
+    <span class="issue-title">`build` sem type hints em `rebuild_cache.py`</span>
+    <a class="issue-loc" href="http://localhost:3004/api/search?q=rebuild_cache.py" target="_blank">rebuild_cache.py:152</a>
+  </div>
+  <div class="issue-body">
+    <p class="issue-desc">A função pública `build` em `rebuild_cache.py` não tem anotações de tipo nos 2 parâmetros nem no retorno. Type hints documentam o contrato e habilitam checagem estática (mypy/pyright).</p>
+    
+    <div class="issue-suggest"><strong>Sugestão:</strong> Adicione anotações: `def calcular(valor: Decimal, taxa: float) -> Decimal:`. Rode `mypy` ou `pyright` para validar a tipagem.</div>
+  </div>
+</div>
+<div class="issue issue-info">
+  <div class="issue-header">
+    <span class="issue-icon">🔵</span>
+    <span class="issue-id">TP001</span>
+    <span class="issue-title">`build_cdgv` sem type hints em `rebuild_cache.py`</span>
+    <a class="issue-loc" href="http://localhost:3004/api/search?q=rebuild_cache.py" target="_blank">rebuild_cache.py:164</a>
+  </div>
+  <div class="issue-body">
+    <p class="issue-desc">A função pública `build_cdgv` em `rebuild_cache.py` não tem anotações de tipo nos 1 parâmetros nem no retorno. Type hints documentam o contrato e habilitam checagem estática (mypy/pyright).</p>
+    
+    <div class="issue-suggest"><strong>Sugestão:</strong> Adicione anotações: `def calcular(valor: Decimal, taxa: float) -> Decimal:`. Rode `mypy` ou `pyright` para validar a tipagem.</div>
+  </div>
+</div>
+<div class="issue issue-info">
+  <div class="issue-header">
+    <span class="issue-icon">🔵</span>
+    <span class="issue-id">TP001</span>
+    <span class="issue-title">`save` sem type hints em `rebuild_cache.py`</span>
+    <a class="issue-loc" href="http://localhost:3004/api/search?q=rebuild_cache.py" target="_blank">rebuild_cache.py:184</a>
+  </div>
+  <div class="issue-body">
+    <p class="issue-desc">A função pública `save` em `rebuild_cache.py` não tem anotações de tipo nos 3 parâmetros nem no retorno. Type hints documentam o contrato e habilitam checagem estática (mypy/pyright).</p>
+    
+    <div class="issue-suggest"><strong>Sugestão:</strong> Adicione anotações: `def calcular(valor: Decimal, taxa: float) -> Decimal:`. Rode `mypy` ou `pyright` para validar a tipagem.</div>
   </div>
 </div>
 </section>

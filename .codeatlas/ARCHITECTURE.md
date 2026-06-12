@@ -1,6 +1,6 @@
 # SISPGEO — Documentação do Sistema
 
-> Gerado automaticamente pelo **Code Atlas** em 2026-06-02 09:09  
+> Gerado automaticamente pelo **Code Atlas** em 2026-06-11 19:01  
 > 1858 nós · 2185 arestas · [Abrir no Visualizador](http://localhost:3002) · [Docs API](http://localhost:3002/api/docs)
 
 ## Visão Geral
@@ -1754,7 +1754,7 @@
 
 - **Arquivo:** `test_api_integration.py` (linha 107)
 
-- **Tags:** —
+- **Tags:** `test`
 
 - **Métodos:** `token()`, `test_login_admin_retorna_token()`, `test_listar_janelas_autenticado()`, `test_listar_pedidos_autenticado()`, `test_listar_usuarios_autenticado()`, `test_perfil_sem_permissao_retorna_403()`
 
@@ -1764,7 +1764,7 @@
 
 - **Arquivo:** `test_pedido_service.py` (linha 153)
 
-- **Tags:** —
+- **Tags:** `test`
 
 - **Métodos:** `test_status_invalido_levanta_400()`, `test_atribuicao_bem_sucedida()`
 
@@ -1774,7 +1774,7 @@
 
 - **Arquivo:** `test_api_integration.py` (linha 44)
 
-- **Tags:** —
+- **Tags:** `test`
 
 - **Métodos:** `test_login_credenciais_invalidas_retorna_401()`, `test_login_payload_incompleto_retorna_422()`, `test_registro_email_invalido_retorna_422()`, `test_forgot_password_sempre_200()`, `test_confirm_token_invalido_retorna_400()`
 
@@ -1784,7 +1784,7 @@
 
 - **Arquivo:** `test_auth_service.py` (linha 123)
 
-- **Tags:** —
+- **Tags:** `test`
 
 - **Métodos:** `test_email_nao_encontrado_levanta_401()`, `test_conta_bloqueada_levanta_403()`, `test_senha_incorreta_levanta_401()`, `test_login_bem_sucedido_retorna_token()`, `test_senha_expirada_levanta_403()`
 
@@ -1794,7 +1794,7 @@
 
 - **Arquivo:** `test_pedido_service.py` (linha 176)
 
-- **Tags:** —
+- **Tags:** `test`
 
 - **Métodos:** `test_status_invalido_levanta_400()`, `test_acao_invalida_levanta_400()`, `test_aprovacao_envia_email_ao_solicitante()`, `test_reprovacao_registra_motivo()`
 
@@ -1804,7 +1804,7 @@
 
 - **Arquivo:** `test_auth_service.py` (linha 87)
 
-- **Tags:** —
+- **Tags:** `test`
 
 - **Métodos:** `test_token_invalido_levanta_400()`, `test_confirmacao_bem_sucedida()`
 
@@ -1814,7 +1814,7 @@
 
 - **Arquivo:** `test_pedido_service.py` (linha 115)
 
-- **Tags:** —
+- **Tags:** `test`
 
 - **Métodos:** `test_perfil_nao_autorizado_levanta_403()`, `test_consolidacao_avanca_pedidos_validos()`, `test_pedido_com_status_errado_e_ignorado()`
 
@@ -1824,7 +1824,7 @@
 
 - **Arquivo:** `test_api_integration.py` (linha 30)
 
-- **Tags:** —
+- **Tags:** `test`
 
 - **Métodos:** `test_health_retorna_ok()`
 
@@ -1834,7 +1834,7 @@
 
 - **Arquivo:** `test_api_integration.py` (linha 164)
 
-- **Tags:** —
+- **Tags:** `test`
 
 - **Campos:** `GUSTAVO_EMAIL: ?`, `GUSTAVO_SENHA: ?`, `JOAO_EMAIL: ?`, `JOAO_SENHA: ?`
 
@@ -1846,7 +1846,7 @@
 
 - **Arquivo:** `test_notification_service.py` (linha 39)
 
-- **Tags:** —
+- **Tags:** `test`
 
 - **Métodos:** `test_notifica_todos_os_usuarios_do_perfil()`, `test_retorna_zero_sem_usuarios()`, `test_filtra_por_orgao_vinculante_quando_fornecido()`
 
@@ -1856,7 +1856,7 @@
 
 - **Arquivo:** `test_notification_service.py` (linha 22)
 
-- **Tags:** —
+- **Tags:** `test`
 
 - **Métodos:** `test_adiciona_notificacao_ao_db()`, `test_pedido_id_opcional()`
 
@@ -1866,7 +1866,7 @@
 
 - **Arquivo:** `test_api_integration.py` (linha 85)
 
-- **Tags:** —
+- **Tags:** `test`
 
 - **Campos:** `endpoints: ?`
 
@@ -1878,7 +1878,7 @@
 
 - **Arquivo:** `test_auth_service.py` (linha 22)
 
-- **Tags:** —
+- **Tags:** `test`
 
 - **Métodos:** `test_email_duplicado_levanta_400()`, `test_cadastro_bem_sucedido()`, `test_cadastro_com_nome_de_guerra()`
 
@@ -1888,7 +1888,7 @@
 
 - **Arquivo:** `test_auth_service.py` (linha 201)
 
-- **Tags:** —
+- **Tags:** `test`
 
 - **Métodos:** `test_email_desconhecido_silencioso()`, `test_limite_diario_levanta_429()`
 
@@ -1898,7 +1898,7 @@
 
 - **Arquivo:** `test_auth_service.py` (linha 224)
 
-- **Tags:** —
+- **Tags:** `test`
 
 - **Métodos:** `test_token_invalido_levanta_400()`, `test_redefinicao_bem_sucedida()`
 
@@ -1908,7 +1908,7 @@
 
 - **Arquivo:** `test_pedido_service.py` (linha 69)
 
-- **Tags:** —
+- **Tags:** `test`
 
 - **Métodos:** `test_status_invalido_levanta_400()`, `test_acao_invalida_levanta_400()`, `test_aprovar_avanca_para_aguardando_consolidador()`, `test_reprovar_cancela_e_envia_email()`, `test_observacoes_sao_salvas()`
 
@@ -1918,7 +1918,7 @@
 
 - **Arquivo:** `test_pedido_service.py` (linha 21)
 
-- **Tags:** —
+- **Tags:** `test`
 
 - **Métodos:** `test_pedido_ja_submetido_levanta_400()`, `test_pedido_de_outro_usuario_levanta_403()`, `test_pedido_sem_itens_levanta_400()`, `test_perfil_nao_autorizado_levanta_403()`, `test_submit_bem_sucedido_avanca_status()`
 
