@@ -505,20 +505,29 @@ function SortablePedidoRow_Base({
                     key={item.id}
                     className="flex items-center gap-2.5 text-xs bg-zinc-800/60 border border-zinc-700/40 rounded-lg px-3 py-2"
                   >
-                    {item.mi && (
+                    {item.mi ? (
+                      <>
+                        <span className="text-zinc-500 shrink-0">
+                          MI:{" "}
+                          <span className="text-emerald-400 font-mono font-medium">
+                            {item.mi}
+                          </span>
+                        </span>
+                        <span className="text-zinc-500 shrink-0">
+                          INOM:{" "}
+                          <span className="text-zinc-400 font-mono">
+                            {item.inom}
+                          </span>
+                        </span>
+                      </>
+                    ) : (
                       <span className="text-zinc-500 shrink-0">
-                        MI:{" "}
-                        <span className="text-zinc-300 font-mono">
-                          {item.mi}
+                        INOM:{" "}
+                        <span className="text-emerald-400 font-mono font-medium">
+                          {item.inom}
                         </span>
                       </span>
                     )}
-                    <span className="text-zinc-500 shrink-0">
-                      INOM:{" "}
-                      <span className="text-emerald-400 font-mono font-medium">
-                        {item.inom}
-                      </span>
-                    </span>
                     <span className="text-zinc-400 shrink-0">
                       {TIPO_PRODUTO_LABELS[item.tipo_produto]}
                     </span>
@@ -625,17 +634,23 @@ function SortableItemRow({
         <GripVertical className="h-3.5 w-3.5" />
       </button>
       <span className="text-zinc-600 w-4 text-center shrink-0">{rank}</span>
-      {item.mi && (
+      {item.mi ? (
+        <>
+          <span className="text-zinc-500 shrink-0">
+            MI: <span className="text-emerald-400 font-mono font-medium">{item.mi}</span>
+          </span>
+          <span className="text-zinc-500 shrink-0">
+            INOM: <span className="text-zinc-400 font-mono">{item.inom}</span>
+          </span>
+        </>
+      ) : (
         <span className="text-zinc-500 shrink-0">
-          MI: <span className="text-zinc-300 font-mono">{item.mi}</span>
+          INOM:{" "}
+          <span className="text-emerald-400 font-mono font-medium">
+            {item.inom}
+          </span>
         </span>
       )}
-      <span className="text-zinc-500 shrink-0">
-        INOM:{" "}
-        <span className="text-emerald-400 font-mono font-medium">
-          {item.inom}
-        </span>
-      </span>
       <span className="text-zinc-400 shrink-0">
         {TIPO_PRODUTO_LABELS[item.tipo_produto]}
       </span>
@@ -1446,7 +1461,7 @@ export function MeusPedidos() {
       <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="text-xl font-semibold text-zinc-100 tracking-tight">
-            Meus Pedidos
+            Ver Pedidos
           </h1>
         </div>
         <div className="flex items-center gap-2">

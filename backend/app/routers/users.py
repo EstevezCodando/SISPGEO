@@ -18,6 +18,7 @@ from app.services.email_service import send_email
 from app.utils.email_templates import (
     conta_ativada as tpl_conta_ativada,
     dados_organizacionais_atualizados as tpl_dados_org,
+    senha_alterada as tpl_senha_alterada,
 )
 
 router = APIRouter(prefix="/users", tags=["Usuários"])
@@ -68,6 +69,11 @@ async def change_password(
     current_user.senha_hash = get_password_hash(body.nova_senha)
     current_user.ultima_senha_alterada = datetime.now(timezone.utc)
     await db.commit()
+    try:
+        subject, html = tpl_senha_alterada(current_user.nome, current_user.email)
+        await send_email(current_user.email, subject, html)
+    except Exception:
+        pass  # falha de e-mail não reverte a alteração de senha
     return {"message": "Senha alterada com sucesso"}
 
 

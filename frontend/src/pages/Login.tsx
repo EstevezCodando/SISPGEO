@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   Eye, EyeOff, RefreshCw,
@@ -42,6 +42,9 @@ function classifyError(detail: string, status?: number): LoginError {
 
   return { kind: 'generic', msg: detail }
 }
+
+// Tempo mínimo (ms) que o bloco de erro fica visível antes de poder ser limpo
+const MIN_ERROR_MS = 5_000
 
 // ─── Bloco de erro inline ─────────────────────────────────────────────────────
 interface ErrorBlockProps {
@@ -88,7 +91,7 @@ function ErrorBlock({ error, email, onResend, reenvioLoading }: ErrorBlockProps)
       body: (
         <span className="text-zinc-400">
           Sua conta foi cadastrada mas ainda não foi ativada pelo administrador do sistema.
-          Entre em contato com a DSG para solicitar a ativação.
+          Entre em contato com a DSG no telefone (61) 3415-5237 ou 860-5237 (RITEx).
         </span>
       ),
     },
@@ -140,7 +143,31 @@ export function Login() {
   const [loading, setLoading] = useState(false)
   const [reenvioLoading, setReenvioLoading] = useState(false)
   const [error, setError] = useState<LoginError | null>(null)
+  const errorSetAt  = useRef<number>(0)
+  const clearTimer  = useRef<ReturnType<typeof setTimeout> | null>(null)
   const { setToken, setUser } = useAuthStore()
+
+  /** Exibe um erro e registra o instante para controle do temporizador. */
+  const showError = (err: LoginError) => {
+    if (clearTimer.current) { clearTimeout(clearTimer.current); clearTimer.current = null }
+    errorSetAt.current = Date.now()
+    setError(err)
+  }
+
+  /** Limpa o erro somente após MIN_ERROR_MS desde que foi exibido.
+   *  Se ainda não passou o tempo, agenda a limpeza para o momento certo. */
+  const dismissError = () => {
+    const elapsed   = Date.now() - errorSetAt.current
+    const remaining = MIN_ERROR_MS - elapsed
+    if (remaining <= 0) {
+      setError(null)
+    } else if (!clearTimer.current) {
+      clearTimer.current = setTimeout(() => {
+        setError(null)
+        clearTimer.current = null
+      }, remaining)
+    }
+  }
   const navigate = useNavigate()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -156,7 +183,7 @@ export function Login() {
       const axiosErr = err as { response?: { status?: number; data?: { detail?: string } } }
       const status = axiosErr.response?.status
       const detail = axiosErr.response?.data?.detail ?? 'Erro inesperado. Tente novamente.'
-      setError(classifyError(detail, status))
+      showError(classifyError(detail, status))
     } finally {
       setLoading(false)
     }
@@ -167,14 +194,14 @@ export function Login() {
     setReenvioLoading(true)
     try {
       await authApi.resendActivation(email)
-      setError({
+      showError({
         kind: 'unconfirmed',
         msg: 'Link reenviado! Verifique sua caixa de entrada.',
       })
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { detail?: string } } }
       const detail = axiosErr.response?.data?.detail ?? 'Erro ao reenviar.'
-      setError({ kind: 'generic', msg: detail })
+      showError({ kind: 'generic', msg: detail })
     } finally {
       setReenvioLoading(false)
     }
@@ -203,7 +230,7 @@ export function Login() {
               <input
                 type="email"
                 value={email}
-                onChange={(e) => { setEmail(e.target.value); setError(null); }}
+                onChange={(e) => { setEmail(e.target.value); dismissError() }}
                 placeholder="nome@eb.mil.br"
                 required
                 autoComplete="username"
@@ -217,7 +244,7 @@ export function Login() {
                 <input
                   type={mostrarSenha ? 'text' : 'password'}
                   value={senha}
-                  onChange={(e) => { setSenha(e.target.value); setError(null); }}
+                  onChange={(e) => { setSenha(e.target.value); dismissError() }}
                   required
                   autoComplete="current-password"
                   className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2.5 pr-10 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
@@ -252,7 +279,7 @@ export function Login() {
             </button>
           </form>
 
-          {/* Bloco de erro — persiste até nova tentativa ou mudança nos campos */}
+          {/* Bloco de erro — visível por no mínimo MIN_ERROR_MS; desaparece ao digitar após esse prazo */}
           {error && (
             <ErrorBlock
               error={error}
@@ -262,10 +289,9 @@ export function Login() {
             />
           )}
 
-          <p className="text-center text-sm text-zinc-500 mt-6">
-            Não tem conta?{' '}
+          <p className="text-center text-sm mt-6">
             <Link to="/cadastro" className="text-emerald-400 font-medium hover:text-emerald-300 transition-colors">
-              Cadastre-se
+              Novo Cadastro de Usuário
             </Link>
           </p>
         </div>

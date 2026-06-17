@@ -361,8 +361,11 @@ function DuplicatesPanel({ open, onToggle }: DuplicatesPanelProps) {
             duplicates.map((dup, idx) => (
               <div key={idx} className="bg-zinc-800/60 border border-amber-500/20 rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-3 flex-wrap">
-                  <span className="text-xs font-semibold text-emerald-400 font-mono">{dup.inom}</span>
-                  {dup.mi && <span className="text-xs text-zinc-500">MI: {dup.mi}</span>}
+                  {dup.mi
+                    ? <span className="text-xs font-semibold text-emerald-400 font-mono">{dup.mi}</span>
+                    : <span className="text-xs font-semibold text-emerald-400 font-mono">{dup.inom}</span>
+                  }
+                  {dup.mi && <span className="text-xs text-zinc-500 font-mono">({dup.inom})</span>}
                   <span className="text-zinc-600">·</span>
                   <span className="text-xs text-zinc-300">
                     {TIPO_PRODUTO_LABELS[dup.tipo_produto as keyof typeof TIPO_PRODUTO_LABELS] ?? dup.tipo_produto}
@@ -498,8 +501,11 @@ function BDGExAgePanel({ open, onToggle }: BDGExAgePanelProps) {
                 <div key={idx} className="bg-zinc-800/60 border border-sky-500/20 rounded-lg p-4">
                   {/* Product header */}
                   <div className="flex items-start gap-2 mb-3 flex-wrap">
-                    <span className="text-xs font-semibold text-emerald-400 font-mono">{item.inom}</span>
-                    {item.mi && <span className="text-xs text-zinc-500">MI {item.mi}</span>}
+                    {item.mi
+                      ? <span className="text-xs font-semibold text-emerald-400 font-mono">{item.mi}</span>
+                      : <span className="text-xs font-semibold text-emerald-400 font-mono">{item.inom}</span>
+                    }
+                    {item.mi && <span className="text-xs text-zinc-500 font-mono">({item.inom})</span>}
                     <span className="text-zinc-600">·</span>
                     <span className="text-xs text-zinc-300">
                       {TIPO_PRODUTO_LABELS[item.tipo_produto as keyof typeof TIPO_PRODUTO_LABELS] ?? item.tipo_produto}
@@ -797,8 +803,11 @@ function PedidoDSGCard({
                 return (
                   <div key={item.id} className={`flex items-center flex-wrap gap-x-2 gap-y-1 text-xs text-zinc-400 border rounded-lg px-3 py-2 ${ageBgColor(age)}`}>
                     <span className="text-zinc-500 w-4 text-center shrink-0">{idx + 1}</span>
-                    <span className="text-emerald-400 font-mono shrink-0 font-medium">{item.inom}</span>
-                    {item.mi && <span className="text-zinc-500 font-mono shrink-0">MI: {item.mi}</span>}
+                    {item.mi
+                      ? <span className="text-emerald-400 font-mono shrink-0 font-medium">{item.mi}</span>
+                      : <span className="text-emerald-400 font-mono shrink-0 font-medium">{item.inom}</span>
+                    }
+                    {item.mi && <span className="text-zinc-500 font-mono shrink-0 text-[10px]">({item.inom})</span>}
                     <span className="shrink-0 text-zinc-300 font-medium">{TIPO_PRODUTO_LABELS[item.tipo_produto]}</span>
                     <span className="text-zinc-600 shrink-0">·</span>
                     <span className="shrink-0">{item.escala}</span>

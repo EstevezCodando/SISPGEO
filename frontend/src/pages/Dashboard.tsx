@@ -20,7 +20,7 @@ export function Dashboard() {
     ...(isSolicitante ? [{
       to: '/meus-pedidos',
       icon: <FileText className="h-7 w-7 text-emerald-400" />,
-      title: 'Meus Pedidos',
+      title: 'Ver Pedidos',
       desc: 'Acompanhe o status das suas solicitações',
     }] : []),
     ...(isGestor() ? [{
@@ -52,7 +52,7 @@ export function Dashboard() {
     {
       to: '/ajuda',
       icon: <HelpCircle className="h-7 w-7 text-emerald-400" />,
-      title: 'Ajuda',
+      title: 'Guia de Solicitação',
       desc: '',
     },
   ]

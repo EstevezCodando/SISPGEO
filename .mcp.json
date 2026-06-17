@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "codeatlas": {
+      "command": "codeatlas",
+      "args": [
+        "mcp",
+        "serve",
+        "C:\\Desenvolvimento\\SISPGEO\\SISPGEO\\SISPGEO"
+      ]
+    }
+  }
+}

@@ -73,7 +73,7 @@ const FINALIDADES_GEO = [
   "Manobra Escolar",
   "Instrução Militar",
   "Atualização de Campo de Instrução",
-  "Outra Finalidade",
+  "Outra",
 ] as const;
 
 const inputCls =
@@ -230,7 +230,7 @@ function RevisaoModal({
           <div>
             <h2 className="text-base font-semibold text-zinc-100 flex items-center gap-2">
               <ClipboardCheck className="h-4 w-4 text-emerald-400" />
-              Revisar Pedido
+              Resumo dos Pedidos
             </h2>
             <p className="text-xs text-zinc-500 mt-0.5">
               {items.length} produto{items.length !== 1 ? "s" : ""} selecionado
@@ -315,12 +315,13 @@ function RevisaoModal({
               </div>
             </div>
 
-            {/* Lista de itens + Finalidade + Impressão (área rolável) */}
+            {/* Lista de itens + Impressão (área rolável) */}
             <div className="flex-1 overflow-auto p-4 space-y-4">
-              {/* Produtos */}
+              {/* Carrinho */}
               <div>
-                <p className="text-xs font-semibold text-zinc-400 mb-2 uppercase tracking-wide">
-                  Produtos ({items.length})
+                <p className="text-xs font-semibold text-zinc-400 mb-2 uppercase tracking-wide flex items-center gap-1.5">
+                  <ShoppingCart className="h-3.5 w-3.5 text-emerald-400" />
+                  Carrinho ({items.length})
                 </p>
                 <div className="space-y-2">
                   {items.map((item) => {
@@ -336,15 +337,15 @@ function RevisaoModal({
                             {item.mi ? (
                               <>
                                 <p className="font-medium text-emerald-400 truncate">
-                                  {item.mi}
+                                  MI: {item.mi}
                                 </p>
                                 <p className="font-mono text-zinc-500 text-[10px] truncate">
-                                  {item.inom}
+                                  Ind Nom: {item.inom}
                                 </p>
                               </>
                             ) : (
                               <p className="font-mono font-medium text-emerald-400 truncate">
-                                {item.inom}
+                                Ind Nom: {item.inom}
                               </p>
                             )}
                             <p className="text-zinc-400">
@@ -354,8 +355,7 @@ function RevisaoModal({
                           </div>
                           <button
                             onClick={() => onRemoveItem(item)}
-                            disabled={items.length <= 1}
-                            className="text-zinc-600 hover:text-red-400 disabled:opacity-30 disabled:cursor-not-allowed transition-colors mt-0.5 shrink-0"
+                            className="text-zinc-600 hover:text-red-400 transition-colors mt-0.5 shrink-0"
                             title="Remover item"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
@@ -363,7 +363,7 @@ function RevisaoModal({
                         </div>
 
                         {/* Impressão por item */}
-                        {isImpressao ? (
+                        {TIPOS_IMPRESSAO.has(item.tipo_produto) ? (
                           // Produto de impressão: campos obrigatórios
                           <div className="grid grid-cols-2 gap-1.5 pt-1 border-t border-white/5">
                             <div>
@@ -396,7 +396,7 @@ function RevisaoModal({
                                 Material <span className="text-red-400">*</span>
                               </label>
                               <select
-                                value={imp?.tipo ?? ""}
+                                value={imp?.tipo ?? "Sulfite"}
                                 onChange={(e) => {
                                   const tipo = e.target
                                     .value as import("../types/pedido").MaterialImpressao;
@@ -409,9 +409,6 @@ function RevisaoModal({
                                 }}
                                 className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs text-zinc-100 focus:outline-none focus:ring-1 focus:ring-emerald-500"
                               >
-                                <option value="" className="bg-zinc-800">
-                                  —
-                                </option>
                                 {MATERIAIS_IMPRESSAO.map((m) => (
                                   <option
                                     key={m}
@@ -439,7 +436,7 @@ function RevisaoModal({
                                 className="accent-emerald-500"
                               />
                               <span className="text-[10px] text-zinc-400">
-                                Impressão?
+                                Imprimir Produto
                               </span>
                             </label>
                             {item.impressao && (
@@ -473,7 +470,7 @@ function RevisaoModal({
                                     <span className="text-red-400">*</span>
                                   </label>
                                   <select
-                                    value={imp?.tipo ?? ""}
+                                    value={imp?.tipo ?? "Sulfite"}
                                     onChange={(e) => {
                                       const tipo = e.target
                                         .value as import("../types/pedido").MaterialImpressao;
@@ -486,9 +483,6 @@ function RevisaoModal({
                                     }}
                                     className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-xs text-zinc-100 focus:outline-none focus:ring-1 focus:ring-emerald-500"
                                   >
-                                    <option value="" className="bg-zinc-800">
-                                      —
-                                    </option>
                                     {MATERIAIS_IMPRESSAO.map((m) => (
                                       <option
                                         key={m}
@@ -510,35 +504,33 @@ function RevisaoModal({
                 </div>
               </div>
 
-              {/* Informação Complementar */}
-              <div>
-                <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide text-amber-400">
-                  Informação Complementar{" "}
-                  <span className="normal-case font-normal tracking-normal">
-                    (obrigatório)
-                  </span>
-                </label>
-                {finalidadeGeo && (
-                  <span className="inline-block mb-1.5 px-2 py-0.5 rounded-full bg-zinc-700/60 border border-zinc-600/40 text-[10px] text-zinc-400">
-                    {finalidadeGeo}
-                  </span>
-                )}
-                <textarea
-                  value={finalidade}
-                  onChange={(e) => onSetFinalidade(e.target.value)}
-                  rows={3}
-                  placeholder="Descreva o objetivo do pedido (mín. 10 caracteres)..."
-                  className="w-full bg-zinc-800 border border-amber-500/50 rounded-lg px-2.5 py-2 text-xs text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 resize-none transition-colors"
-                />
-                {finalidade.trim().length > 0 &&
-                  finalidade.trim().length < 10 && (
-                    <p className="text-[11px] text-amber-400 mt-1">
-                      {10 - finalidade.trim().length} caractere(s) restante(s)
-                    </p>
-                  )}
-              </div>
             </div>
           </div>
+        </div>
+
+        {/* Informação Complementar — fixa, sempre visível */}
+        <div className="px-4 py-3 border-t border-white/10 shrink-0 bg-zinc-900/60">
+          <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wide text-amber-400">
+            Informação Complementar <span className="text-red-400">*</span>
+          </label>
+          {finalidadeGeo && (
+            <span className="inline-block mb-1.5 px-2 py-0.5 rounded-full bg-zinc-700/60 border border-zinc-600/40 text-[10px] text-zinc-400">
+              Finalidade da Geoinformação: {finalidadeGeo}
+            </span>
+          )}
+          <textarea
+            value={finalidade}
+            onChange={(e) => onSetFinalidade(e.target.value)}
+            rows={3}
+            placeholder="Complementar com informações adicionais acerca da finalidade do pedido (mínimo de 10 caracteres)."
+            className="w-full bg-zinc-800 border border-amber-500/50 rounded-lg px-2.5 py-2 text-xs text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-amber-500 focus:border-amber-500 resize-none transition-colors"
+          />
+          {finalidade.trim().length > 0 &&
+            finalidade.trim().length < 10 && (
+              <p className="text-[11px] text-amber-400 mt-1">
+                {10 - finalidade.trim().length} caractere(s) restante(s)
+              </p>
+            )}
         </div>
 
         {/* Footer */}
@@ -555,7 +547,7 @@ function RevisaoModal({
             className="flex-1 py-2.5 rounded-lg bg-emerald-500 text-white text-sm font-semibold hover:bg-emerald-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
           >
             <Check className="h-4 w-4" />
-            {submitting ? "Enviando..." : "Confirmar"}
+            {submitting ? "Enviando..." : "Confirmar Pedido"}
           </button>
         </div>
       </div>
@@ -682,12 +674,13 @@ export function SolicitarProdutos() {
     }
     if (finalidade.trim().length < 10) {
       toast.error(
-        "Preencha a informação complementar com ao menos 10 caracteres",
+        "Favor preencher a Informação Complementar.",
       );
       return;
     }
-    if (isImpressao) {
-      const semImpressao = items.filter((i) => !impressoes[cartKey(i)]);
+    const itensImpressao = items.filter((i) => TIPOS_IMPRESSAO.has(i.tipo_produto));
+    if (itensImpressao.length > 0) {
+      const semImpressao = itensImpressao.filter((i) => !impressoes[cartKey(i)]);
       if (semImpressao.length > 0) {
         toast.error(
           `Configure quantidade e material para ${semImpressao.length} item(ns) de impressão`,
@@ -697,7 +690,7 @@ export function SolicitarProdutos() {
     }
     if (!user?.orgao_vinculante) {
       toast.error(
-        "Seu perfil não tem órgão vinculante configurado. Contate o Gestor Cartográfico (DSG).",
+        "Seu perfil não tem órgão vinculante configurado. Contate o Gestor Cartográfico (DSG) pelo telefone (61) 3415-5237 ou 860-5237 (RITEx).",
       );
       return;
     }
@@ -745,7 +738,7 @@ export function SolicitarProdutos() {
         // Solicitante: salva em RASCUNHO — envio acontece em Meus Pedidos
         const msg = editingPedidoId
           ? `Pedido atualizado! Novo rascunho #${pedido.data.id} salvo.`
-          : `Pedido #${pedido.data.id} salvo! Acesse Meus Pedidos para gerenciar.`;
+          : `Pedido #${pedido.data.id} salvo! Acesse Ver Pedidos para gerenciar.`;
         toast.success(msg);
         clear();
         setShowRevisao(false);
@@ -891,25 +884,6 @@ export function SolicitarProdutos() {
       {/* Seletores */}
       <div className="bg-zinc-900 border border-white/10 rounded-xl p-4 shrink-0">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          {/* Finalidade da Geoinformação */}
-          <div>
-            <label className={labelCls}>Finalidade da Geoinformação</label>
-            <select
-              value={finalidadeGeo}
-              onChange={(e) => setFinalidadeGeo(e.target.value)}
-              className={inputCls}
-            >
-              <option value="" className="bg-zinc-800">
-                Selecione...
-              </option>
-              {FINALIDADES_GEO.map((fg) => (
-                <option key={fg} value={fg} className="bg-zinc-800">
-                  {fg}
-                </option>
-              ))}
-            </select>
-          </div>
-
           {/* Tipo de Produto / Serviço */}
           <div>
             <label className={labelCls}>Tipo de Produto / Serviço</label>
@@ -936,7 +910,7 @@ export function SolicitarProdutos() {
 
           {/* Escala */}
           <div>
-            <label className={labelCls}>Escala</label>
+            <label className={labelCls}>Escala de Representação</label>
             <select
               value={escala ?? ""}
               onChange={(e) => {
@@ -957,9 +931,28 @@ export function SolicitarProdutos() {
             </select>
           </div>
 
+          {/* Finalidade da Geoinformação */}
+          <div>
+            <label className={labelCls}>Finalidade da Geoinformação</label>
+            <select
+              value={finalidadeGeo}
+              onChange={(e) => setFinalidadeGeo(e.target.value)}
+              className={inputCls}
+            >
+              <option value="" className="bg-zinc-800">
+                Selecione...
+              </option>
+              {FINALIDADES_GEO.map((fg) => (
+                <option key={fg} value={fg} className="bg-zinc-800">
+                  {fg}
+                </option>
+              ))}
+            </select>
+          </div>
+
           {/* Data de Entrega */}
           <div>
-            <label className={labelCls}>Data sugerida de entrega</label>
+            <label className={labelCls}>Data Sugerida de Entrega</label>
             <input
               type="date"
               value={dataEntrega ?? ""}
@@ -995,7 +988,7 @@ export function SolicitarProdutos() {
 
       {/* Mapa + Carrinho */}
       <div className="flex flex-1 gap-4 min-h-0">
-        <div className="flex-1 bg-zinc-900 border border-white/10 rounded-xl overflow-hidden relative">
+        <div className="flex-1 min-h-[520px] bg-zinc-900 border border-white/10 rounded-xl overflow-hidden relative">
           {!escala || !dataEntrega ? (
             <div className="h-full flex items-center justify-center text-zinc-500 text-sm p-8 text-center">
               Selecione tipo de produto, escala e data de entrega para carregar
@@ -1042,10 +1035,10 @@ export function SolicitarProdutos() {
                   <div className="space-y-0.5 text-zinc-400">
                     {[
                       { color: "#10b981", label: "< 5 anos" },
-                      { color: "#84cc16", label: "5–10 anos" },
-                      { color: "#eab308", label: "10–20 anos" },
-                      { color: "#f97316", label: "20–30 anos" },
-                      { color: "#ef4444", label: "> 30 anos" },
+                      { color: "#84cc16", label: "6–10 anos" },
+                      { color: "#eab308", label: "11–15 anos" },
+                      { color: "#f97316", label: "16–20 anos" },
+                      { color: "#ef4444", label: "> 21 anos" },
                       { color: "#f1f1f300", label: "Sem dados" },
                     ].map((l) => (
                       <div key={l.color} className="flex items-center gap-1.5">
@@ -1114,15 +1107,15 @@ export function SolicitarProdutos() {
                         {item.mi ? (
                           <>
                             <p className="font-medium text-emerald-400 truncate">
-                              {item.mi}
+                              MI: {item.mi}
                             </p>
                             <p className="font-mono text-zinc-500 text-[10px] truncate">
-                              {item.inom}
+                              Ind Nom: {item.inom}
                             </p>
                           </>
                         ) : (
                           <p className="font-mono font-medium text-zinc-200 truncate">
-                            {item.inom}
+                            Ind Nom: {item.inom}
                           </p>
                         )}
                         <p className="text-zinc-400">
@@ -1146,7 +1139,7 @@ export function SolicitarProdutos() {
                       >
                         {imp
                           ? `${imp.quantidade}x ${imp.tipo}`
-                          : "⚠ Configure na revisão"}
+                          : "⚠ Configure quantidade e material de impressão na revisão"}
                       </div>
                     )}
                     {!isImpressao && item.impressao && imp && (
@@ -1187,9 +1180,10 @@ export function SolicitarProdutos() {
         <RevisaoModal
           items={items}
           impressoes={impressoes}
-          onRemoveItem={(item) =>
-            removeItem(item.inom, item.tipo_produto, item.escala)
-          }
+          onRemoveItem={(item) => {
+            removeItem(item.inom, item.tipo_produto, item.escala);
+            if (items.length === 1) setShowRevisao(false);
+          }}
           onSetItemImpressao={setItemImpressao}
           onRemoveItemImpressao={removeItemImpressao}
           onClose={() => setShowRevisao(false)}

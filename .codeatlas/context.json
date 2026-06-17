@@ -1,0 +1,2762 @@
+{
+  "project": "SISPGEO",
+  "generated_at": "2026-06-11T19:01:57.258874",
+  "stats": {
+    "total_nodes": 1858,
+    "total_edges": 2185,
+    "nodes_by_type": {
+      "project": 1,
+      "file": 121,
+      "note": 6,
+      "concept": 232,
+      "module": 61,
+      "variable": 608,
+      "class": 91,
+      "method": 81,
+      "import": 375,
+      "function": 209,
+      "endpoint": 73
+    },
+    "edges_by_type": {
+      "contains": 121,
+      "defines": 1361,
+      "imports": 375,
+      "calls": 328
+    }
+  },
+  "layers": {},
+  "endpoints": [
+    {
+      "label": "DELETE /janelas/{janela_id}",
+      "http_method": "DELETE",
+      "path": "/{janela_id}",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "delete_janela",
+          "signature": "async def delete_janela(janela_id: int, db: AsyncSession=Depends(get_db), _: Usuario=Depends(require_profiles(PerfilEnum.GESTOR_CARTOGRAFICO)))",
+          "file": "backend/app/routers/janelas.py",
+          "line": 273
+        },
+        {
+          "type": "service_call",
+          "name": "info",
+          "signature": "def info(msg: str) -> None",
+          "via": "",
+          "file": "backend/scripts/create_hierarchy_users.py",
+          "line": 412
+        },
+        {
+          "type": "service_call",
+          "name": "require_profiles",
+          "signature": "def require_profiles(*profiles: PerfilEnum)",
+          "via": "",
+          "file": "backend/app/dependencies.py",
+          "line": 58
+        }
+      ]
+    },
+    {
+      "label": "DELETE /pedidos/admin/{pedido_id}",
+      "http_method": "DELETE",
+      "path": "/admin/{pedido_id}",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "admin_delete_pedido",
+          "signature": "async def admin_delete_pedido(pedido_id: int, db: AsyncSession=Depends(get_db), _: Usuario=Depends(require_profiles(PerfilEnum.GESTOR_CARTOGRAFICO)))",
+          "file": "backend/app/routers/pedidos.py",
+          "line": 1597
+        },
+        {
+          "type": "service_call",
+          "name": "require_profiles",
+          "signature": "def require_profiles(*profiles: PerfilEnum)",
+          "via": "",
+          "file": "backend/app/dependencies.py",
+          "line": 58
+        }
+      ]
+    },
+    {
+      "label": "DELETE /pedidos/{pedido_id}",
+      "http_method": "DELETE",
+      "path": "/{pedido_id}",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "cancel_pedido",
+          "signature": "async def cancel_pedido(pedido_id: int, db: AsyncSession=Depends(get_db), current_user: Usuario=Depends(get_current_user))",
+          "file": "backend/app/routers/pedidos.py",
+          "line": 1872
+        }
+      ]
+    },
+    {
+      "label": "DELETE /pedidos/{pedido_id}/items/{item_id}",
+      "http_method": "DELETE",
+      "path": "/{pedido_id}/items/{item_id}",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "delete_item",
+          "signature": "async def delete_item(pedido_id: int, item_id: int, db: AsyncSession=Depends(get_db), current_user: Usuario=Depends(get_current_user))",
+          "file": "backend/app/routers/pedidos.py",
+          "line": 1244
+        },
+        {
+          "type": "service_call",
+          "name": "_rm_do_supervisor",
+          "signature": "def _rm_do_supervisor(user: Usuario) -> str | None",
+          "via": "",
+          "file": "backend/app/routers/pedidos.py",
+          "line": 155
+        },
+        {
+          "type": "service_call",
+          "name": "_check_janela_open",
+          "signature": "async def _check_janela_open(db: AsyncSession, user: Usuario) -> None",
+          "via": "",
+          "file": "backend/app/routers/pedidos.py",
+          "line": 113
+        }
+      ]
+    },
+    {
+      "label": "GET /api/v1/health",
+      "http_method": "GET",
+      "path": "/api/v1/health",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "health",
+          "signature": "async def health()",
+          "file": "backend/app/main.py",
+          "line": 418
+        }
+      ]
+    },
+    {
+      "label": "GET /auth/confirm-email/{token}",
+      "http_method": "GET",
+      "path": "/confirm-email/{token}",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "confirm_email",
+          "signature": "async def confirm_email(token: str, db: AsyncSession=Depends(get_db))",
+          "file": "backend/app/routers/auth.py",
+          "line": 63
+        },
+        {
+          "type": "service_call",
+          "name": "info",
+          "signature": "def info(msg: str) -> None",
+          "via": "",
+          "file": "backend/scripts/create_hierarchy_users.py",
+          "line": 412
+        },
+        {
+          "type": "service_call",
+          "name": "confirm_email",
+          "signature": "async def confirm_email(db: AsyncSession, token: str) -> Usuario",
+          "via": "",
+          "file": "backend/app/services/auth_service.py",
+          "line": 150
+        }
+      ]
+    },
+    {
+      "label": "GET /config/entrega",
+      "http_method": "GET",
+      "path": "/entrega",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "get_config_entrega",
+          "signature": "async def get_config_entrega(db: AsyncSession=Depends(get_db), _: Usuario=Depends(get_current_user))",
+          "file": "backend/app/routers/config.py",
+          "line": 73
+        },
+        {
+          "type": "service_call",
+          "name": "get_or_create_config",
+          "signature": "async def get_or_create_config(db: AsyncSession) -> ConfigEntrega",
+          "via": "",
+          "file": "backend/app/routers/config.py",
+          "line": 44
+        },
+        {
+          "type": "service_call",
+          "name": "datas_minimas_para",
+          "signature": "def datas_minimas_para(data_base: date) -> dict[str, str]",
+          "via": "",
+          "file": "backend/app/routers/config.py",
+          "line": 36
+        }
+      ]
+    },
+    {
+      "label": "GET /historico",
+      "http_method": "GET",
+      "path": "/historico",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "get_historico_global",
+          "signature": "async def get_historico_global(limit: int=200, offset: int=0, db: AsyncSession=Depends(get_db), _: Usuario=Depends(require_profiles(PerfilEnum.GESTOR_CARTOGRAFICO)))",
+          "file": "backend/app/routers/historico.py",
+          "line": 82
+        },
+        {
+          "type": "service_call",
+          "name": "require_profiles",
+          "signature": "def require_profiles(*profiles: PerfilEnum)",
+          "via": "",
+          "file": "backend/app/dependencies.py",
+          "line": 58
+        },
+        {
+          "type": "service_call",
+          "name": "_enrich",
+          "signature": "async def _enrich(db: AsyncSession, pedidos: list[Pedido]) -> list[PedidoOut]",
+          "via": "",
+          "file": "backend/app/routers/pedidos.py",
+          "line": 52
+        }
+      ]
+    },
+    {
+      "label": "GET /janelas",
+      "http_method": "GET",
+      "path": "/",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "list_janelas",
+          "signature": "async def list_janelas(db: AsyncSession=Depends(get_db), _: Usuario=Depends(get_current_user))",
+          "file": "backend/app/routers/janelas.py",
+          "line": 129
+        }
+      ]
+    },
+    {
+      "label": "GET /janelas/active",
+      "http_method": "GET",
+      "path": "/active",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "active_janelas",
+          "signature": "async def active_janelas(db: AsyncSession=Depends(get_db), _: Usuario=Depends(get_current_user))",
+          "file": "backend/app/routers/janelas.py",
+          "line": 139
+        }
+      ]
+    },
+    {
+      "label": "GET /janelas/minha-janela",
+      "http_method": "GET",
+      "path": "/minha-janela",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "minha_janela",
+          "signature": "async def minha_janela(db: AsyncSession=Depends(get_db), current_user: Usuario=Depends(get_current_user))",
+          "file": "backend/app/routers/janelas.py",
+          "line": 78
+        },
+        {
+          "type": "service_call",
+          "name": "_get_tipo_janela",
+          "signature": "def _get_tipo_janela(perfil: PerfilEnum) -> TipoJanelaEnum | None",
+          "via": "",
+          "file": "backend/app/routers/janelas.py",
+          "line": 25
+        }
+      ]
+    },
+    {
+      "label": "GET /map/inom-grid",
+      "http_method": "GET",
+      "path": "/inom-grid",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "inom_grid",
+          "signature": "async def inom_grid(request: Request, scale: EscalaEnum=Query(..., description='Escala da grade INOM'), tipo_produto: str=Query('CARTA_TOPOGRAFICA', description='Tipo de produto (TipoProduto enum)'), _: Usuario=Depends(get_current_user))",
+          "file": "backend/app/routers/map_layers.py",
+          "line": 16
+        },
+        {
+          "type": "service_call",
+          "name": "get_grid_gz",
+          "signature": "def get_grid_gz(tipo_produto: str, scale: EscalaEnum) -> tuple[bytes, str]",
+          "via": "",
+          "file": "backend/app/services/bdgex_service.py",
+          "line": 519
+        }
+      ]
+    },
+    {
+      "label": "GET /metricas/api",
+      "http_method": "GET",
+      "path": "/api",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "metricas_api",
+          "signature": "async def metricas_api(horas: int=Query(24, ge=1, le=720, description='Janela temporal em horas'), db: AsyncSession=Depends(get_db), _: Usuario=Depends(require_profiles(PerfilEnum.GESTOR_CARTOGRAFICO)))",
+          "file": "backend/app/routers/metricas.py",
+          "line": 132
+        },
+        {
+          "type": "service_call",
+          "name": "require_profiles",
+          "signature": "def require_profiles(*profiles: PerfilEnum)",
+          "via": "",
+          "file": "backend/app/dependencies.py",
+          "line": 58
+        },
+        {
+          "type": "service_call",
+          "name": "_utcnow",
+          "signature": "def _utcnow() -> datetime",
+          "via": "",
+          "file": "backend/app/routers/metricas.py",
+          "line": 40
+        }
+      ]
+    },
+    {
+      "label": "GET /metricas/pedidos",
+      "http_method": "GET",
+      "path": "/pedidos",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "metricas_pedidos",
+          "signature": "async def metricas_pedidos(db: AsyncSession=Depends(get_db), _: Usuario=Depends(require_profiles(PerfilEnum.GESTOR_CARTOGRAFICO)))",
+          "file": "backend/app/routers/metricas.py",
+          "line": 185
+        },
+        {
+          "type": "service_call",
+          "name": "require_profiles",
+          "signature": "def require_profiles(*profiles: PerfilEnum)",
+          "via": "",
+          "file": "backend/app/dependencies.py",
+          "line": 58
+        },
+        {
+          "type": "service_call",
+          "name": "_utcnow",
+          "signature": "def _utcnow() -> datetime",
+          "via": "",
+          "file": "backend/app/routers/metricas.py",
+          "line": 40
+        }
+      ]
+    },
+    {
+      "label": "GET /metricas/resumo",
+      "http_method": "GET",
+      "path": "/resumo",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "resumo_metricas",
+          "signature": "async def resumo_metricas(db: AsyncSession=Depends(get_db), _: Usuario=Depends(require_profiles(PerfilEnum.GESTOR_CARTOGRAFICO)))",
+          "file": "backend/app/routers/metricas.py",
+          "line": 49
+        },
+        {
+          "type": "service_call",
+          "name": "_utcnow",
+          "signature": "def _utcnow() -> datetime",
+          "via": "",
+          "file": "backend/app/routers/metricas.py",
+          "line": 40
+        },
+        {
+          "type": "service_call",
+          "name": "require_profiles",
+          "signature": "def require_profiles(*profiles: PerfilEnum)",
+          "via": "",
+          "file": "backend/app/dependencies.py",
+          "line": 58
+        }
+      ]
+    },
+    {
+      "label": "GET /om",
+      "http_method": "GET",
+      "path": "/",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "list_oms",
+          "signature": "async def list_oms()",
+          "file": "backend/app/routers/om_data.py",
+          "line": 25
+        },
+        {
+          "type": "service_call",
+          "name": "_load_oms",
+          "signature": "def _load_oms() -> dict",
+          "via": "",
+          "file": "backend/app/routers/om_data.py",
+          "line": 11
+        }
+      ]
+    },
+    {
+      "label": "GET /oms/{cmila}",
+      "http_method": "GET",
+      "path": "/{cmila}",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "listar_oms_customizadas",
+          "signature": "async def listar_oms_customizadas(cmila: str, db: AsyncSession=Depends(get_db), _current_user: Usuario=Depends(get_current_user))",
+          "file": "backend/app/routers/oms.py",
+          "line": 46
+        }
+      ]
+    },
+    {
+      "label": "GET /operacoes",
+      "http_method": "GET",
+      "path": "/",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "list_operacoes",
+          "signature": "async def list_operacoes(db: AsyncSession=Depends(get_db), current_user: Usuario=Depends(get_current_user))",
+          "file": "backend/app/routers/operacoes.py",
+          "line": 35
+        }
+      ]
+    },
+    {
+      "label": "GET /pedidos",
+      "http_method": "GET",
+      "path": "/",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "list_pedidos",
+          "signature": "async def list_pedidos(db: AsyncSession=Depends(get_db), current_user: Usuario=Depends(get_current_user))",
+          "file": "backend/app/routers/pedidos.py",
+          "line": 231
+        },
+        {
+          "type": "service_call",
+          "name": "_enrich",
+          "signature": "async def _enrich(db: AsyncSession, pedidos: list[Pedido]) -> list[PedidoOut]",
+          "via": "",
+          "file": "backend/app/routers/pedidos.py",
+          "line": 52
+        },
+        {
+          "type": "service_call",
+          "name": "_rm_do_supervisor",
+          "signature": "def _rm_do_supervisor(user: Usuario) -> str | None",
+          "via": "",
+          "file": "backend/app/routers/pedidos.py",
+          "line": 155
+        }
+      ]
+    },
+    {
+      "label": "GET /pedidos/admin/all",
+      "http_method": "GET",
+      "path": "/admin/all",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "admin_list_all",
+          "signature": "async def admin_list_all(db: AsyncSession=Depends(get_db), _: Usuario=Depends(require_profiles(PerfilEnum.GESTOR_CARTOGRAFICO)), status: str | None=Query(default=None), orgao_vinculante: str | None=Query(default=None), q: str | None=Query(default=None))",
+          "file": "backend/app/routers/pedidos.py",
+          "line": 1560
+        },
+        {
+          "type": "service_call",
+          "name": "require_profiles",
+          "signature": "def require_profiles(*profiles: PerfilEnum)",
+          "via": "",
+          "file": "backend/app/dependencies.py",
+          "line": 58
+        },
+        {
+          "type": "service_call",
+          "name": "_enrich",
+          "signature": "async def _enrich(db: AsyncSession, pedidos: list[Pedido]) -> list[PedidoOut]",
+          "via": "",
+          "file": "backend/app/routers/pedidos.py",
+          "line": 52
+        }
+      ]
+    },
+    {
+      "label": "GET /pedidos/admin/produtos-recentes",
+      "http_method": "GET",
+      "path": "/admin/produtos-recentes",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "admin_produtos_recentes_bdgex",
+          "signature": "async def admin_produtos_recentes_bdgex(anos: int=Query(default=5, ge=1, le=50), db: AsyncSession=Depends(get_db), _: Usuario=Depends(require_profiles(PerfilEnum.GESTOR_CARTOGRAFICO)))",
+          "file": "backend/app/routers/pedidos.py",
+          "line": 1494
+        },
+        {
+          "type": "service_call",
+          "name": "require_profiles",
+          "signature": "def require_profiles(*profiles: PerfilEnum)",
+          "via": "",
+          "file": "backend/app/dependencies.py",
+          "line": 58
+        },
+        {
+          "type": "service_call",
+          "name": "_enrich",
+          "signature": "async def _enrich(db: AsyncSession, pedidos: list[Pedido]) -> list[PedidoOut]",
+          "via": "",
+          "file": "backend/app/routers/pedidos.py",
+          "line": 52
+        }
+      ]
+    },
+    {
+      "label": "GET /pedidos/cgeo-atendimento",
+      "http_method": "GET",
+      "path": "/cgeo-atendimento",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "cgeo_list_atendimento",
+          "signature": "async def cgeo_list_atendimento(db: AsyncSession=Depends(get_db), current_user: Usuario=Depends(require_profiles(PerfilEnum.ANALISTA_CGEO)))",
+          "file": "backend/app/routers/pedidos.py",
+          "line": 1477
+        },
+        {
+          "type": "service_call",
+          "name": "require_profiles",
+          "signature": "def require_profiles(*profiles: PerfilEnum)",
+          "via": "",
+          "file": "backend/app/dependencies.py",
+          "line": 58
+        },
+        {
+          "type": "service_call",
+          "name": "_enrich",
+          "signature": "async def _enrich(db: AsyncSession, pedidos: list[Pedido]) -> list[PedidoOut]",
+          "via": "",
+          "file": "backend/app/routers/pedidos.py",
+          "line": 52
+        }
+      ]
+    },
+    {
+      "label": "GET /pedidos/duplicatas",
+      "http_method": "GET",
+      "path": "/duplicatas",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "listar_duplicatas",
+          "signature": "async def listar_duplicatas(db: AsyncSession=Depends(get_db), current_user: Usuario=Depends(get_current_user))",
+          "file": "backend/app/routers/pedidos.py",
+          "line": 383
+        },
+        {
+          "type": "service_call",
+          "name": "_enrich",
+          "signature": "async def _enrich(db: AsyncSession, pedidos: list[Pedido]) -> list[PedidoOut]",
+          "via": "",
+          "file": "backend/app/routers/pedidos.py",
+          "line": 52
+        },
+        {
+          "type": "service_call",
+          "name": "_rm_do_supervisor",
+          "signature": "def _rm_do_supervisor(user: Usuario) -> str | None",
+          "via": "",
+          "file": "backend/app/routers/pedidos.py",
+          "line": 155
+        }
+      ]
+    },
+    {
+      "label": "GET /pedidos/export",
+      "http_method": "GET",
+      "path": "/export",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "exportar_pedidos",
+          "signature": "async def exportar_pedidos(db: AsyncSession=Depends(get_db), current_user: Usuario=Depends(require_profiles(PerfilEnum.GESTOR_CARTOGRAFICO)))",
+          "file": "backend/app/routers/pedidos.py",
+          "line": 1161
+        },
+        {
+          "type": "service_call",
+          "name": "require_profiles",
+          "signature": "def require_profiles(*profiles: PerfilEnum)",
+          "via": "",
+          "file": "backend/app/dependencies.py",
+          "line": 58
+        },
+        {
+          "type": "service_call",
+          "name": "_enrich",
+          "signature": "async def _enrich(db: AsyncSession, pedidos: list[Pedido]) -> list[PedidoOut]",
+          "via": "",
+          "file": "backend/app/routers/pedidos.py",
+          "line": 52
+        },
+        {
+          "type": "service_call",
+          "name": "_build_admin_zip",
+          "signature": "async def _build_admin_zip(enriched: list, current_user: Usuario, filtro: str='Todos') -> StreamingResponse",
+          "via": "",
+          "file": "backend/app/routers/pedidos.py",
+          "line": 847
+        }
+      ]
+    },
+    {
+      "label": "GET /pedidos/homologados",
+      "http_method": "GET",
+      "path": "/homologados",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "list_homologados",
+          "signature": "async def list_homologados(db: AsyncSession=Depends(get_db), current_user: Usuario=Depends(require_profiles(*GESTOR_PROFILES)))",
+          "file": "backend/app/routers/pedidos.py",
+          "line": 1297
+        },
+        {
+          "type": "service_call",
+          "name": "require_profiles",
+          "signature": "def require_profiles(*profiles: PerfilEnum)",
+          "via": "",
+          "file": "backend/app/dependencies.py",
+          "line": 58
+        },
+        {
+          "type": "service_call",
+          "name": "_enrich",
+          "signature": "async def _enrich(db: AsyncSession, pedidos: list[Pedido]) -> list[PedidoOut]",
+          "via": "",
+          "file": "backend/app/routers/pedidos.py",
+          "line": 52
+        },
+        {
+          "type": "service_call",
+          "name": "_rm_do_supervisor",
+          "signature": "def _rm_do_supervisor(user: Usuario) -> str | None",
+          "via": "",
+          "file": "backend/app/routers/pedidos.py",
+          "line": 155
+        }
+      ]
+    },
+    {
+      "label": "GET /pedidos/map-features",
+      "http_method": "GET",
+      "path": "/map-features",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "get_map_features",
+          "signature": "async def get_map_features(db: AsyncSession=Depends(get_db), current_user: Usuario=Depends(get_current_user))",
+          "file": "backend/app/routers/pedidos.py",
+          "line": 319
+        },
+        {
+          "type": "service_call",
+          "name": "_enrich",
+          "signature": "async def _enrich(db: AsyncSession, pedidos: list[Pedido]) -> list[PedidoOut]",
+          "via": "",
+          "file": "backend/app/routers/pedidos.py",
+          "line": 52
+        },
+        {
+          "type": "service_call",
+          "name": "_rm_do_supervisor",
+          "signature": "def _rm_do_supervisor(user: Usuario) -> str | None",
+          "via": "",
+          "file": "backend/app/routers/pedidos.py",
+          "line": 155
+        }
+      ]
+    },
+    {
+      "label": "GET /pedidos/pending",
+      "http_method": "GET",
+      "path": "/pending",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "list_pending",
+          "signature": "async def list_pending(db: AsyncSession=Depends(get_db), current_user: Usuario=Depends(get_current_user))",
+          "file": "backend/app/routers/pedidos.py",
+          "line": 277
+        },
+        {
+          "type": "service_call",
+          "name": "_enrich",
+          "signature": "async def _enrich(db: AsyncSession, pedidos: list[Pedido]) -> list[PedidoOut]",
+          "via": "",
+          "file": "backend/app/routers/pedidos.py",
+          "line": 52
+        },
+        {
+          "type": "service_call",
+          "name": "_rm_do_supervisor",
+          "signature": "def _rm_do_supervisor(user: Usuario) -> str | None",
+          "via": "",
+          "file": "backend/app/routers/pedidos.py",
+          "line": 155
+        }
+      ]
+    },
+    {
+      "label": "GET /pedidos/relatorio",
+      "http_method": "GET",
+      "path": "/relatorio",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "exportar_relatorio",
+          "signature": "async def exportar_relatorio(db: AsyncSession=Depends(get_db), current_user: Usuario=Depends(require_profiles(PerfilEnum.SOLICITANTE, *SUPERVISOR_PROFILES, *CONSOLIDADOR_PROFILES)))",
+          "file": "backend/app/routers/pedidos.py",
+          "line": 442
+        },
+        {
+          "type": "service_call",
+          "name": "_slug",
+          "signature": "def _slug(s: str) -> str",
+          "via": "",
+          "file": "backend/app/routers/pedidos.py",
+          "line": 1130
+        },
+        {
+          "type": "service_call",
+          "name": "require_profiles",
+          "signature": "def require_profiles(*profiles: PerfilEnum)",
+          "via": "",
+          "file": "backend/app/dependencies.py",
+          "line": 58
+        },
+        {
+          "type": "service_call",
+          "name": "_enrich",
+          "signature": "async def _enrich(db: AsyncSession, pedidos: list[Pedido]) -> list[PedidoOut]",
+          "via": "",
+          "file": "backend/app/routers/pedidos.py",
+          "line": 52
+        },
+        {
+          "type": "service_call",
+          "name": "_bdgex_info",
+          "signature": "def _bdgex_info(item) -> tuple[bool, object]",
+          "via": "",
+          "file": "backend/app/routers/pedidos.py",
+          "line": 494
+        },
+        {
+          "type": "service_call",
+          "name": "get_inom_geometries",
+          "signature": "def get_inom_geometries(scale: Optional[EscalaEnum]=None) -> dict[str, dict]",
+          "via": "",
+          "file": "backend/app/services/bdgex_service.py",
+          "line": 471
+        },
+        {
+          "type": "service_call",
+          "name": "_rm_do_supervisor",
+          "signature": "def _rm_do_supervisor(user: Usuario) -> str | None",
+          "via": "",
+          "file": "backend/app/routers/pedidos.py",
+          "line": 155
+        }
+      ]
+    },
+    {
+      "label": "GET /pedidos/{pedido_id}",
+      "http_method": "GET",
+      "path": "/{pedido_id}",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "get_pedido",
+          "signature": "async def get_pedido(pedido_id: int, db: AsyncSession=Depends(get_db), current_user: Usuario=Depends(get_current_user))",
+          "file": "backend/app/routers/pedidos.py",
+          "line": 1345
+        },
+        {
+          "type": "service_call",
+          "name": "_enrich",
+          "signature": "async def _enrich(db: AsyncSession, pedidos: list[Pedido]) -> list[PedidoOut]",
+          "via": "",
+          "file": "backend/app/routers/pedidos.py",
+          "line": 52
+        }
+      ]
+    },
+    {
+      "label": "GET /pedidos/{pedido_id}/features",
+      "http_method": "GET",
+      "path": "/{pedido_id}/features",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "get_pedido_features",
+          "signature": "async def get_pedido_features(pedido_id: int, db: AsyncSession=Depends(get_db), current_user: Usuario=Depends(get_current_user))",
+          "file": "backend/app/routers/pedidos.py",
+          "line": 1825
+        }
+      ]
+    },
+    {
+      "label": "GET /pedidos/{pedido_id}/historico",
+      "http_method": "GET",
+      "path": "/pedidos/{pedido_id}/historico",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "get_historico_pedido",
+          "signature": "async def get_historico_pedido(pedido_id: int, db: AsyncSession=Depends(get_db), current_user: Usuario=Depends(get_current_user))",
+          "file": "backend/app/routers/historico.py",
+          "line": 50
+        },
+        {
+          "type": "service_call",
+          "name": "_enrich",
+          "signature": "async def _enrich(db: AsyncSession, pedidos: list[Pedido]) -> list[PedidoOut]",
+          "via": "",
+          "file": "backend/app/routers/pedidos.py",
+          "line": 52
+        }
+      ]
+    },
+    {
+      "label": "GET /transferencias",
+      "http_method": "GET",
+      "path": "/",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "get_all_transferencias",
+          "signature": "async def get_all_transferencias(limit: int=200, offset: int=0, db: AsyncSession=Depends(get_db), _: Usuario=Depends(require_profiles(PerfilEnum.GESTOR_CARTOGRAFICO)))",
+          "file": "backend/app/routers/transferencias.py",
+          "line": 113
+        },
+        {
+          "type": "service_call",
+          "name": "require_profiles",
+          "signature": "def require_profiles(*profiles: PerfilEnum)",
+          "via": "",
+          "file": "backend/app/dependencies.py",
+          "line": 58
+        },
+        {
+          "type": "service_call",
+          "name": "_enrich_transferencias",
+          "signature": "async def _enrich_transferencias(db: AsyncSession, rows: list[PedidoTransferencia]) -> list[TransferenciaOut]",
+          "via": "",
+          "file": "backend/app/routers/transferencias.py",
+          "line": 39
+        }
+      ]
+    },
+    {
+      "label": "GET /transferencias/minhas",
+      "http_method": "GET",
+      "path": "/minhas",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "get_minhas_transferencias",
+          "signature": "async def get_minhas_transferencias(db: AsyncSession=Depends(get_db), current_user: Usuario=Depends(get_current_user))",
+          "file": "backend/app/routers/transferencias.py",
+          "line": 77
+        },
+        {
+          "type": "service_call",
+          "name": "_enrich_transferencias",
+          "signature": "async def _enrich_transferencias(db: AsyncSession, rows: list[PedidoTransferencia]) -> list[TransferenciaOut]",
+          "via": "",
+          "file": "backend/app/routers/transferencias.py",
+          "line": 39
+        }
+      ]
+    },
+    {
+      "label": "GET /transferencias/usuario/{user_id}",
+      "http_method": "GET",
+      "path": "/usuario/{user_id}",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "get_usuario_transferencias",
+          "signature": "async def get_usuario_transferencias(user_id: int, db: AsyncSession=Depends(get_db), _: Usuario=Depends(require_profiles(PerfilEnum.GESTOR_CARTOGRAFICO)))",
+          "file": "backend/app/routers/transferencias.py",
+          "line": 95
+        },
+        {
+          "type": "service_call",
+          "name": "require_profiles",
+          "signature": "def require_profiles(*profiles: PerfilEnum)",
+          "via": "",
+          "file": "backend/app/dependencies.py",
+          "line": 58
+        },
+        {
+          "type": "service_call",
+          "name": "_enrich_transferencias",
+          "signature": "async def _enrich_transferencias(db: AsyncSession, rows: list[PedidoTransferencia]) -> list[TransferenciaOut]",
+          "via": "",
+          "file": "backend/app/routers/transferencias.py",
+          "line": 39
+        }
+      ]
+    },
+    {
+      "label": "GET /users",
+      "http_method": "GET",
+      "path": "/",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "list_users",
+          "signature": "async def list_users(db: AsyncSession=Depends(get_db), _: Usuario=Depends(require_profiles(PerfilEnum.GESTOR_CARTOGRAFICO)))",
+          "file": "backend/app/routers/users.py",
+          "line": 148
+        },
+        {
+          "type": "service_call",
+          "name": "require_profiles",
+          "signature": "def require_profiles(*profiles: PerfilEnum)",
+          "via": "",
+          "file": "backend/app/dependencies.py",
+          "line": 58
+        }
+      ]
+    },
+    {
+      "label": "GET /users/me",
+      "http_method": "GET",
+      "path": "/me",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "get_me",
+          "signature": "async def get_me(current_user: Usuario=Depends(get_current_user))",
+          "file": "backend/app/routers/users.py",
+          "line": 27
+        }
+      ]
+    },
+    {
+      "label": "GET /users/me/notifications",
+      "http_method": "GET",
+      "path": "/me/notifications",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "get_notifications",
+          "signature": "async def get_notifications(db: AsyncSession=Depends(get_db), current_user: Usuario=Depends(get_current_user))",
+          "file": "backend/app/routers/users.py",
+          "line": 98
+        }
+      ]
+    },
+    {
+      "label": "GET /users/me/notifications/unread-count",
+      "http_method": "GET",
+      "path": "/me/notifications/unread-count",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "get_unread_count",
+          "signature": "async def get_unread_count(db: AsyncSession=Depends(get_db), current_user: Usuario=Depends(get_current_user))",
+          "file": "backend/app/routers/users.py",
+          "line": 85
+        }
+      ]
+    },
+    {
+      "label": "GET /users/mesma-om",
+      "http_method": "GET",
+      "path": "/mesma-om",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "list_mesma_om",
+          "signature": "async def list_mesma_om(db: AsyncSession=Depends(get_db), current_user: Usuario=Depends(get_current_user))",
+          "file": "backend/app/routers/users.py",
+          "line": 126
+        }
+      ]
+    },
+    {
+      "label": "POST /auth/forgot-password",
+      "http_method": "POST",
+      "path": "/forgot-password",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "forgot_password",
+          "signature": "async def forgot_password(body: ForgotPasswordRequest, request: Request, db: AsyncSession=Depends(get_db))",
+          "file": "backend/app/routers/auth.py",
+          "line": 122
+        },
+        {
+          "type": "service_call",
+          "name": "get_client_ip",
+          "signature": "def get_client_ip(request: Request) -> str",
+          "via": "",
+          "file": "backend/app/dependencies.py",
+          "line": 86
+        },
+        {
+          "type": "service_call",
+          "name": "info",
+          "signature": "def info(msg: str) -> None",
+          "via": "",
+          "file": "backend/scripts/create_hierarchy_users.py",
+          "line": 412
+        },
+        {
+          "type": "service_call",
+          "name": "request_password_reset",
+          "signature": "async def request_password_reset(db: AsyncSession, email: str, ip: str) -> None",
+          "via": "",
+          "file": "backend/app/services/auth_service.py",
+          "line": 275
+        }
+      ]
+    },
+    {
+      "label": "POST /auth/login",
+      "http_method": "POST",
+      "path": "/login",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "login",
+          "signature": "async def login(body: LoginRequest, request: Request, db: AsyncSession=Depends(get_db))",
+          "file": "backend/app/routers/auth.py",
+          "line": 75
+        },
+        {
+          "type": "service_call",
+          "name": "get_client_ip",
+          "signature": "def get_client_ip(request: Request) -> str",
+          "via": "",
+          "file": "backend/app/dependencies.py",
+          "line": 86
+        },
+        {
+          "type": "service_call",
+          "name": "info",
+          "signature": "def info(msg: str) -> None",
+          "via": "",
+          "file": "backend/scripts/create_hierarchy_users.py",
+          "line": 412
+        },
+        {
+          "type": "service_call",
+          "name": "authenticate_user",
+          "signature": "async def authenticate_user(db: AsyncSession, email: str, senha: str, ip: str) -> str",
+          "via": "",
+          "file": "backend/app/services/auth_service.py",
+          "line": 191
+        }
+      ]
+    },
+    {
+      "label": "POST /auth/register",
+      "http_method": "POST",
+      "path": "/register",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "register",
+          "signature": "async def register(body: RegisterRequest, request: Request, db: AsyncSession=Depends(get_db))",
+          "file": "backend/app/routers/auth.py",
+          "line": 29
+        },
+        {
+          "type": "service_call",
+          "name": "get_client_ip",
+          "signature": "def get_client_ip(request: Request) -> str",
+          "via": "",
+          "file": "backend/app/dependencies.py",
+          "line": 86
+        },
+        {
+          "type": "service_call",
+          "name": "info",
+          "signature": "def info(msg: str) -> None",
+          "via": "",
+          "file": "backend/scripts/create_hierarchy_users.py",
+          "line": 412
+        },
+        {
+          "type": "service_call",
+          "name": "register_user",
+          "signature": "def register_user(client: httpx.Client, u: dict) -> tuple[bool, str]",
+          "via": "",
+          "file": "backend/scripts/create_hierarchy_users.py",
+          "line": 452
+        }
+      ]
+    },
+    {
+      "label": "POST /auth/resend-activation",
+      "http_method": "POST",
+      "path": "/resend-activation",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "resend_activation",
+          "signature": "async def resend_activation(body: ResendActivationRequest, db: AsyncSession=Depends(get_db))",
+          "file": "backend/app/routers/auth.py",
+          "line": 104
+        },
+        {
+          "type": "service_call",
+          "name": "info",
+          "signature": "def info(msg: str) -> None",
+          "via": "",
+          "file": "backend/scripts/create_hierarchy_users.py",
+          "line": 412
+        },
+        {
+          "type": "service_call",
+          "name": "resend_activation_email",
+          "signature": "async def resend_activation_email(db: AsyncSession, email: str) -> None",
+          "via": "",
+          "file": "backend/app/services/auth_service.py",
+          "line": 365
+        }
+      ]
+    },
+    {
+      "label": "POST /auth/reset-password",
+      "http_method": "POST",
+      "path": "/reset-password",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "reset_password",
+          "signature": "async def reset_password(body: ResetPasswordRequest, db: AsyncSession=Depends(get_db))",
+          "file": "backend/app/routers/auth.py",
+          "line": 141
+        },
+        {
+          "type": "service_call",
+          "name": "info",
+          "signature": "def info(msg: str) -> None",
+          "via": "",
+          "file": "backend/scripts/create_hierarchy_users.py",
+          "line": 412
+        },
+        {
+          "type": "service_call",
+          "name": "reset_password",
+          "signature": "async def reset_password(db: AsyncSession, token: str, nova_senha: str) -> None",
+          "via": "",
+          "file": "backend/app/services/auth_service.py",
+          "line": 330
+        }
+      ]
+    },
+    {
+      "label": "POST /janelas",
+      "http_method": "POST",
+      "path": "/",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "create_janela",
+          "signature": "async def create_janela(body: JanelaCreate, db: AsyncSession=Depends(get_db), current_user: Usuario=Depends(require_profiles(PerfilEnum.GESTOR_CARTOGRAFICO)))",
+          "file": "backend/app/routers/janelas.py",
+          "line": 155
+        },
+        {
+          "type": "service_call",
+          "name": "info",
+          "signature": "def info(msg: str) -> None",
+          "via": "",
+          "file": "backend/scripts/create_hierarchy_users.py",
+          "line": 412
+        },
+        {
+          "type": "service_call",
+          "name": "require_profiles",
+          "signature": "def require_profiles(*profiles: PerfilEnum)",
+          "via": "",
+          "file": "backend/app/dependencies.py",
+          "line": 58
+        }
+      ]
+    },
+    {
+      "label": "POST /janelas/solicitar-prorrogacao",
+      "http_method": "POST",
+      "path": "/solicitar-prorrogacao",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "solicitar_prorrogacao",
+          "signature": "async def solicitar_prorrogacao(body: ProrrogacaoRequest, db: AsyncSession=Depends(get_db), current_user: Usuario=Depends(get_current_user))",
+          "file": "backend/app/routers/janelas.py",
+          "line": 231
+        },
+        {
+          "type": "service_call",
+          "name": "info",
+          "signature": "def info(msg: str) -> None",
+          "via": "",
+          "file": "backend/scripts/create_hierarchy_users.py",
+          "line": 412
+        },
+        {
+          "type": "service_call",
+          "name": "notify_by_perfil",
+          "signature": "async def notify_by_perfil(self, perfil: PerfilEnum | frozenset[PerfilEnum], titulo: str, mensagem: str, pedido_id: int | None=None, orgao_vinculante: OrgaoVinculanteEnum | None=None, regiao_militar: str | None=None) -> int",
+          "via": "",
+          "file": "backend/app/services/notification_service.py",
+          "line": 65
+        }
+      ]
+    },
+    {
+      "label": "POST /map/features-preview",
+      "http_method": "POST",
+      "path": "/features-preview",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "features_preview",
+          "signature": "async def features_preview(items: list[FeaturePreviewItem], _: Usuario=Depends(get_current_user))",
+          "file": "backend/app/routers/map_layers.py",
+          "line": 53
+        }
+      ]
+    },
+    {
+      "label": "POST /oms",
+      "http_method": "POST",
+      "path": "",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "criar_om_customizada",
+          "signature": "async def criar_om_customizada(body: OmCreateRequest, db: AsyncSession=Depends(get_db), _current_user: Usuario=Depends(get_current_user))",
+          "file": "backend/app/routers/oms.py",
+          "line": 64
+        }
+      ]
+    },
+    {
+      "label": "POST /operacoes",
+      "http_method": "POST",
+      "path": "/",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "create_operacao",
+          "signature": "async def create_operacao(body: OperacaoCreate, db: AsyncSession=Depends(get_db), current_user: Usuario=Depends(get_current_user))",
+          "file": "backend/app/routers/operacoes.py",
+          "line": 48
+        }
+      ]
+    },
+    {
+      "label": "POST /pedidos",
+      "http_method": "POST",
+      "path": "/",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "create_pedido",
+          "signature": "async def create_pedido(body: PedidoCreate, db: AsyncSession=Depends(get_db), current_user: Usuario=Depends(get_current_user))",
+          "file": "backend/app/routers/pedidos.py",
+          "line": 168
+        },
+        {
+          "type": "service_call",
+          "name": "get_or_create_config",
+          "signature": "async def get_or_create_config(db: AsyncSession) -> ConfigEntrega",
+          "via": "",
+          "file": "backend/app/routers/config.py",
+          "line": 44
+        }
+      ]
+    },
+    {
+      "label": "POST /pedidos/admin/export",
+      "http_method": "POST",
+      "path": "/admin/export",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "admin_export_geojson",
+          "signature": "async def admin_export_geojson(body: ExportRequest, db: AsyncSession=Depends(get_db), current_user: Usuario=Depends(require_profiles(PerfilEnum.GESTOR_CARTOGRAFICO)))",
+          "file": "backend/app/routers/pedidos.py",
+          "line": 1659
+        },
+        {
+          "type": "service_call",
+          "name": "require_profiles",
+          "signature": "def require_profiles(*profiles: PerfilEnum)",
+          "via": "",
+          "file": "backend/app/dependencies.py",
+          "line": 58
+        },
+        {
+          "type": "service_call",
+          "name": "_enrich",
+          "signature": "async def _enrich(db: AsyncSession, pedidos: list[Pedido]) -> list[PedidoOut]",
+          "via": "",
+          "file": "backend/app/routers/pedidos.py",
+          "line": 52
+        },
+        {
+          "type": "service_call",
+          "name": "_build_admin_zip",
+          "signature": "async def _build_admin_zip(enriched: list, current_user: Usuario, filtro: str='Todos') -> StreamingResponse",
+          "via": "",
+          "file": "backend/app/routers/pedidos.py",
+          "line": 847
+        }
+      ]
+    },
+    {
+      "label": "POST /pedidos/consolidate",
+      "http_method": "POST",
+      "path": "/consolidate",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "consolidate",
+          "signature": "async def consolidate(body: ConsolidateRequest, db: AsyncSession=Depends(get_db), current_user: Usuario=Depends(require_profiles(*GESTOR_PROFILES)))",
+          "file": "backend/app/routers/pedidos.py",
+          "line": 1441
+        },
+        {
+          "type": "service_call",
+          "name": "require_profiles",
+          "signature": "def require_profiles(*profiles: PerfilEnum)",
+          "via": "",
+          "file": "backend/app/dependencies.py",
+          "line": 58
+        },
+        {
+          "type": "service_call",
+          "name": "_check_janela_open",
+          "signature": "async def _check_janela_open(db: AsyncSession, user: Usuario) -> None",
+          "via": "",
+          "file": "backend/app/routers/pedidos.py",
+          "line": 113
+        },
+        {
+          "type": "service_call",
+          "name": "consolidate_pedidos",
+          "signature": "async def consolidate_pedidos(db: AsyncSession, pedido_ids: list[int], gestor: Usuario) -> dict",
+          "via": "",
+          "file": "backend/app/services/pedido_service.py",
+          "line": 352
+        }
+      ]
+    },
+    {
+      "label": "POST /pedidos/enviar-lote",
+      "http_method": "POST",
+      "path": "/enviar-lote",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "enviar_lote",
+          "signature": "async def enviar_lote(body: EnviarLoteRequest, db: AsyncSession=Depends(get_db), current_user: Usuario=Depends(get_current_user))",
+          "file": "backend/app/routers/pedidos.py",
+          "line": 1363
+        },
+        {
+          "type": "service_call",
+          "name": "_enrich",
+          "signature": "async def _enrich(db: AsyncSession, pedidos: list[Pedido]) -> list[PedidoOut]",
+          "via": "",
+          "file": "backend/app/routers/pedidos.py",
+          "line": 52
+        },
+        {
+          "type": "service_call",
+          "name": "submit_pedido",
+          "signature": "async def submit_pedido(db: AsyncSession, pedido: Pedido, current_user: Usuario) -> Pedido",
+          "via": "",
+          "file": "backend/app/services/pedido_service.py",
+          "line": 126
+        }
+      ]
+    },
+    {
+      "label": "POST /pedidos/{pedido_id}/dar-pronto",
+      "http_method": "POST",
+      "path": "/{pedido_id}/dar-pronto",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "dar_pronto",
+          "signature": "async def dar_pronto(pedido_id: int, body: DarProntoRequest, db: AsyncSession=Depends(get_db), current_user: Usuario=Depends(require_profiles(PerfilEnum.GESTOR_CARTOGRAFICO)))",
+          "file": "backend/app/routers/pedidos.py",
+          "line": 1187
+        },
+        {
+          "type": "service_call",
+          "name": "require_profiles",
+          "signature": "def require_profiles(*profiles: PerfilEnum)",
+          "via": "",
+          "file": "backend/app/dependencies.py",
+          "line": 58
+        },
+        {
+          "type": "service_call",
+          "name": "registrar_historico",
+          "signature": "async def registrar_historico(db: AsyncSession, pedido: Pedido, usuario: Usuario | None, acao: str, status_anterior: StatusPedidoEnum | None=None, motivo: str | None=None) -> None",
+          "via": "",
+          "file": "backend/app/services/historico_service.py",
+          "line": 26
+        },
+        {
+          "type": "service_call",
+          "name": "notify_user",
+          "signature": "async def notify_user(self, usuario_id: int, titulo: str, mensagem: str, pedido_id: int | None=None) -> None",
+          "via": "",
+          "file": "backend/app/services/notification_service.py",
+          "line": 39
+        },
+        {
+          "type": "service_call",
+          "name": "_enrich",
+          "signature": "async def _enrich(db: AsyncSession, pedidos: list[Pedido]) -> list[PedidoOut]",
+          "via": "",
+          "file": "backend/app/routers/pedidos.py",
+          "line": 52
+        },
+        {
+          "type": "service_call",
+          "name": "notify_by_perfil",
+          "signature": "async def notify_by_perfil(self, perfil: PerfilEnum | frozenset[PerfilEnum], titulo: str, mensagem: str, pedido_id: int | None=None, orgao_vinculante: OrgaoVinculanteEnum | None=None, regiao_militar: str | None=None) -> int",
+          "via": "",
+          "file": "backend/app/services/notification_service.py",
+          "line": 65
+        }
+      ]
+    },
+    {
+      "label": "POST /pedidos/{pedido_id}/solicitar-remocao",
+      "http_method": "POST",
+      "path": "/{pedido_id}/solicitar-remocao",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "solicitar_remocao",
+          "signature": "async def solicitar_remocao(pedido_id: int, body: SolicitarRemocaoRequest, db: AsyncSession=Depends(get_db), current_user: Usuario=Depends(get_current_user))",
+          "file": "backend/app/routers/pedidos.py",
+          "line": 1774
+        }
+      ]
+    },
+    {
+      "label": "POST /pedidos/{pedido_id}/submit",
+      "http_method": "POST",
+      "path": "/{pedido_id}/submit",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "submit",
+          "signature": "async def submit(pedido_id: int, db: AsyncSession=Depends(get_db), current_user: Usuario=Depends(get_current_user))",
+          "file": "backend/app/routers/pedidos.py",
+          "line": 1410
+        },
+        {
+          "type": "service_call",
+          "name": "submit_pedido",
+          "signature": "async def submit_pedido(db: AsyncSession, pedido: Pedido, current_user: Usuario) -> Pedido",
+          "via": "",
+          "file": "backend/app/services/pedido_service.py",
+          "line": 126
+        }
+      ]
+    },
+    {
+      "label": "POST /users/me/confirm-data",
+      "http_method": "POST",
+      "path": "/me/confirm-data",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "confirm_data",
+          "signature": "async def confirm_data(db: AsyncSession=Depends(get_db), current_user: Usuario=Depends(get_current_user))",
+          "file": "backend/app/routers/users.py",
+          "line": 75
+        }
+      ]
+    },
+    {
+      "label": "POST /users/{user_id}/transferir-pedidos",
+      "http_method": "POST",
+      "path": "/{user_id}/transferir-pedidos",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "transferir_pedidos",
+          "signature": "async def transferir_pedidos(user_id: int, body: TransferirPedidosRequest, db: AsyncSession=Depends(get_db), current_user: Usuario=Depends(get_current_user))",
+          "file": "backend/app/routers/users.py",
+          "line": 228
+        },
+        {
+          "type": "service_call",
+          "name": "transferir_pedidos",
+          "signature": "async def transferir_pedidos(db: AsyncSession, source_user: Usuario, novo_responsavel: Usuario, executor: Usuario) -> int",
+          "via": "",
+          "file": "backend/app/services/pedido_service.py",
+          "line": 566
+        }
+      ]
+    },
+    {
+      "label": "PUT /config/entrega",
+      "http_method": "PUT",
+      "path": "/entrega",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "update_config_entrega",
+          "signature": "async def update_config_entrega(body: ConfigEntregaUpdate, db: AsyncSession=Depends(get_db), current_user: Usuario=Depends(require_profiles(PerfilEnum.GESTOR_CARTOGRAFICO)))",
+          "file": "backend/app/routers/config.py",
+          "line": 88
+        },
+        {
+          "type": "service_call",
+          "name": "info",
+          "signature": "def info(msg: str) -> None",
+          "via": "",
+          "file": "backend/scripts/create_hierarchy_users.py",
+          "line": 412
+        },
+        {
+          "type": "service_call",
+          "name": "require_profiles",
+          "signature": "def require_profiles(*profiles: PerfilEnum)",
+          "via": "",
+          "file": "backend/app/dependencies.py",
+          "line": 58
+        },
+        {
+          "type": "service_call",
+          "name": "get_or_create_config",
+          "signature": "async def get_or_create_config(db: AsyncSession) -> ConfigEntrega",
+          "via": "",
+          "file": "backend/app/routers/config.py",
+          "line": 44
+        },
+        {
+          "type": "service_call",
+          "name": "datas_minimas_para",
+          "signature": "def datas_minimas_para(data_base: date) -> dict[str, str]",
+          "via": "",
+          "file": "backend/app/routers/config.py",
+          "line": 36
+        }
+      ]
+    },
+    {
+      "label": "PUT /janelas/{janela_id}",
+      "http_method": "PUT",
+      "path": "/{janela_id}",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "update_janela",
+          "signature": "async def update_janela(janela_id: int, body: JanelaUpdate, db: AsyncSession=Depends(get_db), _: Usuario=Depends(require_profiles(PerfilEnum.GESTOR_CARTOGRAFICO)))",
+          "file": "backend/app/routers/janelas.py",
+          "line": 204
+        },
+        {
+          "type": "service_call",
+          "name": "info",
+          "signature": "def info(msg: str) -> None",
+          "via": "",
+          "file": "backend/scripts/create_hierarchy_users.py",
+          "line": 412
+        },
+        {
+          "type": "service_call",
+          "name": "require_profiles",
+          "signature": "def require_profiles(*profiles: PerfilEnum)",
+          "via": "",
+          "file": "backend/app/dependencies.py",
+          "line": 58
+        }
+      ]
+    },
+    {
+      "label": "PUT /pedidos/admin/{pedido_id}",
+      "http_method": "PUT",
+      "path": "/admin/{pedido_id}",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "admin_update_pedido",
+          "signature": "async def admin_update_pedido(pedido_id: int, body: AdminPedidoUpdate, db: AsyncSession=Depends(get_db), _: Usuario=Depends(require_profiles(PerfilEnum.GESTOR_CARTOGRAFICO)))",
+          "file": "backend/app/routers/pedidos.py",
+          "line": 1612
+        },
+        {
+          "type": "service_call",
+          "name": "require_profiles",
+          "signature": "def require_profiles(*profiles: PerfilEnum)",
+          "via": "",
+          "file": "backend/app/dependencies.py",
+          "line": 58
+        },
+        {
+          "type": "service_call",
+          "name": "_enrich",
+          "signature": "async def _enrich(db: AsyncSession, pedidos: list[Pedido]) -> list[PedidoOut]",
+          "via": "",
+          "file": "backend/app/routers/pedidos.py",
+          "line": 52
+        },
+        {
+          "type": "service_call",
+          "name": "registrar_historico",
+          "signature": "async def registrar_historico(db: AsyncSession, pedido: Pedido, usuario: Usuario | None, acao: str, status_anterior: StatusPedidoEnum | None=None, motivo: str | None=None) -> None",
+          "via": "",
+          "file": "backend/app/services/historico_service.py",
+          "line": 26
+        }
+      ]
+    },
+    {
+      "label": "PUT /pedidos/reorder",
+      "http_method": "PUT",
+      "path": "/reorder",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "reorder_pedidos",
+          "signature": "async def reorder_pedidos(body: ReorderRequest, db: AsyncSession=Depends(get_db), current_user: Usuario=Depends(get_current_user))",
+          "file": "backend/app/routers/pedidos.py",
+          "line": 1696
+        }
+      ]
+    },
+    {
+      "label": "PUT /pedidos/{pedido_id}",
+      "http_method": "PUT",
+      "path": "/{pedido_id}",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "update_pedido",
+          "signature": "async def update_pedido(pedido_id: int, body: PedidoUpdate, db: AsyncSession=Depends(get_db), current_user: Usuario=Depends(get_current_user))",
+          "file": "backend/app/routers/pedidos.py",
+          "line": 1742
+        },
+        {
+          "type": "service_call",
+          "name": "_enrich",
+          "signature": "async def _enrich(db: AsyncSession, pedidos: list[Pedido]) -> list[PedidoOut]",
+          "via": "",
+          "file": "backend/app/routers/pedidos.py",
+          "line": 52
+        }
+      ]
+    },
+    {
+      "label": "PUT /pedidos/{pedido_id}/assign-cgeo",
+      "http_method": "PUT",
+      "path": "/{pedido_id}/assign-cgeo",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "assign_cgeo",
+          "signature": "async def assign_cgeo(pedido_id: int, body: AssignCGEORequest, db: AsyncSession=Depends(get_db), current_user: Usuario=Depends(require_profiles(PerfilEnum.GESTOR_CARTOGRAFICO)))",
+          "file": "backend/app/routers/pedidos.py",
+          "line": 1451
+        },
+        {
+          "type": "service_call",
+          "name": "require_profiles",
+          "signature": "def require_profiles(*profiles: PerfilEnum)",
+          "via": "",
+          "file": "backend/app/dependencies.py",
+          "line": 58
+        },
+        {
+          "type": "service_call",
+          "name": "assign_cgeo",
+          "signature": "async def assign_cgeo(db: AsyncSession, pedido: Pedido, cgeo_id: int, dsg: Usuario) -> Pedido",
+          "via": "",
+          "file": "backend/app/services/pedido_service.py",
+          "line": 425
+        }
+      ]
+    },
+    {
+      "label": "PUT /pedidos/{pedido_id}/cgeo-review",
+      "http_method": "PUT",
+      "path": "/{pedido_id}/cgeo-review",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "cgeo_review",
+          "signature": "async def cgeo_review(pedido_id: int, body: CGEOReviewRequest, db: AsyncSession=Depends(get_db), current_user: Usuario=Depends(require_profiles(PerfilEnum.ANALISTA_CGEO)))",
+          "file": "backend/app/routers/pedidos.py",
+          "line": 1464
+        },
+        {
+          "type": "service_call",
+          "name": "require_profiles",
+          "signature": "def require_profiles(*profiles: PerfilEnum)",
+          "via": "",
+          "file": "backend/app/dependencies.py",
+          "line": 58
+        },
+        {
+          "type": "service_call",
+          "name": "cgeo_review",
+          "signature": "async def cgeo_review(db: AsyncSession, pedido: Pedido, cgeo_user: Usuario, acao: str, motivo: str | None, link_bdgex: str | None=None) -> Pedido",
+          "via": "",
+          "file": "backend/app/services/pedido_service.py",
+          "line": 470
+        }
+      ]
+    },
+    {
+      "label": "PUT /pedidos/{pedido_id}/items/reorder",
+      "http_method": "PUT",
+      "path": "/{pedido_id}/items/reorder",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "reorder_items",
+          "signature": "async def reorder_items(pedido_id: int, body: ReorderRequest, db: AsyncSession=Depends(get_db), current_user: Usuario=Depends(get_current_user))",
+          "file": "backend/app/routers/pedidos.py",
+          "line": 1716
+        }
+      ]
+    },
+    {
+      "label": "PUT /pedidos/{pedido_id}/review",
+      "http_method": "PUT",
+      "path": "/{pedido_id}/review",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "review",
+          "signature": "async def review(pedido_id: int, body: ReviewPedidoRequest, db: AsyncSession=Depends(get_db), current_user: Usuario=Depends(require_profiles(*GESTOR_PROFILES)))",
+          "file": "backend/app/routers/pedidos.py",
+          "line": 1422
+        },
+        {
+          "type": "service_call",
+          "name": "require_profiles",
+          "signature": "def require_profiles(*profiles: PerfilEnum)",
+          "via": "",
+          "file": "backend/app/dependencies.py",
+          "line": 58
+        },
+        {
+          "type": "service_call",
+          "name": "review_pedido",
+          "signature": "async def review_pedido(db: AsyncSession, pedido: Pedido, gestor: Usuario, acao: str, motivo: str | None, observacoes: str | None=None) -> Pedido",
+          "via": "",
+          "file": "backend/app/services/pedido_service.py",
+          "line": 270
+        },
+        {
+          "type": "service_call",
+          "name": "_check_janela_open",
+          "signature": "async def _check_janela_open(db: AsyncSession, user: Usuario) -> None",
+          "via": "",
+          "file": "backend/app/routers/pedidos.py",
+          "line": 113
+        }
+      ]
+    },
+    {
+      "label": "PUT /users/me",
+      "http_method": "PUT",
+      "path": "/me",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "update_me",
+          "signature": "async def update_me(body: UsuarioUpdateRequest, db: AsyncSession=Depends(get_db), current_user: Usuario=Depends(get_current_user))",
+          "file": "backend/app/routers/users.py",
+          "line": 32
+        }
+      ]
+    },
+    {
+      "label": "PUT /users/me/notifications/{notif_id}/read",
+      "http_method": "PUT",
+      "path": "/me/notifications/{notif_id}/read",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "mark_read",
+          "signature": "async def mark_read(notif_id: int, db: AsyncSession=Depends(get_db), current_user: Usuario=Depends(get_current_user))",
+          "file": "backend/app/routers/users.py",
+          "line": 112
+        }
+      ]
+    },
+    {
+      "label": "PUT /users/me/password",
+      "http_method": "PUT",
+      "path": "/me/password",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "change_password",
+          "signature": "async def change_password(body: ChangePasswordRequest, db: AsyncSession=Depends(get_db), current_user: Usuario=Depends(get_current_user))",
+          "file": "backend/app/routers/users.py",
+          "line": 61
+        },
+        {
+          "type": "service_call",
+          "name": "get_password_hash",
+          "signature": "def get_password_hash(password: str) -> str",
+          "via": "",
+          "file": "backend/app/utils/security.py",
+          "line": 9
+        },
+        {
+          "type": "service_call",
+          "name": "verify_password",
+          "signature": "def verify_password(plain: str, hashed: str) -> bool",
+          "via": "",
+          "file": "backend/app/utils/security.py",
+          "line": 13
+        }
+      ]
+    },
+    {
+      "label": "PUT /users/{user_id}/activate",
+      "http_method": "PUT",
+      "path": "/{user_id}/activate",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "toggle_activate",
+          "signature": "async def toggle_activate(user_id: int, db: AsyncSession=Depends(get_db), _: Usuario=Depends(require_profiles(PerfilEnum.GESTOR_CARTOGRAFICO)))",
+          "file": "backend/app/routers/users.py",
+          "line": 256
+        },
+        {
+          "type": "service_call",
+          "name": "require_profiles",
+          "signature": "def require_profiles(*profiles: PerfilEnum)",
+          "via": "",
+          "file": "backend/app/dependencies.py",
+          "line": 58
+        },
+        {
+          "type": "service_call",
+          "name": "send_email",
+          "signature": "async def send_email(to: str, subject: str, html_body: str) -> None",
+          "via": "",
+          "file": "backend/app/services/email_service.py",
+          "line": 80
+        }
+      ]
+    },
+    {
+      "label": "PUT /users/{user_id}/dados-organizacionais",
+      "http_method": "PUT",
+      "path": "/{user_id}/dados-organizacionais",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "admin_update_dados_org",
+          "signature": "async def admin_update_dados_org(user_id: int, body: AdminDadosOrgRequest, db: AsyncSession=Depends(get_db), current_user: Usuario=Depends(require_profiles(PerfilEnum.GESTOR_CARTOGRAFICO)))",
+          "file": "backend/app/routers/users.py",
+          "line": 176
+        },
+        {
+          "type": "service_call",
+          "name": "require_profiles",
+          "signature": "def require_profiles(*profiles: PerfilEnum)",
+          "via": "",
+          "file": "backend/app/dependencies.py",
+          "line": 58
+        },
+        {
+          "type": "service_call",
+          "name": "send_email",
+          "signature": "async def send_email(to: str, subject: str, html_body: str) -> None",
+          "via": "",
+          "file": "backend/app/services/email_service.py",
+          "line": 80
+        }
+      ]
+    },
+    {
+      "label": "PUT /users/{user_id}/profile",
+      "http_method": "PUT",
+      "path": "/{user_id}/profile",
+      "chain": [
+        {
+          "type": "controller_method",
+          "name": "update_profile",
+          "signature": "async def update_profile(user_id: int, body: UpdateProfileRequest, db: AsyncSession=Depends(get_db), _: Usuario=Depends(require_profiles(PerfilEnum.GESTOR_CARTOGRAFICO)))",
+          "file": "backend/app/routers/users.py",
+          "line": 157
+        },
+        {
+          "type": "service_call",
+          "name": "require_profiles",
+          "signature": "def require_profiles(*profiles: PerfilEnum)",
+          "via": "",
+          "file": "backend/app/dependencies.py",
+          "line": 58
+        }
+      ]
+    }
+  ],
+  "call_chains": [],
+  "files": [
+    {
+      "path": "ARQUITETURA.md",
+      "symbols": [
+        {
+          "type": "note",
+          "name": "SisPGeo — Arquitetura de Dados e Relacionamentos"
+        }
+      ]
+    },
+    {
+      "path": "DEPLOY.md",
+      "symbols": [
+        {
+          "type": "note",
+          "name": "SisPGeo — Guia de Deploy e Configuração de Domínio"
+        }
+      ]
+    },
+    {
+      "path": "DOMINIO.md",
+      "symbols": [
+        {
+          "type": "note",
+          "name": "SisPGeo — Configurar Domínio Próprio"
+        }
+      ]
+    },
+    {
+      "path": "README.md",
+      "symbols": [
+        {
+          "type": "note",
+          "name": "SisPGeo — Sistema de Pedidos de Geoinformação"
+        }
+      ]
+    },
+    {
+      "path": "SISTEMA.md",
+      "symbols": [
+        {
+          "type": "note",
+          "name": "SISGEO - Sistema Integrado de Solicitações de Geoinformação"
+        }
+      ]
+    },
+    {
+      "path": "backend/app/config.py",
+      "symbols": [
+        {
+          "type": "module",
+          "name": "backend.app.config"
+        }
+      ]
+    },
+    {
+      "path": "backend/app/database.py",
+      "symbols": [
+        {
+          "type": "module",
+          "name": "backend.app.database"
+        }
+      ]
+    },
+    {
+      "path": "backend/app/dependencies.py",
+      "symbols": [
+        {
+          "type": "module",
+          "name": "backend.app.dependencies"
+        }
+      ]
+    },
+    {
+      "path": "backend/app/main.py",
+      "symbols": [
+        {
+          "type": "module",
+          "name": "backend.app.main"
+        }
+      ]
+    },
+    {
+      "path": "backend/app/middleware/__init__.py",
+      "symbols": [
+        {
+          "type": "module",
+          "name": "backend.app.middleware.__init__"
+        }
+      ]
+    },
+    {
+      "path": "backend/app/middleware/metrics.py",
+      "symbols": [
+        {
+          "type": "module",
+          "name": "backend.app.middleware.metrics"
+        }
+      ]
+    },
+    {
+      "path": "backend/app/models/__init__.py",
+      "symbols": [
+        {
+          "type": "module",
+          "name": "backend.app.models.__init__"
+        }
+      ]
+    },
+    {
+      "path": "backend/app/models/api_metrica.py",
+      "symbols": [
+        {
+          "type": "module",
+          "name": "backend.app.models.api_metrica"
+        }
+      ]
+    },
+    {
+      "path": "backend/app/models/audit_log.py",
+      "symbols": [
+        {
+          "type": "module",
+          "name": "backend.app.models.audit_log"
+        }
+      ]
+    },
+    {
+      "path": "backend/app/models/bdgex_cache.py",
+      "symbols": [
+        {
+          "type": "module",
+          "name": "backend.app.models.bdgex_cache"
+        }
+      ]
+    },
+    {
+      "path": "backend/app/models/config_entrega.py",
+      "symbols": [
+        {
+          "type": "module",
+          "name": "backend.app.models.config_entrega"
+        }
+      ]
+    },
+    {
+      "path": "backend/app/models/enums.py",
+      "symbols": [
+        {
+          "type": "module",
+          "name": "backend.app.models.enums"
+        }
+      ]
+    },
+    {
+      "path": "backend/app/models/janela.py",
+      "symbols": [
+        {
+          "type": "module",
+          "name": "backend.app.models.janela"
+        }
+      ]
+    },
+    {
+      "path": "backend/app/models/notificacao.py",
+      "symbols": [
+        {
+          "type": "module",
+          "name": "backend.app.models.notificacao"
+        }
+      ]
+    },
+    {
+      "path": "backend/app/models/om_customizada.py",
+      "symbols": [
+        {
+          "type": "module",
+          "name": "backend.app.models.om_customizada"
+        }
+      ]
+    },
+    {
+      "path": "backend/app/models/operacao.py",
+      "symbols": [
+        {
+          "type": "module",
+          "name": "backend.app.models.operacao"
+        }
+      ]
+    },
+    {
+      "path": "backend/app/models/pedido.py",
+      "symbols": [
+        {
+          "type": "module",
+          "name": "backend.app.models.pedido"
+        }
+      ]
+    },
+    {
+      "path": "backend/app/models/pedido_historico.py",
+      "symbols": [
+        {
+          "type": "module",
+          "name": "backend.app.models.pedido_historico"
+        }
+      ]
+    },
+    {
+      "path": "backend/app/models/pedido_transferencia.py",
+      "symbols": [
+        {
+          "type": "module",
+          "name": "backend.app.models.pedido_transferencia"
+        }
+      ]
+    },
+    {
+      "path": "backend/app/models/user.py",
+      "symbols": [
+        {
+          "type": "module",
+          "name": "backend.app.models.user"
+        }
+      ]
+    },
+    {
+      "path": "backend/app/routers/__init__.py",
+      "symbols": [
+        {
+          "type": "module",
+          "name": "backend.app.routers.__init__"
+        }
+      ]
+    },
+    {
+      "path": "backend/app/routers/auth.py",
+      "symbols": [
+        {
+          "type": "module",
+          "name": "backend.app.routers.auth"
+        }
+      ]
+    },
+    {
+      "path": "backend/app/routers/config.py",
+      "symbols": [
+        {
+          "type": "module",
+          "name": "backend.app.routers.config"
+        }
+      ]
+    },
+    {
+      "path": "backend/app/routers/historico.py",
+      "symbols": [
+        {
+          "type": "module",
+          "name": "backend.app.routers.historico"
+        }
+      ]
+    },
+    {
+      "path": "backend/app/routers/janelas.py",
+      "symbols": [
+        {
+          "type": "module",
+          "name": "backend.app.routers.janelas"
+        }
+      ]
+    },
+    {
+      "path": "backend/app/routers/map_layers.py",
+      "symbols": [
+        {
+          "type": "module",
+          "name": "backend.app.routers.map_layers"
+        }
+      ]
+    },
+    {
+      "path": "backend/app/routers/metricas.py",
+      "symbols": [
+        {
+          "type": "module",
+          "name": "backend.app.routers.metricas"
+        }
+      ]
+    },
+    {
+      "path": "backend/app/routers/om_data.py",
+      "symbols": [
+        {
+          "type": "module",
+          "name": "backend.app.routers.om_data"
+        }
+      ]
+    },
+    {
+      "path": "backend/app/routers/oms.py",
+      "symbols": [
+        {
+          "type": "module",
+          "name": "backend.app.routers.oms"
+        }
+      ]
+    },
+    {
+      "path": "backend/app/routers/operacoes.py",
+      "symbols": [
+        {
+          "type": "module",
+          "name": "backend.app.routers.operacoes"
+        }
+      ]
+    },
+    {
+      "path": "backend/app/routers/pedidos.py",
+      "symbols": [
+        {
+          "type": "module",
+          "name": "backend.app.routers.pedidos"
+        }
+      ]
+    },
+    {
+      "path": "backend/app/routers/transferencias.py",
+      "symbols": [
+        {
+          "type": "module",
+          "name": "backend.app.routers.transferencias"
+        }
+      ]
+    },
+    {
+      "path": "backend/app/routers/users.py",
+      "symbols": [
+        {
+          "type": "module",
+          "name": "backend.app.routers.users"
+        }
+      ]
+    },
+    {
+      "path": "backend/app/schemas/__init__.py",
+      "symbols": [
+        {
+          "type": "module",
+          "name": "backend.app.schemas.__init__"
+        }
+      ]
+    },
+    {
+      "path": "backend/app/schemas/auth.py",
+      "symbols": [
+        {
+          "type": "module",
+          "name": "backend.app.schemas.auth"
+        }
+      ]
+    },
+    {
+      "path": "backend/app/schemas/historico.py",
+      "symbols": [
+        {
+          "type": "module",
+          "name": "backend.app.schemas.historico"
+        }
+      ]
+    },
+    {
+      "path": "backend/app/schemas/metrica.py",
+      "symbols": [
+        {
+          "type": "module",
+          "name": "backend.app.schemas.metrica"
+        }
+      ]
+    },
+    {
+      "path": "backend/app/schemas/pedido.py",
+      "symbols": [
+        {
+          "type": "module",
+          "name": "backend.app.schemas.pedido"
+        }
+      ]
+    },
+    {
+      "path": "backend/app/schemas/user.py",
+      "symbols": [
+        {
+          "type": "module",
+          "name": "backend.app.schemas.user"
+        }
+      ]
+    },
+    {
+      "path": "backend/app/services/__init__.py",
+      "symbols": [
+        {
+          "type": "module",
+          "name": "backend.app.services.__init__"
+        }
+      ]
+    },
+    {
+      "path": "backend/app/services/auth_service.py",
+      "symbols": [
+        {
+          "type": "module",
+          "name": "backend.app.services.auth_service"
+        }
+      ]
+    },
+    {
+      "path": "backend/app/services/bdgex_service.py",
+      "symbols": [
+        {
+          "type": "module",
+          "name": "backend.app.services.bdgex_service"
+        }
+      ]
+    },
+    {
+      "path": "backend/app/services/email_service.py",
+      "symbols": [
+        {
+          "type": "module",
+          "name": "backend.app.services.email_service"
+        }
+      ]
+    },
+    {
+      "path": "backend/app/services/historico_service.py",
+      "symbols": [
+        {
+          "type": "module",
+          "name": "backend.app.services.historico_service"
+        }
+      ]
+    },
+    {
+      "path": "backend/app/services/notification_service.py",
+      "symbols": [
+        {
+          "type": "module",
+          "name": "backend.app.services.notification_service"
+        }
+      ]
+    },
+    {
+      "path": "backend/app/services/pedido_service.py",
+      "symbols": [
+        {
+          "type": "module",
+          "name": "backend.app.services.pedido_service"
+        }
+      ]
+    },
+    {
+      "path": "backend/app/utils/__init__.py",
+      "symbols": [
+        {
+          "type": "module",
+          "name": "backend.app.utils.__init__"
+        }
+      ]
+    },
+    {
+      "path": "backend/app/utils/email_templates.py",
+      "symbols": [
+        {
+          "type": "module",
+          "name": "backend.app.utils.email_templates"
+        }
+      ]
+    },
+    {
+      "path": "backend/app/utils/logging_config.py",
+      "symbols": [
+        {
+          "type": "module",
+          "name": "backend.app.utils.logging_config"
+        }
+      ]
+    },
+    {
+      "path": "backend/app/utils/postos.py",
+      "symbols": [
+        {
+          "type": "module",
+          "name": "backend.app.utils.postos"
+        }
+      ]
+    },
+    {
+      "path": "backend/app/utils/security.py",
+      "symbols": [
+        {
+          "type": "module",
+          "name": "backend.app.utils.security"
+        }
+      ]
+    },
+    {
+      "path": "backend/create_admin.py",
+      "symbols": [
+        {
+          "type": "module",
+          "name": "backend.create_admin"
+        }
+      ]
+    },
+    {
+      "path": "backend/scripts/create_hierarchy_users.py",
+      "symbols": [
+        {
+          "type": "module",
+          "name": "backend.scripts.create_hierarchy_users"
+        }
+      ]
+    },
+    {
+      "path": "backend/tests/__init__.py",
+      "symbols": [
+        {
+          "type": "module",
+          "name": "backend.tests.__init__"
+        }
+      ]
+    },
+    {
+      "path": "backend/tests/conftest.py",
+      "symbols": [
+        {
+          "type": "module",
+          "name": "backend.tests.conftest"
+        }
+      ]
+    },
+    {
+      "path": "backend/tests/test_api_integration.py",
+      "symbols": [
+        {
+          "type": "module",
+          "name": "backend.tests.test_api_integration"
+        }
+      ]
+    },
+    {
+      "path": "backend/tests/test_auth_service.py",
+      "symbols": [
+        {
+          "type": "module",
+          "name": "backend.tests.test_auth_service"
+        }
+      ]
+    },
+    {
+      "path": "backend/tests/test_notification_service.py",
+      "symbols": [
+        {
+          "type": "module",
+          "name": "backend.tests.test_notification_service"
+        }
+      ]
+    },
+    {
+      "path": "backend/tests/test_pedido_service.py",
+      "symbols": [
+        {
+          "type": "module",
+          "name": "backend.tests.test_pedido_service"
+        }
+      ]
+    },
+    {
+      "path": "dados/produtos.md",
+      "symbols": [
+        {
+          "type": "note",
+          "name": "Tabela 1: Produtos Geoespaciais Básicos ofertados pela DSG."
+        }
+      ]
+    },
+    {
+      "path": "frontend/postcss.config.js",
+      "symbols": []
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "symbols": []
+    },
+    {
+      "path": "frontend/src/api/auth.ts",
+      "symbols": []
+    },
+    {
+      "path": "frontend/src/api/client.ts",
+      "symbols": []
+    },
+    {
+      "path": "frontend/src/api/config.ts",
+      "symbols": []
+    },
+    {
+      "path": "frontend/src/api/janelas.ts",
+      "symbols": []
+    },
+    {
+      "path": "frontend/src/api/metricas.ts",
+      "symbols": []
+    },
+    {
+      "path": "frontend/src/api/oms.ts",
+      "symbols": []
+    },
+    {
+      "path": "frontend/src/api/operacoes.ts",
+      "symbols": []
+    },
+    {
+      "path": "frontend/src/api/pedidos.ts",
+      "symbols": []
+    },
+    {
+      "path": "frontend/src/api/users.ts",
+      "symbols": []
+    },
+    {
+      "path": "frontend/src/components/layout/AppLayout.tsx",
+      "symbols": []
+    },
+    {
+      "path": "frontend/src/components/layout/DeadlineBanner.tsx",
+      "symbols": []
+    },
+    {
+      "path": "frontend/src/components/layout/Navbar.tsx",
+      "symbols": []
+    },
+    {
+      "path": "frontend/src/components/layout/ProductTicker.tsx",
+      "symbols": []
+    },
+    {
+      "path": "frontend/src/components/layout/Sidebar.tsx",
+      "symbols": []
+    },
+    {
+      "path": "frontend/src/components/map/InteractiveMap.tsx",
+      "symbols": []
+    },
+    {
+      "path": "frontend/src/components/map/PedidosMap.tsx",
+      "symbols": []
+    },
+    {
+      "path": "frontend/src/components/shared/CadeiaAprovacao.tsx",
+      "symbols": []
+    },
+    {
+      "path": "frontend/src/components/shared/LoadingSpinner.tsx",
+      "symbols": []
+    },
+    {
+      "path": "frontend/src/components/shared/NotificationBell.tsx",
+      "symbols": []
+    },
+    {
+      "path": "frontend/src/components/shared/StatusBadge.tsx",
+      "symbols": []
+    },
+    {
+      "path": "frontend/src/data/omsData.ts",
+      "symbols": []
+    },
+    {
+      "path": "frontend/src/data/postos.ts",
+      "symbols": []
+    },
+    {
+      "path": "frontend/src/firebase.ts",
+      "symbols": []
+    },
+    {
+      "path": "frontend/src/hooks/useExportRelatorio.ts",
+      "symbols": []
+    },
+    {
+      "path": "frontend/src/main.tsx",
+      "symbols": []
+    },
+    {
+      "path": "frontend/src/pages/Ajuda.tsx",
+      "symbols": []
+    },
+    {
+      "path": "frontend/src/pages/AtivarConta.tsx",
+      "symbols": []
+    },
+    {
+      "path": "frontend/src/pages/Dashboard.tsx",
+      "symbols": []
+    },
+    {
+      "path": "frontend/src/pages/EsqueciSenha.tsx",
+      "symbols": []
+    },
+    {
+      "path": "frontend/src/pages/Integracoes.tsx",
+      "symbols": []
+    },
+    {
+      "path": "frontend/src/pages/Login.tsx",
+      "symbols": []
+    },
+    {
+      "path": "frontend/src/pages/MeusDados.tsx",
+      "symbols": []
+    },
+    {
+      "path": "frontend/src/pages/MeusPedidos.tsx",
+      "symbols": []
+    },
+    {
+      "path": "frontend/src/pages/RedefinirSenha.tsx",
+      "symbols": []
+    },
+    {
+      "path": "frontend/src/pages/Register.tsx",
+      "symbols": []
+    },
+    {
+      "path": "frontend/src/pages/SolicitarProdutos.tsx",
+      "symbols": []
+    },
+    {
+      "path": "frontend/src/pages/admin/AdminPedidos.tsx",
+      "symbols": []
+    },
+    {
+      "path": "frontend/src/pages/admin/ApiMetricas.tsx",
+      "symbols": []
+    },
+    {
+      "path": "frontend/src/pages/admin/GerenciarUsuarios.tsx",
+      "symbols": []
+    },
+    {
+      "path": "frontend/src/pages/cgeo/CGEODashboard.tsx",
+      "symbols": []
+    },
+    {
+      "path": "frontend/src/pages/dsg/DSGDashboard.tsx",
+      "symbols": []
+    },
+    {
+      "path": "frontend/src/pages/dsg/JanelasPedidos.tsx",
+      "symbols": []
+    },
+    {
+      "path": "frontend/src/pages/dsg/Relatorios.tsx",
+      "symbols": []
+    },
+    {
+      "path": "frontend/src/pages/gestor/GestorDashboard.tsx",
+      "symbols": []
+    },
+    {
+      "path": "frontend/src/pages/gestor/PedidosHomologados.tsx",
+      "symbols": []
+    },
+    {
+      "path": "frontend/src/store/authStore.ts",
+      "symbols": []
+    },
+    {
+      "path": "frontend/src/store/cartStore.ts",
+      "symbols": []
+    },
+    {
+      "path": "frontend/src/types/pedido.ts",
+      "symbols": []
+    },
+    {
+      "path": "frontend/src/types/user.ts",
+      "symbols": []
+    },
+    {
+      "path": "frontend/src/vite-env.d.ts",
+      "symbols": []
+    },
+    {
+      "path": "frontend/tailwind.config.js",
+      "symbols": []
+    },
+    {
+      "path": "frontend/vite.config.ts",
+      "symbols": []
+    },
+    {
+      "path": "scripts/rebuild_cache.py",
+      "symbols": [
+        {
+          "type": "module",
+          "name": "scripts.rebuild_cache"
+        }
+      ]
+    },
+    {
+      "path": "step0.py",
+      "symbols": [
+        {
+          "type": "module",
+          "name": "step0"
+        }
+      ]
+    }
+  ]
+}

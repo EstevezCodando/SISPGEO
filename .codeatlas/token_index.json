@@ -1,0 +1,410 @@
+{
+  "total_raw_tokens": 98687,
+  "total_structural_tokens": 20684,
+  "reduction_pct": 79.0,
+  "node_count": 381,
+  "chars_per_token": 4,
+  "note": "estimativa heuristica (len/4); valores aproximados",
+  "nodes": [
+    {
+      "node_id": "function:backend/app/routers/pedidos.py::backend.app.routers.pedidos.exportar_relatorio",
+      "type": "function",
+      "file_path": "backend/app/routers/pedidos.py",
+      "tokens_raw": 4708,
+      "tokens_structural": 194,
+      "reduction_pct": 95.9
+    },
+    {
+      "node_id": "function:backend/app/routers/pedidos.py::backend.app.routers.pedidos._build_admin_zip",
+      "type": "function",
+      "file_path": "backend/app/routers/pedidos.py",
+      "tokens_raw": 3843,
+      "tokens_structural": 93,
+      "reduction_pct": 97.6
+    },
+    {
+      "node_id": "class:backend/tests/test_api_integration.py::backend.tests.test_api_integration.TestHerancaPedidos",
+      "type": "class",
+      "file_path": "backend/tests/test_api_integration.py",
+      "tokens_raw": 3194,
+      "tokens_structural": 144,
+      "reduction_pct": 95.5
+    },
+    {
+      "node_id": "function:backend/app/main.py::backend.app.main._run_migrations",
+      "type": "function",
+      "file_path": "backend/app/main.py",
+      "tokens_raw": 1847,
+      "tokens_structural": 108,
+      "reduction_pct": 94.2
+    },
+    {
+      "node_id": "function:backend/scripts/create_hierarchy_users.py::backend.scripts.create_hierarchy_users.run",
+      "type": "function",
+      "file_path": "backend/scripts/create_hierarchy_users.py",
+      "tokens_raw": 1570,
+      "tokens_structural": 35,
+      "reduction_pct": 97.8
+    },
+    {
+      "node_id": "function:backend/app/services/pedido_service.py::backend.app.services.pedido_service.submit_pedido",
+      "type": "function",
+      "file_path": "backend/app/services/pedido_service.py",
+      "tokens_raw": 1437,
+      "tokens_structural": 164,
+      "reduction_pct": 88.6
+    },
+    {
+      "node_id": "function:backend/app/main.py::backend.app.main._create_test_users",
+      "type": "function",
+      "file_path": "backend/app/main.py",
+      "tokens_raw": 1271,
+      "tokens_structural": 147,
+      "reduction_pct": 88.4
+    },
+    {
+      "node_id": "function:backend/app/utils/email_templates.py::backend.app.utils.email_templates.ativacao_conta",
+      "type": "function",
+      "file_path": "backend/app/utils/email_templates.py",
+      "tokens_raw": 961,
+      "tokens_structural": 49,
+      "reduction_pct": 94.9
+    },
+    {
+      "node_id": "function:backend/app/services/pedido_service.py::backend.app.services.pedido_service.cgeo_review",
+      "type": "function",
+      "file_path": "backend/app/services/pedido_service.py",
+      "tokens_raw": 891,
+      "tokens_structural": 177,
+      "reduction_pct": 80.1
+    },
+    {
+      "node_id": "class:backend/app/config.py::backend.app.config.Settings",
+      "type": "class",
+      "file_path": "backend/app/config.py",
+      "tokens_raw": 849,
+      "tokens_structural": 9,
+      "reduction_pct": 98.9
+    },
+    {
+      "node_id": "function:backend/app/utils/email_templates.py::backend.app.utils.email_templates.pedido_submetido",
+      "type": "function",
+      "file_path": "backend/app/utils/email_templates.py",
+      "tokens_raw": 846,
+      "tokens_structural": 81,
+      "reduction_pct": 90.4
+    },
+    {
+      "node_id": "function:backend/app/utils/email_templates.py::backend.app.utils.email_templates.notificar_gestor",
+      "type": "function",
+      "file_path": "backend/app/utils/email_templates.py",
+      "tokens_raw": 828,
+      "tokens_structural": 98,
+      "reduction_pct": 88.2
+    },
+    {
+      "node_id": "function:backend/app/services/auth_service.py::backend.app.services.auth_service.authenticate_user",
+      "type": "function",
+      "file_path": "backend/app/services/auth_service.py",
+      "tokens_raw": 825,
+      "tokens_structural": 164,
+      "reduction_pct": 80.1
+    },
+    {
+      "node_id": "class:backend/app/models/pedido.py::backend.app.models.pedido.Pedido",
+      "type": "class",
+      "file_path": "backend/app/models/pedido.py",
+      "tokens_raw": 821,
+      "tokens_structural": 10,
+      "reduction_pct": 98.8
+    },
+    {
+      "node_id": "function:backend/app/services/bdgex_service.py::backend.app.services.bdgex_service._load_sopegeo_ages",
+      "type": "function",
+      "file_path": "backend/app/services/bdgex_service.py",
+      "tokens_raw": 817,
+      "tokens_structural": 94,
+      "reduction_pct": 88.5
+    },
+    {
+      "node_id": "class:backend/tests/test_auth_service.py::backend.tests.test_auth_service.TestAuthenticateUser",
+      "type": "class",
+      "file_path": "backend/tests/test_auth_service.py",
+      "tokens_raw": 817,
+      "tokens_structural": 19,
+      "reduction_pct": 97.7
+    },
+    {
+      "node_id": "class:backend/app/services/notification_service.py::backend.app.services.notification_service.NotificationService",
+      "type": "class",
+      "file_path": "backend/app/services/notification_service.py",
+      "tokens_raw": 775,
+      "tokens_structural": 78,
+      "reduction_pct": 89.9
+    },
+    {
+      "node_id": "function:backend/app/routers/metricas.py::backend.app.routers.metricas.resumo_metricas",
+      "type": "function",
+      "file_path": "backend/app/routers/metricas.py",
+      "tokens_raw": 755,
+      "tokens_structural": 96,
+      "reduction_pct": 87.3
+    },
+    {
+      "node_id": "function:backend/app/services/pedido_service.py::backend.app.services.pedido_service.review_pedido",
+      "type": "function",
+      "file_path": "backend/app/services/pedido_service.py",
+      "tokens_raw": 746,
+      "tokens_structural": 178,
+      "reduction_pct": 76.1
+    },
+    {
+      "node_id": "function:backend/app/services/auth_service.py::backend.app.services.auth_service.register_user",
+      "type": "function",
+      "file_path": "backend/app/services/auth_service.py",
+      "tokens_raw": 739,
+      "tokens_structural": 215,
+      "reduction_pct": 70.9
+    },
+    {
+      "node_id": "function:backend/app/services/pedido_service.py::backend.app.services.pedido_service.transferir_pedidos",
+      "type": "function",
+      "file_path": "backend/app/services/pedido_service.py",
+      "tokens_raw": 719,
+      "tokens_structural": 167,
+      "reduction_pct": 76.8
+    },
+    {
+      "node_id": "function:backend/app/utils/email_templates.py::backend.app.utils.email_templates._base",
+      "type": "function",
+      "file_path": "backend/app/utils/email_templates.py",
+      "tokens_raw": 709,
+      "tokens_structural": 22,
+      "reduction_pct": 96.9
+    },
+    {
+      "node_id": "function:backend/app/routers/pedidos.py::backend.app.routers.pedidos.get_map_features",
+      "type": "function",
+      "file_path": "backend/app/routers/pedidos.py",
+      "tokens_raw": 696,
+      "tokens_structural": 72,
+      "reduction_pct": 89.7
+    },
+    {
+      "node_id": "function:backend/app/main.py::backend.app.main._create_test_janelas",
+      "type": "function",
+      "file_path": "backend/app/main.py",
+      "tokens_raw": 684,
+      "tokens_structural": 103,
+      "reduction_pct": 84.9
+    },
+    {
+      "node_id": "function:backend/app/services/pedido_service.py::backend.app.services.pedido_service.consolidate_pedidos",
+      "type": "function",
+      "file_path": "backend/app/services/pedido_service.py",
+      "tokens_raw": 666,
+      "tokens_structural": 168,
+      "reduction_pct": 74.8
+    },
+    {
+      "node_id": "class:backend/tests/test_auth_service.py::backend.tests.test_auth_service.TestRegisterUser",
+      "type": "class",
+      "file_path": "backend/tests/test_auth_service.py",
+      "tokens_raw": 649,
+      "tokens_structural": 17,
+      "reduction_pct": 97.4
+    },
+    {
+      "node_id": "class:backend/tests/test_pedido_service.py::backend.tests.test_pedido_service.TestCgeoReview",
+      "type": "class",
+      "file_path": "backend/tests/test_pedido_service.py",
+      "tokens_raw": 648,
+      "tokens_structural": 16,
+      "reduction_pct": 97.5
+    },
+    {
+      "node_id": "function:backend/app/routers/pedidos.py::backend.app.routers.pedidos.create_pedido",
+      "type": "function",
+      "file_path": "backend/app/routers/pedidos.py",
+      "tokens_raw": 612,
+      "tokens_structural": 61,
+      "reduction_pct": 90.0
+    },
+    {
+      "node_id": "function:backend/app/routers/pedidos.py::backend.app.routers.pedidos.admin_produtos_recentes_bdgex",
+      "type": "function",
+      "file_path": "backend/app/routers/pedidos.py",
+      "tokens_raw": 611,
+      "tokens_structural": 129,
+      "reduction_pct": 78.9
+    },
+    {
+      "node_id": "function:backend/app/routers/pedidos.py::backend.app.routers.pedidos._enrich",
+      "type": "function",
+      "file_path": "backend/app/routers/pedidos.py",
+      "tokens_raw": 596,
+      "tokens_structural": 48,
+      "reduction_pct": 91.9
+    },
+    {
+      "node_id": "class:backend/tests/test_pedido_service.py::backend.tests.test_pedido_service.TestSubmitPedido",
+      "type": "class",
+      "file_path": "backend/tests/test_pedido_service.py",
+      "tokens_raw": 579,
+      "tokens_structural": 17,
+      "reduction_pct": 97.1
+    },
+    {
+      "node_id": "function:backend/app/routers/metricas.py::backend.app.routers.metricas.metricas_pedidos",
+      "type": "function",
+      "file_path": "backend/app/routers/metricas.py",
+      "tokens_raw": 573,
+      "tokens_structural": 99,
+      "reduction_pct": 82.7
+    },
+    {
+      "node_id": "function:backend/app/services/auth_service.py::backend.app.services.auth_service.resend_activation_email",
+      "type": "function",
+      "file_path": "backend/app/services/auth_service.py",
+      "tokens_raw": 567,
+      "tokens_structural": 140,
+      "reduction_pct": 75.3
+    },
+    {
+      "node_id": "class:backend/tests/test_api_integration.py::backend.tests.test_api_integration.TestAdminFlow",
+      "type": "class",
+      "file_path": "backend/tests/test_api_integration.py",
+      "tokens_raw": 561,
+      "tokens_structural": 16,
+      "reduction_pct": 97.1
+    },
+    {
+      "node_id": "class:backend/app/models/user.py::backend.app.models.user.Usuario",
+      "type": "class",
+      "file_path": "backend/app/models/user.py",
+      "tokens_raw": 557,
+      "tokens_structural": 10,
+      "reduction_pct": 98.2
+    },
+    {
+      "node_id": "function:backend/app/routers/pedidos.py::backend.app.routers.pedidos.listar_duplicatas",
+      "type": "function",
+      "file_path": "backend/app/routers/pedidos.py",
+      "tokens_raw": 540,
+      "tokens_structural": 73,
+      "reduction_pct": 86.5
+    },
+    {
+      "node_id": "function:backend/app/utils/email_templates.py::backend.app.utils.email_templates.dados_organizacionais_atualizados",
+      "type": "function",
+      "file_path": "backend/app/utils/email_templates.py",
+      "tokens_raw": 539,
+      "tokens_structural": 108,
+      "reduction_pct": 80.0
+    },
+    {
+      "node_id": "class:backend/tests/test_pedido_service.py::backend.tests.test_pedido_service.TestReviewPedido",
+      "type": "class",
+      "file_path": "backend/tests/test_pedido_service.py",
+      "tokens_raw": 525,
+      "tokens_structural": 17,
+      "reduction_pct": 96.8
+    },
+    {
+      "node_id": "function:backend/app/routers/pedidos.py::backend.app.routers.pedidos.delete_item",
+      "type": "function",
+      "file_path": "backend/app/routers/pedidos.py",
+      "tokens_raw": 507,
+      "tokens_structural": 142,
+      "reduction_pct": 72.0
+    },
+    {
+      "node_id": "function:backend/app/services/bdgex_service.py::backend.app.services.bdgex_service.get_inom_geometries",
+      "type": "function",
+      "file_path": "backend/app/services/bdgex_service.py",
+      "tokens_raw": 507,
+      "tokens_structural": 150,
+      "reduction_pct": 70.4
+    },
+    {
+      "node_id": "function:backend/app/routers/janelas.py::backend.app.routers.janelas.create_janela",
+      "type": "function",
+      "file_path": "backend/app/routers/janelas.py",
+      "tokens_raw": 505,
+      "tokens_structural": 123,
+      "reduction_pct": 75.6
+    },
+    {
+      "node_id": "function:backend/app/routers/pedidos.py::backend.app.routers.pedidos.solicitar_remocao",
+      "type": "function",
+      "file_path": "backend/app/routers/pedidos.py",
+      "tokens_raw": 505,
+      "tokens_structural": 85,
+      "reduction_pct": 83.2
+    },
+    {
+      "node_id": "function:backend/app/services/bdgex_service.py::backend.app.services.bdgex_service._build_cdgv_stripped",
+      "type": "function",
+      "file_path": "backend/app/services/bdgex_service.py",
+      "tokens_raw": 498,
+      "tokens_structural": 52,
+      "reduction_pct": 89.6
+    },
+    {
+      "node_id": "function:backend/app/routers/pedidos.py::backend.app.routers.pedidos.dar_pronto",
+      "type": "function",
+      "file_path": "backend/app/routers/pedidos.py",
+      "tokens_raw": 497,
+      "tokens_structural": 93,
+      "reduction_pct": 81.3
+    },
+    {
+      "node_id": "function:backend/app/routers/pedidos.py::backend.app.routers.pedidos.get_pedido_features",
+      "type": "function",
+      "file_path": "backend/app/routers/pedidos.py",
+      "tokens_raw": 489,
+      "tokens_structural": 76,
+      "reduction_pct": 84.5
+    },
+    {
+      "node_id": "method:backend/app/services/notification_service.py::backend.app.services.notification_service.NotificationService.notify_by_perfil",
+      "type": "method",
+      "file_path": "backend/app/services/notification_service.py",
+      "tokens_raw": 486,
+      "tokens_structural": 196,
+      "reduction_pct": 59.7
+    },
+    {
+      "node_id": "function:backend/app/services/auth_service.py::backend.app.services.auth_service.request_password_reset",
+      "type": "function",
+      "file_path": "backend/app/services/auth_service.py",
+      "tokens_raw": 481,
+      "tokens_structural": 141,
+      "reduction_pct": 70.7
+    },
+    {
+      "node_id": "function:step0.py::step0._build_output",
+      "type": "function",
+      "file_path": "step0.py",
+      "tokens_raw": 473,
+      "tokens_structural": 29,
+      "reduction_pct": 93.9
+    },
+    {
+      "node_id": "class:backend/app/models/pedido_historico.py::backend.app.models.pedido_historico.PedidoHistorico",
+      "type": "class",
+      "file_path": "backend/app/models/pedido_historico.py",
+      "tokens_raw": 466,
+      "tokens_structural": 62,
+      "reduction_pct": 86.7
+    },
+    {
+      "node_id": "function:step0.py::step0.main",
+      "type": "function",
+      "file_path": "step0.py",
+      "tokens_raw": 457,
+      "tokens_structural": 9,
+      "reduction_pct": 98.0
+    }
+  ]
+}

@@ -9,13 +9,13 @@ export const POSTOS: PostoGraduacao[] = [
   { id: 6, nome: "Terceiro Sargento", abrev: "3º Sgt" },
   { id: 7, nome: "Segundo Sargento", abrev: "2º Sgt" },
   { id: 8, nome: "Primeiro Sargento", abrev: "1º Sgt" },
-  { id: 9, nome: "Subtenente", abrev: "STen" },
-  { id: 10, nome: "Aspirante", abrev: "Asp" },
+  { id: 9, nome: "Subtenente", abrev: "S Ten" },
+  { id: 10, nome: "Aspirante a Oficial", abrev: "Asp Of" },
   { id: 11, nome: "Segundo Tenente", abrev: "2º Ten" },
   { id: 12, nome: "Primeiro Tenente", abrev: "1º Ten" },
   { id: 13, nome: "Capitão", abrev: "Cap" },
   { id: 14, nome: "Major", abrev: "Maj" },
-  { id: 15, nome: "Tenente Coronel", abrev: "TC" },
+  { id: 15, nome: "Tenente-Coronel", abrev: "Ten Cel" },
   { id: 16, nome: "Coronel", abrev: "Cel" },
 ];
 

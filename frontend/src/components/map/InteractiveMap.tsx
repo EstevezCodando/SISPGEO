@@ -11,11 +11,11 @@ import { useCartStore } from '../../store/cartStore'
  */
 function getAgeColor(idadeAnos: number | null | undefined): string {
   if (idadeAnos === null || idadeAnos === undefined) return 'transparent'
-  if (idadeAnos < 5)  return '#10b981'
-  if (idadeAnos < 10) return '#84cc16'
-  if (idadeAnos < 20) return '#eab308'
-  if (idadeAnos < 30) return '#f97316'
-  return '#ef4444'
+  if (idadeAnos < 6)  return '#10b981'  // < 5 anos
+  if (idadeAnos < 11) return '#84cc16'  // 6–10 anos
+  if (idadeAnos < 16) return '#eab308'  // 11–15 anos
+  if (idadeAnos < 21) return '#f97316'  // 16–20 anos
+  return '#ef4444'                       // > 21 anos
 }
 
 export type Basemap = 'osm' | 'satellite'

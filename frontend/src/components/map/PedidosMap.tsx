@@ -111,12 +111,12 @@ export function PedidosMap({ className = '' }: PedidosMapProps) {
               return `
                 <div style="min-width:160px${bordered ? ';border-left:1px solid #3f3f46;padding-left:10px' : ''}">
                   <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px">
-                    <span style="font-weight:600;color:#f4f4f5;font-size:11px">${e.inom as string}</span>
+                    ${e.mi ? `<span style="font-weight:700;color:#34d399;font-family:monospace;font-size:11px">${e.mi as string}</span>` : `<span style="font-weight:600;color:#f4f4f5;font-size:11px">${e.inom as string}</span>`}
                     <span style="color:#34d399;font-family:monospace;font-weight:700;font-size:11px;white-space:nowrap">
                       #${e.pedido_id as number}
                     </span>
                   </div>
-                  ${e.mi ? `<div style="font-size:10px"><span style="color:#71717a">MI:</span> <span style="color:#34d399;font-family:monospace">${e.mi as string}</span></div>` : ''}
+                  ${e.mi ? `<div style="font-size:10px"><span style="color:#71717a">INOM:</span> <span style="color:#a1a1aa;font-family:monospace">${e.inom as string}</span></div>` : ''}
                   <div style="font-size:10px"><span style="color:#71717a">Produto:</span> ${tipoLabel}</div>
                   <div style="font-size:10px"><span style="color:#71717a">Escala:</span> ${e.escala as string}</div>
                   <div style="font-size:10px"><span style="color:#71717a">Entrega:</span> ${dataFmt}</div>

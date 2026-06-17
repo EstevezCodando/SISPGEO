@@ -329,6 +329,48 @@ def reset_senha(nome: str, token: str) -> tuple[str, str]:
     return subject, _base(subject, body)
 
 
+# ── Confirmação de alteração de senha (usuário logado) ───────────────────────
+
+def senha_alterada(nome: str, email: str) -> tuple[str, str]:
+    """Enviado ao usuário após alterar a senha com sucesso via Meus Dados."""
+    link_recuperacao = f"{settings.FRONTEND_URL}/esqueci-senha"
+    subject = "SisPGeo - Sua senha foi alterada"
+    body = f"""
+<h2 style="margin:0 0 4px 0;color:#3a4c22;font-size:18px;font-weight:700;
+           letter-spacing:0.3px">Prezado(a) {nome},</h2>
+<p style="{_P};border-bottom:1px solid #e0ddd0;padding-bottom:16px">
+  A senha da sua conta no <strong>SisPGeo</strong> foi
+  <strong style="color:#3a7030">alterada com sucesso</strong>.
+  Esta mensagem é uma confirmação automática de segurança.
+</p>
+
+<table cellpadding="0" cellspacing="0"
+       style="width:100%;border-collapse:collapse;margin-bottom:24px;
+              border:1px solid #c8c4b0">
+  {_info_row("E-mail de acesso", email)}
+  {_info_row("Operação", '<span style="color:#3a7030;font-weight:700">✓ Senha alterada com sucesso</span>')}
+</table>
+
+<div style="background:#fdf6e8;border-left:4px solid #8b7d3a;
+            padding:14px 16px;border-radius:0 3px 3px 0;margin-bottom:24px">
+  <p style="margin:0 0 6px 0;color:#4a3c10;font-size:12px;font-weight:700;
+            text-transform:uppercase;letter-spacing:0.5px">⚠ Não reconhece esta alteração?</p>
+  <p style="margin:0;color:#5a4c1a;font-size:13px;line-height:1.6;text-align:justify">
+    Se você <strong>não realizou</strong> esta alteração de senha, sua conta pode ter sido
+    comprometida. Utilize imediatamente o link abaixo para redefinir sua senha e recuperar
+    o acesso.
+  </p>
+</div>
+
+{_btn(link_recuperacao, "▶ Recuperar Minha Conta", color="#6b4020")}
+
+<p style="{_P_SMALL}">
+  Se foi você quem alterou a senha, pode ignorar esta mensagem com segurança.
+</p>
+"""
+    return subject, _base(subject, body)
+
+
 # ── Confirmação de e-mail (alias legado) ─────────────────────────────────────
 
 def confirmacao_email(nome: str, token: str) -> tuple[str, str]:
