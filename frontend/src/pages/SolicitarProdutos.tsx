@@ -768,13 +768,20 @@ export function SolicitarProdutos() {
     setShowRevisao(true);
   };
 
-  // Janela fechada — só bloqueia SOLICITANTE; SUPERVISOR pode solicitar a qualquer momento
+  // Bloqueia SOLICITANTE sempre que a janela não estiver aberta (incluindo quando não há janela configurada).
+  // Aguarda o carregamento (minhaJanela === null) antes de bloquear para evitar falso positivo.
   const janelaFechada =
     user?.perfil === "SOLICITANTE" &&
-    minhaJanela?.configurada &&
+    minhaJanela !== null &&
     !minhaJanela?.aberta;
 
   if (janelaFechada) {
+    const proximaAbertura = minhaJanela?.data_inicio
+      ? new Date(minhaJanela.data_inicio) > new Date()
+        ? new Date(minhaJanela.data_inicio).toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })
+        : null
+      : null;
+
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6 text-center px-4">
         <div className="bg-zinc-900 border border-white/10 rounded-2xl p-10 max-w-md w-full shadow-2xl">
@@ -787,10 +794,12 @@ export function SolicitarProdutos() {
             Período de Solicitações Encerrado
           </h2>
           <p className="text-sm text-zinc-500 leading-relaxed mb-6">
-            O prazo para inclusão de novos produtos geoespaciais está encerrado.
-            Nenhum produto pode ser adicionado neste momento.
+            Não é possível realizar pedidos fora do prazo.{" "}
+            {proximaAbertura
+              ? `A janela de solicitações abrirá em ${proximaAbertura}.`
+              : "Aguarde a janela de solicitações ser aberta pela DSG."}
           </p>
-          {minhaJanela?.data_fim && (
+          {minhaJanela?.data_fim && new Date(minhaJanela.data_fim) < new Date() && (
             <p className="text-xs text-zinc-600 mb-4">
               Encerrado em{" "}
               {new Date(minhaJanela.data_fim).toLocaleDateString("pt-BR", {
@@ -812,7 +821,7 @@ export function SolicitarProdutos() {
           </div>
           <div className="mt-4 flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-zinc-800 border border-zinc-700 text-xs text-zinc-500">
             <Lock className="h-3.5 w-3.5" />
-            Acesso bloqueado pelo administrador
+            Acesso bloqueado pela DSG
           </div>
         </div>
       </div>

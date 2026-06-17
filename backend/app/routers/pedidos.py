@@ -118,12 +118,16 @@ async def _check_janela_open(db: AsyncSession, user: Usuario) -> None:
     from app.models.janela import JanelaPedidos
     from app.models.enums import TipoJanelaEnum
 
-    if user.perfil in SUPERVISOR_PROFILES:
+    if user.perfil == PerfilEnum.SOLICITANTE:
+        tipo = TipoJanelaEnum.SOLICITANTE
+    elif user.perfil in SUPERVISOR_PROFILES:
         tipo = TipoJanelaEnum.SUPERVISOR
     elif user.perfil in CONSOLIDADOR_PROFILES:
         tipo = TipoJanelaEnum.CONSOLIDADOR
     else:
         return  # GESTOR_CARTOGRAFICO, ANALISTA_CGEO — sem restrição de janela
+
+    is_solicitante = (tipo == TipoJanelaEnum.SOLICITANTE)
 
     now = datetime.now(timezone.utc)
     result = await db.scalars(
@@ -133,15 +137,30 @@ async def _check_janela_open(db: AsyncSession, user: Usuario) -> None:
     )
     janelas = list(result)
     if not janelas:
+        if is_solicitante:
+            raise HTTPException(
+                status_code=403,
+                detail="Não é possível realizar pedidos fora do prazo. Aguarde a janela de solicitações ser aberta pela DSG.",
+            )
         raise HTTPException(status_code=403, detail="Fora do período de ação: janela não configurada para o seu perfil")
 
     ativa = next((j for j in janelas if j.data_inicio <= now <= j.data_fim), None)
     if not ativa:
         prox = next((j for j in sorted(janelas, key=lambda j: j.data_inicio) if j.data_inicio > now), None)
         if prox:
+            if is_solicitante:
+                raise HTTPException(
+                    status_code=403,
+                    detail=f"Não é possível realizar pedidos fora do prazo. A janela de solicitações abrirá em {prox.data_inicio.strftime('%d/%m/%Y')}.",
+                )
             raise HTTPException(
                 status_code=403,
                 detail=f"Sua janela de ação ainda não iniciou. Início previsto: {prox.data_inicio.strftime('%d/%m/%Y')}",
+            )
+        if is_solicitante:
+            raise HTTPException(
+                status_code=403,
+                detail="Não é possível realizar pedidos fora do prazo. Aguarde a janela de solicitações ser aberta pela DSG.",
             )
         raise HTTPException(status_code=403, detail="Sua janela de ação foi encerrada. Aguarde o próximo ciclo.")
 
@@ -171,6 +190,8 @@ async def create_pedido(
     current_user: Usuario = Depends(get_current_user),
 ):
     from app.routers.config import get_or_create_config, PRAZOS_MINIMOS
+
+    await _check_janela_open(db, current_user)
 
     ov = body.orgao_vinculante if body.orgao_vinculante is not None else current_user.orgao_vinculante
     if ov is None:
@@ -1412,6 +1433,7 @@ async def submit(
     db: AsyncSession = Depends(get_db),
     current_user: Usuario = Depends(get_current_user),
 ):
+    await _check_janela_open(db, current_user)
     pedido = await db.get(Pedido, pedido_id)
     if not pedido:
         raise HTTPException(status_code=404, detail="Pedido não encontrado")
