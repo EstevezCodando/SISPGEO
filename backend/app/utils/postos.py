@@ -1,17 +1,20 @@
 """Abreviaturas de posto/graduação - espelha PostoGraduacaoEnum."""
 
 POSTO_ABREV: dict[str, str] = {
-    "Terceiro Sargento":      "3º Sgt",
-    "Segundo Sargento":       "2º Sgt",
-    "Primeiro Sargento":      "1º Sgt",
-    "Subtenente":             "STen",
-    "Aspirante":              "Asp",
-    "Segundo Tenente":        "2º Ten",
-    "Primeiro Tenente":       "1º Ten",
-    "Capitão":                "Cap",
-    "Major":                  "Maj",
-    "Tenente Coronel":        "TC",
-    "Coronel":                "Cel",
+    "Terceiro Sargento":    "3º Sgt",
+    "Segundo Sargento":     "2º Sgt",
+    "Primeiro Sargento":    "1º Sgt",
+    "Subtenente":           "S Ten",
+    "Aspirante a Oficial":  "Asp Of",
+    "Segundo Tenente":      "2º Ten",
+    "Primeiro Tenente":     "1º Ten",
+    "Capitão":              "Cap",
+    "Major":                "Maj",
+    "Tenente-Coronel":      "Ten Cel",
+    "Coronel":              "Cel",
+    # Aliases para registros no banco criados antes da padronização
+    "Aspirante":            "Asp Of",
+    "Tenente Coronel":      "Ten Cel",
 }
 
 

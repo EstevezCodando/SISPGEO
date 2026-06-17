@@ -93,7 +93,7 @@ async def _run_migrations():
         "SELECT setval('pedidos_id_seq', 999, true) WHERE (SELECT last_value FROM pedidos_id_seq) < 1000",
         # 2026-05: flag de submissão automática ao fim da janela de solicitações
         "ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS auto_submitted BOOLEAN DEFAULT FALSE",
-        # 2026-05: posto/graduação do militar (Civil, Sd EV, Cb, Cap, TC, Cel...)
+        # 2026-05: posto/graduação do militar (3º Sgt ... Coronel)
         "ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS posto_graduacao VARCHAR(50)",
         # 2026-05: nome de guerra - exibido no lugar do nome completo nas referências do sistema
         "ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS nome_de_guerra VARCHAR(100)",
