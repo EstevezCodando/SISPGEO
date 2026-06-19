@@ -648,24 +648,16 @@ export function SolicitarProdutos() {
     return () => controller.abort();
   }, [escala, dataEntrega, tipoProduto]);
 
-  // Todos os produtos: data mínima fev/2027 por política DSG.
-  const POLICY_FLOOR = "2027-02-01";
-
-  // minDate = max(prazo de produção, piso de política)
   const minDate = (() => {
-    if (!tipoProduto) return POLICY_FLOOR;
-    let calculated: string;
+    if (!tipoProduto) return undefined;
     if (configEntrega?.datas_minimas?.[tipoProduto]) {
-      calculated = configEntrega.datas_minimas[tipoProduto];
-    } else {
-      // fallback enquanto API carrega — usa data atual como base se data_base ainda não veio
-      const prazo = PRAZO_FALLBACK[tipoProduto];
-      const base = configEntrega?.data_base
-        ? new Date(configEntrega.data_base + "T00:00:00")
-        : new Date();
-      calculated = format(addDays(base, prazo), "yyyy-MM-dd");
+      return configEntrega.datas_minimas[tipoProduto];
     }
-    return calculated >= POLICY_FLOOR ? calculated : POLICY_FLOOR;
+    const prazo = PRAZO_FALLBACK[tipoProduto];
+    const base = configEntrega?.data_base
+      ? new Date(configEntrega.data_base + "T00:00:00")
+      : new Date();
+    return format(addDays(base, prazo), "yyyy-MM-dd");
   })();
 
   const handleSubmit = async () => {
@@ -977,10 +969,23 @@ export function SolicitarProdutos() {
             />
             {tipoProduto && minDate && (
               <p className="text-[11px] text-zinc-600 mt-1">
-                A partir de{" "}
+                Mínimo:{" "}
                 <span className="text-zinc-400">
                   {new Date(minDate + "T00:00:00").toLocaleDateString("pt-BR")}
                 </span>
+                {configEntrega && (
+                  <span className="text-zinc-600">
+                    {" "}
+                    (+
+                    {configEntrega.prazos_minimos[tipoProduto] ??
+                      PRAZO_FALLBACK[tipoProduto]}
+                    d a partir de{" "}
+                    {new Date(
+                      configEntrega.data_base + "T00:00:00",
+                    ).toLocaleDateString("pt-BR")}
+                    )
+                  </span>
+                )}
               </p>
             )}
           </div>
