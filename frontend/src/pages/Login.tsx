@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   Eye, EyeOff, RefreshCw,
@@ -43,8 +43,56 @@ function classifyError(detail: string, status?: number): LoginError {
   return { kind: 'generic', msg: detail }
 }
 
-// Tempo mínimo (ms) que o bloco de erro fica visível antes de poder ser limpo
-const MIN_ERROR_MS = 5_000
+// ─── Popup de boas-vindas ─────────────────────────────────────────────────────
+function WelcomeModal({ onClose }: { onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-zinc-900 border border-white/10 rounded-2xl shadow-2xl w-full max-w-lg p-6 space-y-4 overflow-y-auto max-h-[80vh]">
+        <h2 className="text-base font-semibold text-zinc-100 leading-snug">
+          Bem-vindo ao SisPGeo
+        </h2>
+        <div className="text-sm text-zinc-300 space-y-3 leading-relaxed">
+          <p>
+            Seja bem-vindo ao Sistema de Pedidos de Geoinformação (SisPGeo) do Serviço Geográfico,
+            ambiente destinado ao cadastro e homologação das solicitações de Geoinformação que serão
+            incluídas no Plano Interno de Trabalho da Diretoria de Serviço Geográfico (PIT/DSG) em 2027.
+          </p>
+          <p>
+            Antes de realizar qualquer solicitação, recomenda-se a leitura atenta do Guia de
+            Solicitação, disponível na página principal. O link contém orientações importantes sobre
+            os procedimentos, requisitos, fluxos de tramitação e demais informações necessárias para
+            o correto preenchimento e processamento dos pedidos.
+          </p>
+          <p>
+            A observância das instruções contidas no Guia de Solicitação contribuirá para maior
+            agilidade na análise e atendimento das demandas, reduzindo a ocorrência de inconsistências
+            e retrabalhos.
+          </p>
+          <p>
+            Em caso de dúvidas, dificuldades de utilização do sistema ou identificação de problemas
+            durante a operação, entre em contato com a equipe técnica da DSG preferencialmente pelos
+            telefones (61) 3415-5237 e 860-5237 (RITEx) ou pelo e-mail institucional{' '}
+            <span className="text-emerald-400">suporte.sispgeo@dsg.eb.mil.br</span>.
+          </p>
+          <p>
+            Lembre-se de manter as informações atualizadas na aba <strong>"Meus Dados"</strong> para
+            garantir o recebimento das notificações.
+          </p>
+        </div>
+        <div className="pt-2 flex justify-end">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-5 py-2 bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-medium rounded-lg transition-colors"
+          >
+            Entendido
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 // ─── Bloco de erro inline ─────────────────────────────────────────────────────
 interface ErrorBlockProps {
@@ -143,31 +191,16 @@ export function Login() {
   const [loading, setLoading] = useState(false)
   const [reenvioLoading, setReenvioLoading] = useState(false)
   const [error, setError] = useState<LoginError | null>(null)
-  const errorSetAt  = useRef<number>(0)
-  const clearTimer  = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [showWelcome, setShowWelcome] = useState(true)
   const { setToken, setUser } = useAuthStore()
 
-  /** Exibe um erro e registra o instante para controle do temporizador. */
-  const showError = (err: LoginError) => {
-    if (clearTimer.current) { clearTimeout(clearTimer.current); clearTimer.current = null }
-    errorSetAt.current = Date.now()
-    setError(err)
-  }
+  // Auto-dismiss do erro após 3 s
+  useEffect(() => {
+    if (!error) return
+    const t = setTimeout(() => setError(null), 3_000)
+    return () => clearTimeout(t)
+  }, [error])
 
-  /** Limpa o erro somente após MIN_ERROR_MS desde que foi exibido.
-   *  Se ainda não passou o tempo, agenda a limpeza para o momento certo. */
-  const dismissError = () => {
-    const elapsed   = Date.now() - errorSetAt.current
-    const remaining = MIN_ERROR_MS - elapsed
-    if (remaining <= 0) {
-      setError(null)
-    } else if (!clearTimer.current) {
-      clearTimer.current = setTimeout(() => {
-        setError(null)
-        clearTimer.current = null
-      }, remaining)
-    }
-  }
   const navigate = useNavigate()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -183,7 +216,7 @@ export function Login() {
       const axiosErr = err as { response?: { status?: number; data?: { detail?: string } } }
       const status = axiosErr.response?.status
       const detail = axiosErr.response?.data?.detail ?? 'Erro inesperado. Tente novamente.'
-      showError(classifyError(detail, status))
+      setError(classifyError(detail, status))
     } finally {
       setLoading(false)
     }
@@ -194,20 +227,19 @@ export function Login() {
     setReenvioLoading(true)
     try {
       await authApi.resendActivation(email)
-      showError({
-        kind: 'unconfirmed',
-        msg: 'Link reenviado! Verifique sua caixa de entrada.',
-      })
+      setError({ kind: 'unconfirmed', msg: 'Link reenviado! Verifique sua caixa de entrada.' })
     } catch (err: unknown) {
       const axiosErr = err as { response?: { data?: { detail?: string } } }
       const detail = axiosErr.response?.data?.detail ?? 'Erro ao reenviar.'
-      showError({ kind: 'generic', msg: detail })
+      setError({ kind: 'generic', msg: detail })
     } finally {
       setReenvioLoading(false)
     }
   }
 
   return (
+    <>
+    {showWelcome && <WelcomeModal onClose={() => setShowWelcome(false)} />}
     <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4 relative overflow-hidden">
       {/* Glow de fundo */}
       <div className="absolute top-[-200px] left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-emerald-500/15 blur-[120px] rounded-full pointer-events-none" />
@@ -230,7 +262,7 @@ export function Login() {
               <input
                 type="email"
                 value={email}
-                onChange={(e) => { setEmail(e.target.value); dismissError() }}
+                onChange={(e) => setEmail(e.target.value)}
                 placeholder="nome@eb.mil.br"
                 required
                 autoComplete="username"
@@ -244,7 +276,7 @@ export function Login() {
                 <input
                   type={mostrarSenha ? 'text' : 'password'}
                   value={senha}
-                  onChange={(e) => { setSenha(e.target.value); dismissError() }}
+                  onChange={(e) => setSenha(e.target.value)}
                   required
                   autoComplete="current-password"
                   className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2.5 pr-10 text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 transition-colors"
@@ -279,7 +311,7 @@ export function Login() {
             </button>
           </form>
 
-          {/* Bloco de erro — visível por no mínimo MIN_ERROR_MS; desaparece ao digitar após esse prazo */}
+          {/* Bloco de erro — desaparece automaticamente após 3 s */}
           {error && (
             <ErrorBlock
               error={error}
@@ -297,5 +329,6 @@ export function Login() {
         </div>
       </div>
     </div>
+    </>
   )
 }
