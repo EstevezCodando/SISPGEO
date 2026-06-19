@@ -3,7 +3,7 @@
 // Regras de negócio e contratos: Cap Perrut <perrut.raphael@eb.mil.br>  ·  Cartographic Engineer
 // Revisão técnica do projeto: Cel Azeredo <azeredo.marcio@eb.mil.br>  ·  Cartographic Engineer
 
-import { useEffect } from "react";
+import { useEffect, type ReactNode } from "react";
 import { Toaster } from "react-hot-toast";
 import {
     BrowserRouter,
@@ -42,7 +42,7 @@ const GESTOR_PROFILES = new Set([
   ...CONSOLIDADOR_PROFILES,
 ]);
 
-function RequireAuth({ children }: { children: React.ReactNode }) {
+function RequireAuth({ children }: { children: ReactNode }) {
   const { token, user, setUser } = useAuthStore();
   const location = useLocation();
 
@@ -65,7 +65,7 @@ function RequireProfile({
   children,
 }: {
   profiles: Set<string>;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   const { user } = useAuthStore();
   if (user && !profiles.has(user.perfil)) return <Navigate to="/" replace />;

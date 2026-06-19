@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, type ReactNode } from 'react'
 import { metricasApi, ResumoMetricas, EndpointMetrica, PedidosMetricas } from '../../api/metricas'
 import { Activity, Zap, AlertTriangle, Server, RefreshCw, Clock } from 'lucide-react'
 
@@ -45,7 +45,7 @@ function MethodBadge({ method }: { method: string }) {
 }
 
 function Card({ icon, label, value, sub, color = 'emerald' }: {
-  icon: React.ReactNode; label: string; value: string | number; sub?: string; color?: string
+  icon: ReactNode; label: string; value: string | number; sub?: string; color?: string
 }) {
   const ring = {
     emerald: 'border-emerald-500/20 bg-emerald-500/5',

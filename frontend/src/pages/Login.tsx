@@ -1,4 +1,4 @@
-import { useState, useEffect, type ElementType } from 'react'
+import { useState, useEffect, type ElementType, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   Eye, EyeOff, RefreshCw,
@@ -170,7 +170,7 @@ export function Login() {
     return () => clearTimeout(t)
   }, [error])
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     setLoading(true)
     try {

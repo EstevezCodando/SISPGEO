@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { Eye, EyeOff, KeyRound, CheckCircle2, XCircle } from 'lucide-react'
@@ -40,7 +40,7 @@ export function RedefinirSenha() {
   const senhaOk = novaSenha.length > 0 && erroSenha === null
   const confirmacaoOk = novaSenha === confirmar && confirmar.length > 0
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
 
     if (!token) {

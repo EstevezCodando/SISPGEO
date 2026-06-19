@@ -1,3 +1,4 @@
+import { type ReactNode } from 'react'
 import { NavLink } from 'react-router-dom'
 import {
   FileText, PlusSquare, Users, Settings, MapPin,
@@ -16,7 +17,7 @@ const NAO_SOLICITANTE = [...GESTORES, ...DSG, ...CGEO]
 interface NavItem {
   to: string
   label: string
-  icon: React.ReactNode
+  icon: ReactNode
   /** Perfis que enxergam este item. Omitir = todos. */
   profiles?: string[]
 }
