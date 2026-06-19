@@ -648,19 +648,32 @@ export function SolicitarProdutos() {
     return () => controller.abort();
   }, [escala, dataEntrega, tipoProduto]);
 
-  // minDate = data_base (global) + prazo_minimo do produto selecionado.
-  // Se a configuração ainda não carregou, usa fallback local.
+  // Piso mínimo por política da DSG (independente do prazo de produção técnica).
+  // Ortoimagem e Impressão: a partir de dez/2026; demais produtos: a partir de fev/2027.
+  const POLICY_FLOOR: Partial<Record<TipoProduto, string>> = {
+    ORTOIMAGEM: "2026-12-01",
+    IMPRESSAO_CT: "2026-12-01",
+    IMPRESSAO_COI: "2026-12-01",
+    IMPRESSAO: "2026-12-01",
+  };
+  const POLICY_FLOOR_DEFAULT = "2027-02-01";
+
+  // minDate = max(prazo de produção, piso de política)
   const minDate = (() => {
     if (!tipoProduto) return format(addDays(new Date(), 1), "yyyy-MM-dd");
+    let calculated: string;
     if (configEntrega?.datas_minimas?.[tipoProduto]) {
-      return configEntrega.datas_minimas[tipoProduto];
+      calculated = configEntrega.datas_minimas[tipoProduto];
+    } else {
+      // fallback enquanto API carrega — usa data atual como base se data_base ainda não veio
+      const prazo = PRAZO_FALLBACK[tipoProduto];
+      const base = configEntrega?.data_base
+        ? new Date(configEntrega.data_base + "T00:00:00")
+        : new Date();
+      calculated = format(addDays(base, prazo), "yyyy-MM-dd");
     }
-    // fallback enquanto API carrega — usa data atual como base se data_base ainda não veio
-    const prazo = PRAZO_FALLBACK[tipoProduto];
-    const base = configEntrega?.data_base
-      ? new Date(configEntrega.data_base + "T00:00:00")
-      : new Date();
-    return format(addDays(base, prazo), "yyyy-MM-dd");
+    const floor = POLICY_FLOOR[tipoProduto] ?? POLICY_FLOOR_DEFAULT;
+    return calculated >= floor ? calculated : floor;
   })();
 
   const handleSubmit = async () => {
