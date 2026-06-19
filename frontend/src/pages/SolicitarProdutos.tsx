@@ -977,23 +977,10 @@ export function SolicitarProdutos() {
             />
             {tipoProduto && minDate && (
               <p className="text-[11px] text-zinc-600 mt-1">
-                Mínimo:{" "}
+                A partir de{" "}
                 <span className="text-zinc-400">
                   {new Date(minDate + "T00:00:00").toLocaleDateString("pt-BR")}
                 </span>
-                {configEntrega && (
-                  <span className="text-zinc-600">
-                    {" "}
-                    (+
-                    {configEntrega.prazos_minimos[tipoProduto] ??
-                      PRAZO_FALLBACK[tipoProduto]}
-                    d a partir de{" "}
-                    {new Date(
-                      configEntrega.data_base + "T00:00:00",
-                    ).toLocaleDateString("pt-BR")}
-                    )
-                  </span>
-                )}
               </p>
             )}
           </div>
