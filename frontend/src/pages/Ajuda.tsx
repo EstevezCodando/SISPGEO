@@ -775,17 +775,17 @@ const TUTORIAIS = {
     {
       n: "1",
       title: "Acesse o Formulário de Solicitação de Produtos",
-      desc: 'No menu lateral, clique em "Solicitar Produtos" para carregar a página com o Formulário de Solicitação de Produtos.',
+      desc: 'Clique em "Solicitar Produtos" no menu lateral para carregar a página com o Formulário de Solicitação de Produtos.',
     },
     {
       n: "2",
-      title: "Defina a Finalidade da Geoinformação",
-      desc: "Considere as opções apresentadas. Esta informação deverá ser complementada posteriormente por ocasião da revisão do pedido.",
+      title: "Escolha o Tipo de Produto/Serviço e a Escala de Representação",
+      desc: "Selecione o tipo de produto (ex. Carta Topográfica) e a escala de representação (ex. 1:50.000) que melhor atendam aos objetivos de utilização da Geoinformação (ver detalhes).",
     },
     {
       n: "3",
-      title: "Escolha o Produto e a Escala de Representação",
-      desc: "Selecione o tipo de produto (ex. Carta Topográfica) e a escala de representação (ex. 1:50.000) que melhor atendam aos objetivos de utilização da Geoinformação (ver detalhes).",
+      title: "Defina a Finalidade da Geoinformação",
+      desc: "Selecione a finalidade da Geoinformação, considerando as opções apresentadas. Esta informação deverá ser complementada posteriormente por ocasião da revisão do pedido.",
     },
     {
       n: "4",
@@ -794,8 +794,7 @@ const TUTORIAIS = {
     },
     {
       n: "5",
-      title:
-        "Selecione o Enquadramento dos Produtos no Mapa e Adicione ao Carrinho",
+      title: "Selecione o Enquadramento dos Produtos no Mapa e Adicione ao Carrinho de Solicitações",
       desc: "Clique nas células sobre o mapa correspondentes às áreas de interesse, de modo a adicionar os produtos desejados ao carrinho. Cabe ressaltar que os mesmos podem ser removidos a qualquer tempo, antes da confirmação do pedido.",
     },
     {
@@ -806,7 +805,7 @@ const TUTORIAIS = {
     {
       n: "7",
       title: "Revise o Pedido",
-      desc: "Verifique se os pedidos solicitados estão listados no carrinho. Caso tenha interesse na impressão dos produtos adicionados, marcar a opção e informar a quantidade e tipo de material desejável. Tyvek esta condicionados à disponibilidade e podem ser eventualmente fornecidos em Sulfite.",
+      desc: "Verifique se os pedidos solicitados estão listados no carrinho. Caso tenha interesse na impressão dos produtos adicionados, marcar a opção e informar a quantidade e tipo de material desejável. Tyvek está condicionado à disponibilidade e pode ser eventualmente fornecido em Sulfite.",
     },
   ],
   editar: [
@@ -864,6 +863,8 @@ interface JornadaGuia {
   perfil: string;
   cor: string;
   passos: { n: string; title: string; desc: string }[];
+  nota?: string;
+  notaUrl?: string;
 }
 
 const JORNADAS: JornadaGuia[] = [
@@ -871,6 +872,8 @@ const JORNADAS: JornadaGuia[] = [
     perfil: "OMDS – Solicitante",
     cor: "emerald",
     passos: TUTORIAIS.solicitar,
+    nota: "Recomenda-se a visualização deste vídeo tutorial para a correta realização do cadastro dos pedidos de Geoinformação.",
+    notaUrl: "/TutorialSolicitarProdutos.mp4",
   },
   {
     perfil: "C Mil A – Supervisor",
@@ -1035,6 +1038,33 @@ function JornadaCard({ jornada }: { jornada: JornadaGuia }) {
               </li>
             ))}
           </ol>
+          {jornada.nota && (
+            <p className="mt-3 text-xs text-zinc-400 leading-relaxed border-t border-white/5 pt-3">
+              {jornada.notaUrl ? (
+                <>
+                  {jornada.nota.split("vídeo tutorial").map((part, i) =>
+                    i === 0 ? (
+                      <span key={i}>
+                        {part}
+                        <a
+                          href={jornada.notaUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-emerald-400 hover:text-emerald-300 underline"
+                        >
+                          vídeo tutorial
+                        </a>
+                      </span>
+                    ) : (
+                      <span key={i}>{part}</span>
+                    )
+                  )}
+                </>
+              ) : (
+                jornada.nota
+              )}
+            </p>
+          )}
         </div>
       )}
     </div>
@@ -1279,8 +1309,8 @@ export function Ajuda() {
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
             {[
               {
-                label: "Rascunho",
-                desc: "Criado, ainda não enviado — pode ser editado",
+                label: "Em Rascunho",
+                desc: "Criado, mas ainda não enviado - pode ser editado",
               },
               {
                 label: "Enviado / Em revisão",
