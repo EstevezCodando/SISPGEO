@@ -648,19 +648,12 @@ export function SolicitarProdutos() {
     return () => controller.abort();
   }, [escala, dataEntrega, tipoProduto]);
 
-  // Piso mínimo por política da DSG (independente do prazo de produção técnica).
-  // Ortoimagem e Impressão: a partir de dez/2026; demais produtos: a partir de fev/2027.
-  const POLICY_FLOOR: Partial<Record<TipoProduto, string>> = {
-    ORTOIMAGEM: "2026-12-01",
-    IMPRESSAO_CT: "2026-12-01",
-    IMPRESSAO_COI: "2026-12-01",
-    IMPRESSAO: "2026-12-01",
-  };
-  const POLICY_FLOOR_DEFAULT = "2027-02-01";
+  // Todos os produtos: data mínima fev/2027 por política DSG.
+  const POLICY_FLOOR = "2027-02-01";
 
   // minDate = max(prazo de produção, piso de política)
   const minDate = (() => {
-    if (!tipoProduto) return format(addDays(new Date(), 1), "yyyy-MM-dd");
+    if (!tipoProduto) return POLICY_FLOOR;
     let calculated: string;
     if (configEntrega?.datas_minimas?.[tipoProduto]) {
       calculated = configEntrega.datas_minimas[tipoProduto];
@@ -672,8 +665,7 @@ export function SolicitarProdutos() {
         : new Date();
       calculated = format(addDays(base, prazo), "yyyy-MM-dd");
     }
-    const floor = POLICY_FLOOR[tipoProduto] ?? POLICY_FLOOR_DEFAULT;
-    return calculated >= floor ? calculated : floor;
+    return calculated >= POLICY_FLOOR ? calculated : POLICY_FLOOR;
   })();
 
   const handleSubmit = async () => {

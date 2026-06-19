@@ -1164,7 +1164,7 @@ export function Ajuda() {
           icon={<BookOpen className="h-3.5 w-3.5" />}
         >
           <p className="text-xs text-zinc-500">
-            ...conforme finalidade de utilização.
+            Tipos de material para impressão, conforme a finalidade de utilização da Geoinformação.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {[

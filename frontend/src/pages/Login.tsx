@@ -108,9 +108,12 @@ function ErrorBlock({ error, email, onResend, reenvioLoading }: ErrorBlockProps)
 function WelcomeModal({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
       <div className="relative bg-zinc-900 border border-white/10 rounded-2xl shadow-2xl w-full max-w-lg p-6 space-y-4 overflow-y-auto max-h-[80vh]">
-        <h2 className="text-base font-semibold text-zinc-100 leading-snug">Bem-vindo ao SisPGeo</h2>
+        <div className="flex flex-col items-center mb-2">
+          <img src="/dsg.png" alt="DSG" className="h-16 w-auto mb-3" />
+          <h2 className="text-base font-semibold text-zinc-100 leading-snug text-center">Bem-vindo ao SisPGeo</h2>
+        </div>
         <div className="text-sm text-zinc-300 space-y-3 leading-relaxed">
           <p>
             Seja bem-vindo ao Sistema de Pedidos de Geoinformação (SisPGeo) do Serviço Geográfico,
@@ -118,7 +121,7 @@ function WelcomeModal({ onClose }: { onClose: () => void }) {
             incluídas no Plano Interno de Trabalho da Diretoria de Serviço Geográfico (PIT/DSG) em 2027.
           </p>
           <p>
-            Antes de realizar qualquer solicitação, recomenda-se a leitura atenta do Guia de Solicitação,
+            Antes de realizar qualquer pedido, recomenda-se a leitura atenta do Guia de Solicitação,
             disponível na página principal. O link contém orientações importantes sobre os procedimentos,
             requisitos, fluxos de tramitação e demais informações necessárias para o correto preenchimento
             e processamento dos pedidos.
@@ -129,13 +132,14 @@ function WelcomeModal({ onClose }: { onClose: () => void }) {
           </p>
           <p>
             Em caso de dúvidas, dificuldades de utilização do sistema ou identificação de problemas durante
-            a operação, entre em contato com a equipe técnica da DSG preferencialmente pelos telefones
-            (61) 3415-5237 e 860-5237 (RITEx) ou pelo e-mail institucional{' '}
+            a operação, entre em contato com a equipe técnica da DSG, preferencialmente pelos telefones{' '}
+            <span className="text-zinc-200">(61) 3415-5237</span> e{' '}
+            <span className="text-zinc-200">860-5237 (RITEx)</span> ou pelo e-mail institucional{' '}
             <span className="text-emerald-400">suporte.sispgeo@dsg.eb.mil.br</span>.
           </p>
           <p>
-            Lembre-se de manter as informações atualizadas na aba <strong>"Meus Dados"</strong> para
-            garantir o recebimento das notificações.
+            Lembre-se de manter as informações atualizadas na aba{' '}
+            <strong className="text-zinc-100">"Meus Dados"</strong> para garantir o recebimento das notificações.
           </p>
         </div>
         <div className="pt-2 flex justify-end">
@@ -160,9 +164,14 @@ export function Login() {
   const [loading, setLoading]           = useState(false)
   const [reenvioLoading, setReenvioLoading] = useState(false)
   const [error, setError]               = useState<LoginError | null>(null)
-  const [showWelcome, setShowWelcome]   = useState(true)
+  const [showWelcome, setShowWelcome]   = useState(false)
   const { setToken, setUser } = useAuthStore()
   const navigate = useNavigate()
+
+  useEffect(() => {
+    const t = setTimeout(() => setShowWelcome(true), 350)
+    return () => clearTimeout(t)
+  }, [])
 
   useEffect(() => {
     if (!error) return
@@ -215,7 +224,7 @@ export function Login() {
               <div className="flex justify-center mb-4">
                 <img src="/dsg.png" alt="DSG" className="h-14 w-auto" />
               </div>
-              <h1 className="text-2xl font-semibold text-zinc-100 tracking-tight">SisPGeo</h1>
+              <h1 className="text-2xl font-semibold text-zinc-100 tracking-tight">SisPGeo – 2027</h1>
               <p className="text-zinc-500 text-sm mt-1">Sistema de Pedidos de Geoinformação – DSG/EB</p>
             </div>
 
