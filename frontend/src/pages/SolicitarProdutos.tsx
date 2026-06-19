@@ -1142,13 +1142,9 @@ export function SolicitarProdutos() {
                       </button>
                     </div>
                     {/* Indicador de impressão por item no carrinho */}
-                    {isImpressao && (
-                      <div
-                        className={`mt-1.5 pt-1.5 border-t border-white/5 text-[10px] ${imp ? "text-emerald-400" : "text-amber-400"}`}
-                      >
-                        {imp
-                          ? `${imp.quantidade}x ${imp.tipo}`
-                          : "⚠ Configure quantidade e material de impressão na revisão"}
+                    {isImpressao && imp && (
+                      <div className="mt-1.5 pt-1.5 border-t border-white/5 text-[10px] text-emerald-400">
+                        {imp.quantidade}x {imp.tipo}
                       </div>
                     )}
                     {!isImpressao && item.impressao && imp && (
@@ -1163,15 +1159,6 @@ export function SolicitarProdutos() {
           </div>
 
           <div className="p-3 border-t border-white/10">
-            {items.length > 0 && isImpressao && (
-              <div className="flex flex-wrap gap-1.5 mb-2.5">
-                <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[11px] text-emerald-400">
-                  <ClipboardCheck className="h-3 w-3" />
-                  Impressão: configure quantidade e material de impressão na
-                  revisão
-                </span>
-              </div>
-            )}
             <button
               onClick={handleOpenRevisao}
               disabled={items.length === 0}
