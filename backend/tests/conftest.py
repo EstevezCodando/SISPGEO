@@ -29,6 +29,7 @@ def _make_user(
     orgao_vinculante: OrgaoVinculanteEnum = OrgaoVinculanteEnum.COTER,
     ativo: bool = True,
     nome_de_guerra: str | None = "Teste",
+    regiao_militar: str | None = None,
 ) -> MagicMock:
     """Cria um mock de :class:`Usuario` sem persistência no banco."""
     u = MagicMock(spec=Usuario)
@@ -44,6 +45,7 @@ def _make_user(
     u.tentativas_login = 0
     u.bloqueado_ate = None
     u.ultima_senha_alterada = datetime.now(timezone.utc)
+    u.regiao_militar = regiao_militar
     return u
 
 
@@ -125,8 +127,8 @@ def usuario_omds() -> MagicMock:
 
 @pytest.fixture
 def gestor_brigada() -> MagicMock:
-    """Mock de usuário com perfil SUPERVISOR (antigo GESTOR_BRIGADA/CMA)."""
-    return _make_user(user_id=2, email="supervisor@eb.mil.br", perfil=PerfilEnum.SUPERVISOR)
+    """Mock de usuário com perfil SUPERVISOR (legado) — Região Militar CMP, alinhado com pedido_submetido_brigada."""
+    return _make_user(user_id=2, email="supervisor@eb.mil.br", perfil=PerfilEnum.SUPERVISOR, regiao_militar="CMP")
 
 
 @pytest.fixture
