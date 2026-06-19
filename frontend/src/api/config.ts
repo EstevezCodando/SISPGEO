@@ -8,6 +8,7 @@ export interface ConfigEntrega {
 }
 
 export const configApi = {
+  getAno: () => api.get<{ ano: number }>('/config/ano'),
   getEntrega: () => api.get<ConfigEntrega>('/config/entrega'),
   updateEntrega: (data_base: string) =>
     api.put<ConfigEntrega>('/config/entrega', { data_base }),

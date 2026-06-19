@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 import { authApi } from '../api/auth'
 import { usersApi } from '../api/users'
+import { configApi } from '../api/config'
 import { useAuthStore } from '../store/authStore'
 
 // ─── Tipos de erro ────────────────────────────────────────────────────────────
@@ -105,14 +106,16 @@ function ErrorBlock({ error, email, onResend, reenvioLoading }: ErrorBlockProps)
 }
 
 // ─── Popup de boas-vindas ─────────────────────────────────────────────────────
-function WelcomeModal({ onClose }: { onClose: () => void }) {
+function WelcomeModal({ onClose, ano }: { onClose: () => void; ano: number | null }) {
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
       <div className="relative bg-zinc-900 border border-white/10 rounded-2xl shadow-2xl w-full max-w-lg p-6 space-y-4 overflow-y-auto max-h-[80vh]">
         <div className="flex flex-col items-center mb-2">
           <img src="/dsg.png" alt="DSG" className="h-16 w-auto mb-3" />
-          <h2 className="text-base font-semibold text-zinc-100 leading-snug text-center">Bem-vindo ao SisPGeo - 2027</h2>
+          <h2 className="text-base font-semibold text-zinc-100 leading-snug text-center">
+            Bem-vindo ao SisPGeo{ano ? ` - ${ano}` : ''}
+          </h2>
         </div>
         <div className="text-sm text-zinc-300 space-y-3 leading-relaxed">
           <p>
@@ -165,10 +168,12 @@ export function Login() {
   const [reenvioLoading, setReenvioLoading] = useState(false)
   const [error, setError]               = useState<LoginError | null>(null)
   const [showWelcome, setShowWelcome]   = useState(false)
+  const [ano, setAno]                   = useState<number | null>(null)
   const { setToken, setUser } = useAuthStore()
   const navigate = useNavigate()
 
   useEffect(() => {
+    configApi.getAno().then((r) => setAno(r.data.ano)).catch(() => {})
     const t = setTimeout(() => setShowWelcome(true), 350)
     return () => clearTimeout(t)
   }, [])
@@ -215,7 +220,7 @@ export function Login() {
 
   return (
     <>
-      {showWelcome && <WelcomeModal onClose={() => setShowWelcome(false)} />}
+      {showWelcome && <WelcomeModal onClose={() => setShowWelcome(false)} ano={ano} />}
       <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4 relative overflow-hidden">
         <div className="absolute top-[-200px] left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-emerald-500/15 blur-[120px] rounded-full pointer-events-none" />
         <div className="relative z-10 w-full max-w-md">
@@ -224,7 +229,7 @@ export function Login() {
               <div className="flex justify-center mb-4">
                 <img src="/dsg.png" alt="DSG" className="h-14 w-auto" />
               </div>
-              <h1 className="text-2xl font-semibold text-zinc-100 tracking-tight">SisPGeo – 2027</h1>
+              <h1 className="text-2xl font-semibold text-zinc-100 tracking-tight">SisPGeo{ano ? ` – ${ano}` : ''}</h1>
               <p className="text-zinc-500 text-sm mt-1">Sistema de Pedidos de Geoinformação – DSG/EB</p>
             </div>
 
