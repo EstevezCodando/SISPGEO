@@ -745,29 +745,18 @@ const FAQS: FAQ[] = [
 
 const FLUXO_COTER = [
   { perfil: "OMDS", acao: "Cria e submete o pedido", cor: "emerald" },
-  { perfil: "C Mil. A", acao: "Supervisor revisa e encaminha", cor: "amber" },
-  { perfil: "COTER", acao: "Consolida e envia à DSG", cor: "yellow" },
-  { perfil: "DSG", acao: "Valida e atribui ao CGEO", cor: "blue" },
-  {
-    perfil: "CGEO",
-    acao: "Analisa, produz e disponibiliza no BDGEx",
-    cor: "purple",
-  },
+  { perfil: "C Mil A", acao: "Revisa, prioriza e encaminha o pedido ao COTER", cor: "amber" },
+  { perfil: "COTER", acao: "Consolida, prioriza e encaminha o pedido à DSG", cor: "yellow" },
+  { perfil: "DSG", acao: "Valida e atribui o pedido ao CGEO", cor: "blue" },
+  { perfil: "CGEO", acao: "Produz e disponibiliza o pedido no BDGEx", cor: "purple" },
 ];
 
 const FLUXO_OUTROS = [
   { perfil: "OMDS", acao: "Cria e submete o pedido", cor: "emerald" },
-  {
-    perfil: "DEC / COLOG / DECEx",
-    acao: "Consolida e envia à DSG",
-    cor: "orange",
-  },
-  { perfil: "DSG", acao: "Valida e atribui ao CGEO", cor: "blue" },
-  {
-    perfil: "CGEO",
-    acao: "Analisa, produz e disponibiliza no BDGEx",
-    cor: "purple",
-  },
+  { perfil: "Diretorias Subordinadas", acao: "Revisa, prioriza e encaminha o pedido ao ODS", cor: "amber" },
+  { perfil: "DEC, COLOG e DECEX", acao: "Consolida, prioriza e encaminha o pedido à DSG", cor: "orange" },
+  { perfil: "DSG", acao: "Valida e atribui o pedido ao CGEO", cor: "blue" },
+  { perfil: "CGEO", acao: "Produz e disponibiliza o pedido no BDGEx", cor: "purple" },
 ];
 
 const COR: Record<string, string> = {
@@ -1164,7 +1153,8 @@ export function Ajuda() {
           icon={<BookOpen className="h-3.5 w-3.5" />}
         >
           <p className="text-xs text-zinc-500">
-            Tipos de material para impressão, conforme a finalidade de utilização da Geoinformação.
+            Tipos de material para impressão, conforme a finalidade de
+            utilização da Geoinformação.
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {[
@@ -1255,8 +1245,7 @@ export function Ajuda() {
 
             <div>
               <p className="text-xs font-semibold text-orange-400 uppercase tracking-wide mb-2">
-                Solicitante subordinado a Órgão de Direção Setorial (DECEX, DEC
-                e COLOG)
+                Solicitante subordinado a Órgão de Direção Setorial (ODS)
               </p>
               <div className="flex flex-wrap gap-2 items-center">
                 {FLUXO_OUTROS.map((s, i) => (
@@ -1273,17 +1262,12 @@ export function Ajuda() {
                   </div>
                 ))}
               </div>
-              <p className="mt-2 text-[11px] text-zinc-600 leading-relaxed">
-                Neste fluxo o pedido não passa pelo C Mil. A — vai diretamente
-                ao Consolidador do órgão.
-              </p>
             </div>
           </div>
 
           <p className="text-xs text-zinc-600 leading-relaxed border-t border-white/5 pt-3">
-            Gestores podem consolidar múltiplos pedidos e encaminhá-los em lote
-            ao escalão seguinte. Notificações por e-mail são enviadas em cada
-            movimentação.
+            Os pedidos podem ser encaminhados em lote, sendo enviadas as
+            notificações por e-mail a cada movimentação.
           </p>
         </SubCard>
 
@@ -1359,13 +1343,10 @@ export function Ajuda() {
         </SubCard>
 
         {/* Sub-card: Contato */}
-        <SubCard
-          title="Contato"
-          icon={<CheckCircle className="h-3.5 w-3.5" />}
-        >
+        <SubCard title="Contato" icon={<CheckCircle className="h-3.5 w-3.5" />}>
           <p className="text-sm text-zinc-400 leading-relaxed">
             Em caso de dúvidas ou sugestões, entre em contato com a equipe
-            técnica da DSG preferencialmente pelos telefones{" "}
+            técnica da DSG, preferencialmente pelos telefones{" "}
             <span className="text-zinc-200">(61) 3415-5237</span> e{" "}
             <span className="text-zinc-200">860-5237 (RITEx)</span> ou pelo
             e-mail institucional{" "}
@@ -1376,8 +1357,8 @@ export function Ajuda() {
               suporte.sispgeo@dsg.eb.mil.br
             </a>
             . Lembre-se de manter as informações atualizadas na aba{" "}
-            <span className="text-emerald-400">Meus Dados</span> para garantir
-            o recebimento das notificações.
+            <span className="text-emerald-400">Meus Dados</span> para garantir o
+            recebimento das notificações.
           </p>
         </SubCard>
       </section>
