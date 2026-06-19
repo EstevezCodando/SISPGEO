@@ -736,7 +736,7 @@ const FAQS: FAQ[] = [
               Subordinados ao COTER
             </p>
             <p className="text-xs text-zinc-500">
-              OM → C Mil. A → COTER → DSG → CGEO
+              OM → C Mil A → COTER → DSG → CGEO
             </p>
           </div>
           <div>
