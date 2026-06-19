@@ -73,7 +73,7 @@ class ConfigEntregaUpdate(BaseModel):
 async def get_ano_referencia(db: AsyncSession = Depends(get_db)):
     """Retorna o ano de referência do PIT (público, sem autenticação)."""
     cfg = await get_or_create_config(db)
-    return {"ano": cfg.data_base.year + 1}
+    return {"ano": cfg.data_base.year}
 
 
 @router.get("/entrega", response_model=ConfigEntregaOut)
