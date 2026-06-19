@@ -112,7 +112,7 @@ function WelcomeModal({ onClose }: { onClose: () => void }) {
       <div className="relative bg-zinc-900 border border-white/10 rounded-2xl shadow-2xl w-full max-w-lg p-6 space-y-4 overflow-y-auto max-h-[80vh]">
         <div className="flex flex-col items-center mb-2">
           <img src="/dsg.png" alt="DSG" className="h-16 w-auto mb-3" />
-          <h2 className="text-base font-semibold text-zinc-100 leading-snug text-center">Bem-vindo ao SisPGeo</h2>
+          <h2 className="text-base font-semibold text-zinc-100 leading-snug text-center">Bem-vindo ao SisPGeo - 2027</h2>
         </div>
         <div className="text-sm text-zinc-300 space-y-3 leading-relaxed">
           <p>
