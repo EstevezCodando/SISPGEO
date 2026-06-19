@@ -659,36 +659,48 @@ const FAQS: FAQ[] = [
     q: "Como sei se o produto já existe no BDGEx?",
     a: (
       <>
-        Ao selecionar a escala no formulário, o mapa exibe em verde as folhas
-        que já constam no Banco de Dados Geoespaciais do Exército (BDGEx). Esses
-        produtos podem ser obtidos diretamente sem solicitação de nova produção
-        — mas você pode marcar "Solicitar mesmo disponível" se precisar de
-        versão atualizada. Acesse o BDGEx em:{" "}
+        Após a seleção das informações iniciais de solicitação do pedido (Tipo
+        de Produto/Serviço, Escala de Representação, Finalidade da Geoinformação
+        e Data Sugerida de Entrega), o sistema exibe, no mapa central, as folhas
+        disponíveis no Banco de Dados Geográficos do Exército (BDGEx), conforme
+        legenda de cores. Caso algum dos produtos disponíveis atenda à
+        necessidade do solicitante, ele poderá ser obtido diretamente por meio
+        dos portais{" "}
         <a
           href="https://bdgex.eb.mil.br"
           target="_blank"
           rel="noopener noreferrer"
           className="text-emerald-400 hover:text-emerald-300 underline underline-offset-2 transition-colors"
         >
-          bdgex.eb.mil.br
+          BDGEx
+        </a>{" "}
+        e{" "}
+        <a
+          href="http://bdgexop.eb.mil.br"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-emerald-400 hover:text-emerald-300 underline underline-offset-2 transition-colors"
+        >
+          BDGEx Operacional
         </a>
+        , dispensando a abertura de uma nova solicitação de produção.
       </>
     ),
   },
   {
-    q: "Por que a data mínima de entrega está tão no futuro?",
-    a: "Cada produto tem um prazo mínimo de produção técnica a partir de uma data base global configurada pela DSG: Carta Topográfica e CDGV = 180 dias; Carta Ortoimagem = 60 dias; Ortoimagem / MDT / MDS = 40 dias; Impressão = 30 dias. O sistema bloqueia automaticamente datas anteriores ao mínimo calculado.",
+    q: "Por que a Data Sugerida de Entrega está tão longe?",
+    a: "Com base no histórico de produção da DSG, foram estabelecidos os seguintes prazos mínimos médios para entrega dos produtos: Carta Topográfica e CDGV (180 dias), Carta Ortoimagem (60 dias), Ortoimagem, MDT e MDS (40 dias) e Impressão (30 dias). Em razão desses prazos, o sistema bloqueia automaticamente a seleção de datas anteriores. Em situações específicas, conforme as características do produto solicitado, o prazo de produção poderá ser reduzido.",
   },
   {
-    q: "O que é INOM e MI?",
+    q: "O que é Índice de Nomenclatura (Ind Nom) e Número de Mapa Índice (MI)?",
     a: (
       <>
-        <strong className="text-zinc-300">INOM</strong> (Índice de Nomenclatura)
-        é o código oficial que identifica cada folha cartográfica em padrão
-        internacional. <strong className="text-zinc-300">MI</strong> (Mapa
-        Índice) é o código numérico simplificado utilizado no Sistema
-        Cartográfico Nacional. No mapa de seleção, cada célula representa uma
-        folha cartográfica identificada pelo seu código INOM/MI.
+        O <strong className="text-zinc-300">Ind Nom</strong> é um código
+        alfanumérico padronizado que funciona como um "CEP" para localizar
+        espacialmente uma Carta Topográfica no globo terrestre. O{" "}
+        <strong className="text-zinc-300">MI</strong>, por sua vez, é um
+        identificador numérico simplificado criado para substituir a complexa
+        sequência alfanumérica do Índice de Nomenclatura.
       </>
     ),
   },
@@ -696,18 +708,22 @@ const FAQS: FAQ[] = [
     q: "Posso cancelar um pedido após submetê-lo?",
     a: (
       <>
-        Sim — enquanto o pedido não for recebido pela DSG é possível cancelá-lo.
-        Entre em contato com seu supervisor imediato:{" "}
+        Sim. O pedido pode ser cancelado desde que ainda não tenha sido recebido
+        pela DSG. Para isso, entre em contato com o seu escalão superior
+        intermediário:{" "}
         <span className="text-zinc-300">
-          C Mil. A (para OM subordinadas ao COTER)
+          C Mil A (para OM ligada ao COTER)
         </span>{" "}
-        ou diretamente com o responsável do órgão ao qual sua OM está vinculada
-        (DEC, COLOG, DECEx etc.).
+        ou com a respectiva{" "}
+        <span className="text-zinc-300">
+          Diretoria subordinada (para OM no sistema DEC, COLOG ou DECEx)
+        </span>
+        .
       </>
     ),
   },
   {
-    q: "Meu pedido foi enviado. O que acontece agora?",
+    q: "Meu pedido foi enviado. O Que acontece agora?",
     a: (
       <div className="space-y-3">
         <p>
@@ -728,13 +744,14 @@ const FAQS: FAQ[] = [
               Subordinados a outros órgãos (DEC, COLOG, DECEx)
             </p>
             <p className="text-xs text-zinc-500">
-              OM → [Órgão Consolidador] → DSG → CGEO
+              OM → Diretoria → ODS → DSG → CGEO
             </p>
           </div>
         </div>
         <p>
-          Você será notificado por e-mail em cada movimentação. Acompanhe o
-          status em <span className="text-emerald-400">"Ver Pedidos"</span>.
+          Cada movimentação do pedido será notificada por e-mail. O status
+          atualizado pode ser acompanhado na aba{" "}
+          <span className="text-emerald-400">"Ver Pedidos"</span>.
         </p>
       </div>
     ),
