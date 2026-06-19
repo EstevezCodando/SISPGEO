@@ -876,44 +876,46 @@ const JORNADAS: JornadaGuia[] = [
     notaUrl: "/TutorialSolicitarProdutos.mp4",
   },
   {
-    perfil: "C Mil A – Supervisor",
+    perfil: "C Mil A e Diretorias - Supervisores",
     cor: "amber",
     passos: [
       {
         n: "1",
         title: "Acesse a relação de 'Pedidos Pendentes'",
-        desc: "No menu lateral, clique em 'Pedidos Pendentes' para visualizar a relação dos pedidos submetidos pelas suas OMDS e que se encontram pendentes de aprovação.",
+        desc: "Clique em 'Pedidos Pendentes' no menu lateral para visualizar a relação dos pedidos submetidos pelas suas OMDS e que se encontram pendentes de aprovação.",
       },
       {
         n: "2",
-        title: "Expanda os Pedidos e Verifique os Produtos",
-        desc: "Clique no pedido para visualizar os detalhes relativos aos pedidos submetidos (dados do responsável, finalidade do pedido e lista de produtos). É possível cancelar os pedidos.",
+        title: "Verifique os Produtos Contidos nos Pedidos",
+        desc: "Clique no pacote de pedido para visualizar os detalhes relativos aos pedidos submetidos (dados do responsável, finalidade do pedido e lista de produtos).",
       },
       {
         n: "3",
         title: "Cancele os Pedidos Não Aprovados",
-        desc: "Pedidos não aprovados podem ser eventualmente cancelados mediante justificativa prévia.",
+        desc: "Cancele os pedidos não aprovados anotando o respectivo motivo.",
       },
       {
         n: "4",
         title: "Reorganize a Prioridade dos Pedidos",
-        desc: "Arraste as linhas de pacotes de pedidos para reorganizar a prioridade. Os pedidos na parte superior têm prioridade mais alta.",
+        desc: "Arraste as linhas de pacotes de pedidos para reorganizar a prioridade. Os pedidos localizados na parte superior têm prioridade mais alta.",
       },
       {
         n: "5",
         title: "Encaminhe os Pedidos ao Consolidador (ODOp/ODS)",
-        desc: "Marque os pedidos que serão encaminhados ao Consolidador (ODOp/ODS) e clique no botão de encaminhar. Se for o caso, é possível encaminhar todos de uma só vez.",
+        desc: "Marque os pacotes de pedidos que serão encaminhados ao Consolidador (ODOp/ODS) e clique no botão de encaminhar. Se for o caso, é possível encaminhar todos de uma única vez.",
       },
     ],
+    nota: "Recomenda-se a visualização deste vídeo tutorial para a correta realização do cadastro dos pedidos de Geoinformação.",
+    notaUrl: "/TutorialSolicitarProdutos.mp4",
   },
   {
-    perfil: "COTER – Consolidador",
+    perfil: "COTER, DEC, COLOG e DECEX - Consolidadores",
     cor: "yellow",
     passos: [
       {
         n: "1",
         title: "Acesse a relação de 'Pedidos Pendentes'",
-        desc: "No menu lateral, clique em 'Pedidos Pendentes' para visualizar a relação dos pedidos submetidos pelos seus C Mil A subordinados e que se encontram pendentes de aprovação.",
+        desc: "Clique em 'Pedidos Pendentes' no menu lateral para visualizar a relação dos pedidos submetidos pelos C Mil A e Diretorias subordinadas e que se encontram pendentes de aprovação.",
       },
       {
         n: "2",
@@ -923,39 +925,20 @@ const JORNADAS: JornadaGuia[] = [
       {
         n: "3",
         title: "Encaminhe os Pedidos à DSG",
-        desc: "Marque os pedidos que serão encaminhados à DSG e clique no botão de encaminhar. Se for o caso, é possível encaminhar todos de uma só vez.",
+        desc: "Marque os pedidos que serão encaminhados à DSG e clique no botão de encaminhar. Se for o caso, é possível encaminhar todos de uma única vez.",
       },
     ],
+    nota: "Recomenda-se a visualização deste vídeo tutorial para a correta realização do cadastro dos pedidos de Geoinformação.",
+    notaUrl: "/TutorialSolicitarProdutos.mp4",
   },
   {
-    perfil: "DEC / COLOG / DECEx – Consolidador",
-    cor: "orange",
-    passos: [
-      {
-        n: "1",
-        title: "Acesse a relação de 'Pedidos Pendentes'",
-        desc: "No menu lateral, clique em 'Pedidos Pendentes' para visualizar a relação dos pedidos submetidos pelas suas OMDS e que se encontram pendentes de aprovação.",
-      },
-      {
-        n: "2",
-        title: "Revise os Pedidos Duplicados",
-        desc: "Clique no pedido para visualizar os detalhes relativos aos pedidos submetidos (dados do responsável, finalidade do pedido e lista de produtos). O sistema alertará automaticamente sobre pedidos duplicados (mesmo Tipo de Produto e MI/MIR).",
-      },
-      {
-        n: "3",
-        title: "Encaminhe os Pedidos à DSG",
-        desc: "Marque os pedidos que serão encaminhados à DSG e clique no botão de encaminhar. Se for o caso, é possível encaminhar todos de uma só vez.",
-      },
-    ],
-  },
-  {
-    perfil: "DSG – Produtor",
+    perfil: "DSG - Produtor",
     cor: "blue",
     passos: [
       {
         n: "1",
         title: "Acesse a relação de 'Pedidos Pendentes'",
-        desc: "No menu lateral, clique em 'Pedidos Pendentes' para visualizar a relação dos pedidos submetidos para produção pelo ODOp e ODS, ainda com a produção pendente de aprovação.",
+        desc: "Clique em 'Pedidos Pendentes' no menu lateral para visualizar a relação dos pedidos submetidos para produção pelo ODOp e ODS, ainda com a produção pendente de aprovação.",
       },
       {
         n: "2",
@@ -965,9 +948,11 @@ const JORNADAS: JornadaGuia[] = [
       {
         n: "3",
         title: "Disponibilize no BDGEx",
-        desc: "Após produção, informe o link BDGEx. O solicitante e toda a cadeia receberão notificação.",
+        desc: "Após finalizar a produção, carregar os produtos no BDGEx e informar aos ODOp e ODS.",
       },
     ],
+    nota: "Recomenda-se a visualização deste vídeo tutorial para a correta realização do cadastro dos pedidos de Geoinformação.",
+    notaUrl: "/TutorialSolicitarProdutos.mp4",
   },
 ];
 
