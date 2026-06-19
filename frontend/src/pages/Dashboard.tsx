@@ -14,7 +14,7 @@ export function Dashboard() {
       to: '/solicitar-produtos',
       icon: <PlusSquare className="h-7 w-7 text-emerald-400" />,
       title: 'Solicitar Produtos',
-      desc: 'Crie uma nova solicitação de produto geoinformacional',
+      desc: 'Crie uma nova solicitação de produto de Geoinformação',
     }] : []),
     // Meus Pedidos — apenas SOLICITANTE
     ...(isSolicitante ? [{
