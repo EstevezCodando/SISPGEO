@@ -121,7 +121,7 @@ function WelcomeModal({ onClose, ano }: { onClose: () => void; ano: number | nul
           <p>
             Seja bem-vindo ao Sistema de Pedidos de Geoinformação (SisPGeo) do Serviço Geográfico,
             ambiente destinado ao cadastro e homologação das solicitações de Geoinformação que serão
-            incluídas no Plano Interno de Trabalho da Diretoria de Serviço Geográfico (PIT/DSG) em 2027.
+            incluídas no Plano Interno de Trabalho da Diretoria de Serviço Geográfico (PIT/DSG){ano ? ` em ${ano}` : ''}.
           </p>
           <p>
             Antes de realizar qualquer pedido, recomenda-se a leitura atenta do Guia de Solicitação,
