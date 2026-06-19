@@ -15,7 +15,10 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    // Só redireciona ao login quando havia um token ativo (sessão expirada).
+    // 401 na tentativa de autenticação não deve causar reload — o handler do
+    // formulário trata o erro e exibe a mensagem para o usuário.
+    if (error.response?.status === 401 && localStorage.getItem('token')) {
       localStorage.removeItem('token')
       window.location.href = '/login'
     }
