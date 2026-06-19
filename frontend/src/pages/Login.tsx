@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, type ElementType } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   Eye, EyeOff, RefreshCw,
@@ -36,7 +36,7 @@ function classifyError(detail: string, status?: number): LoginError {
 }
 
 // ─── Bloco de erro ────────────────────────────────────────────────────────────
-const ERROR_META: Record<ErrorKind, { cls: string; Icon: React.ElementType; title: string }> = {
+const ERROR_META: Record<ErrorKind, { cls: string; Icon: ElementType; title: string }> = {
   credentials: { cls: 'bg-red-500/10 border-red-500/30',        Icon: XCircle,    title: 'E-mail ou senha incorretos' },
   unconfirmed:  { cls: 'bg-amber-500/10 border-amber-500/30',   Icon: MailWarning, title: 'E-mail ainda não confirmado' },
   inactive:     { cls: 'bg-zinc-800/60 border-zinc-600/40',     Icon: ShieldAlert, title: 'Conta pendente de ativação' },
