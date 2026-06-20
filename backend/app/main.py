@@ -54,68 +54,43 @@ async def _create_admin():
 async def _run_migrations():
     """Aplica migrações de esquema para colunas adicionadas após a criação inicial.
 
-    Usa ``ADD COLUMN IF NOT EXISTS`` (PostgreSQL ≥ 9.6) - seguro para re-execução.
+    Usa ``ADD COLUMN IF NOT EXISTS`` (PostgreSQL ≥ 9.6) — seguro para re-execução.
+    Cada statement roda em transação isolada para que uma falha não silencie as seguintes.
 
-    Migrações DDL de enum (ALTER TYPE ADD VALUE) são executadas em modo AUTOCOMMIT
-    separado, pois o PostgreSQL não permite esse comando dentro de blocos de
-    transação que já contêm outros statements.
+    Valores de enum NÃO ficam aqui — pertencem a models/enums.py. Em novos deploys,
+    ``Base.metadata.create_all`` cria os tipos PostgreSQL com todos os valores do Python
+    de uma vez. Em bancos existentes, os valores já foram adicionados por execuções anteriores.
     """
-    # ── Migrações transacionais - cada uma em transação própria ────────────────
-    # IMPORTANTE: rodar em transações isoladas garante que um RENAME que já foi
-    # aplicado (e falha) não coloca toda a sessão PostgreSQL em estado de erro,
-    # o que silenciaria as migrações subsequentes.
     migrations = [
-        # 2026-05: ampliar tipo de geometria de POLYGON para GEOMETRY (suporta MultiPolygon)
         "ALTER TABLE bdgex_cache ALTER COLUMN geom TYPE geometry(GEOMETRY,4326) USING geom::geometry(GEOMETRY,4326)",
-        # 2026-05: link do produto disponibilizado pelo CGEO no BDGEx
         "ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS link_bdgex TEXT",
-        # 2026-05: criador original do pedido (imutável, pode diferir de usuario_id após transferência)
         "ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS criador_id INTEGER REFERENCES usuarios(id)",
-        # 2026-05: backfill criador_id = usuario_id para pedidos criados antes desta migração
         "UPDATE pedidos SET criador_id = usuario_id WHERE criador_id IS NULL",
-        # 2026-05: data em que o usuário executou a herança de pedidos (desbloqueia mudança de OM)
         "ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS pedidos_transferidos_em TIMESTAMPTZ",
-        # 2026-05: ampliar regiao_militar para acomodar "12ª RM" (6 chars UTF-8)
         "ALTER TABLE usuarios ALTER COLUMN regiao_militar TYPE VARCHAR(20)",
-        # 2026-05: regiao_militar em pedidos - roteamento para supervisor intermediário (C. Mil. A)
         "ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS regiao_militar VARCHAR(20)",
-        # backfill: preenche regiao_militar a partir do usuario que criou o pedido
         "UPDATE pedidos p SET regiao_militar = u.regiao_militar FROM usuarios u WHERE u.id = p.criador_id AND p.regiao_militar IS NULL",
-        # 2026-05: prioridade de item dentro do pedido
         "ALTER TABLE itens_pedido ADD COLUMN IF NOT EXISTS prioridade SMALLINT DEFAULT 0",
-        # 2026-05: renomear coluna demandante → orgao_vinculante em usuarios
         "ALTER TABLE usuarios RENAME COLUMN demandante TO orgao_vinculante",
-        # 2026-05: renomear coluna demandante → orgao_vinculante em pedidos
         "ALTER TABLE pedidos RENAME COLUMN demandante TO orgao_vinculante",
-        # 2026-05: telefone Ritex (NNN-NNNN) nos usuários
         "ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS telefone_ritex VARCHAR(10)",
-        # 2026-05: IDs de pedidos iniciam em 1000 (sequência só avança se ainda estiver abaixo)
         "SELECT setval('pedidos_id_seq', 999, true) WHERE (SELECT last_value FROM pedidos_id_seq) < 1000",
-        # 2026-05: flag de submissão automática ao fim da janela de solicitações
         "ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS auto_submitted BOOLEAN DEFAULT FALSE",
-        # 2026-05: posto/graduação do militar (Civil, Sd EV, Cb, Cap, TC, Cel...)
         "ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS posto_graduacao VARCHAR(50)",
-        # 2026-05: nome de guerra - exibido no lugar do nome completo nas referências do sistema
         "ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS nome_de_guerra VARCHAR(100)",
-        # 2026-05: configuração global de data base de entrega (singleton id=1)
         """CREATE TABLE IF NOT EXISTS config_entrega (
             id INTEGER PRIMARY KEY DEFAULT 1,
             data_base DATE NOT NULL DEFAULT '2026-11-18',
             atualizado_em TIMESTAMPTZ DEFAULT NOW(),
             atualizado_por INTEGER REFERENCES usuarios(id)
         )""",
-        # Seed da configuração inicial (não sobrescreve se já existir)
         "INSERT INTO config_entrega (id, data_base) VALUES (1, '2026-11-18') ON CONFLICT (id) DO NOTHING",
-        # 2026-05: impressão do pedido - quantidade de cópias e tipo de material (nível pedido - legado)
         "ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS impressao_solicitada BOOLEAN DEFAULT FALSE",
         "ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS impressao_quantidade SMALLINT",
         "ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS impressao_tipo_material VARCHAR(20)",
-        # 2026-05: impressão per-item - quantidade e material por célula selecionada
         "ALTER TABLE itens_pedido ADD COLUMN IF NOT EXISTS impressao_quantidade SMALLINT",
         "ALTER TABLE itens_pedido ADD COLUMN IF NOT EXISTS impressao_tipo_material VARCHAR(20)",
-        # 2026-05: finalidade da geoinformação (dropdown) separado da informação complementar (textarea)
         "ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS finalidade_geo VARCHAR(100)",
-        # 2026-05: timestamp do último envio de e-mail de ativação (controle de cooldown 30 min)
         "ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS activation_email_sent_at TIMESTAMPTZ",
     ]
     for stmt in migrations:
@@ -125,38 +100,6 @@ async def _run_migrations():
             logger.debug("Migration OK: %s", stmt[:60])
         except Exception as exc:
             logger.warning("Migration skipped (%s): %s", stmt[:40], exc)
-
-    # ── Migrações de enum - exigem AUTOCOMMIT (fora de bloco de transação) ────
-    enum_migrations = [
-        "ALTER TYPE tipo_janela_enum ADD VALUE IF NOT EXISTS 'SUPERVISOR'",
-        # 2026-05: supervisores regionais por CMilA
-        "ALTER TYPE perfil_enum ADD VALUE IF NOT EXISTS 'SUPERVISOR_CMP'",
-        "ALTER TYPE perfil_enum ADD VALUE IF NOT EXISTS 'SUPERVISOR_CML'",
-        "ALTER TYPE perfil_enum ADD VALUE IF NOT EXISTS 'SUPERVISOR_CMS'",
-        "ALTER TYPE perfil_enum ADD VALUE IF NOT EXISTS 'SUPERVISOR_CMO'",
-        "ALTER TYPE perfil_enum ADD VALUE IF NOT EXISTS 'SUPERVISOR_CMAO'",
-        "ALTER TYPE perfil_enum ADD VALUE IF NOT EXISTS 'SUPERVISOR_CMA'",
-        "ALTER TYPE perfil_enum ADD VALUE IF NOT EXISTS 'SUPERVISOR_CMNOR'",  # legado
-        "ALTER TYPE perfil_enum ADD VALUE IF NOT EXISTS 'SUPERVISOR_CMNE'",
-        "ALTER TYPE perfil_enum ADD VALUE IF NOT EXISTS 'SUPERVISOR_CMSE'",
-        # 2026-05: consolidadores por órgão vinculante
-        "ALTER TYPE perfil_enum ADD VALUE IF NOT EXISTS 'CONSOLIDADOR_COTER'",
-        "ALTER TYPE perfil_enum ADD VALUE IF NOT EXISTS 'CONSOLIDADOR_DSG'",
-        "ALTER TYPE perfil_enum ADD VALUE IF NOT EXISTS 'CONSOLIDADOR_DEC'",
-        "ALTER TYPE perfil_enum ADD VALUE IF NOT EXISTS 'CONSOLIDADOR_COLOG'",
-        "ALTER TYPE perfil_enum ADD VALUE IF NOT EXISTS 'CONSOLIDADOR_DECEX'",
-        # 2026-05: tipos de impressão específicos
-        "ALTER TYPE tipo_produto_enum ADD VALUE IF NOT EXISTS 'IMPRESSAO_CT'",
-        "ALTER TYPE tipo_produto_enum ADD VALUE IF NOT EXISTS 'IMPRESSAO_COI'",
-    ]
-    async with engine.connect() as conn:
-        await conn.execution_options(isolation_level="AUTOCOMMIT")
-        for stmt in enum_migrations:
-            try:
-                await conn.execute(text(stmt))
-                logger.debug("Enum migration OK: %s", stmt[:60])
-            except Exception as exc:
-                logger.warning("Enum migration skipped (%s): %s", stmt[:40], exc)
 
 
 
