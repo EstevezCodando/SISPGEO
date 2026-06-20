@@ -1,5 +1,5 @@
 """Configuração global do sistema - data base de entrega e prazos mínimos por produto."""
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -7,50 +7,18 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.dependencies import get_current_user, require_profiles
-from app.models.config_entrega import ConfigEntrega
 from app.models.enums import PerfilEnum
 from app.models.user import Usuario
+from app.services.config_service import (
+    PRAZO_DEFAULT as PRAZOS_MINIMOS,
+    get_or_create_config,
+    datas_minimas_para,
+)
 from app.utils.logging_config import get_logger
 
 logger = get_logger(__name__)
 
 router = APIRouter(prefix="/config", tags=["Configuração do Sistema"])
-
-# ── Prazos mínimos de produção por produto (dias a partir da data_base) ────────
-PRAZOS_MINIMOS: dict[str, int] = {
-    "CARTA_TOPOGRAFICA": 180,
-    "CDGV":              180,
-    "CARTA_ORTOIMAGEM":   60,
-    "ORTOIMAGEM":          40,
-    "MDT":                 40,
-    "MDS":                 40,
-    "IMPRESSAO":           30,
-}
-
-# Data base padrão (alterável pelo admin via PUT /config/entrega)
-DATA_BASE_PADRAO = date(2026, 11, 18)
-
-
-# ── Helpers ───────────────────────────────────────────────────────────────────
-
-def datas_minimas_para(data_base: date) -> dict[str, str]:
-    """Retorna {produto: data_minima_iso} calculado sobre a data_base."""
-    return {
-        produto: (data_base + timedelta(days=prazo)).isoformat()
-        for produto, prazo in PRAZOS_MINIMOS.items()
-    }
-
-
-async def get_or_create_config(db: AsyncSession) -> ConfigEntrega:
-    """Retorna a config global (singleton id=1), criando com valor padrão se ausente."""
-    cfg = await db.get(ConfigEntrega, 1)
-    if cfg is None:
-        cfg = ConfigEntrega(id=1, data_base=DATA_BASE_PADRAO)
-        db.add(cfg)
-        await db.commit()
-        await db.refresh(cfg)
-        logger.info("ConfigEntrega inicializada com data_base=%s", DATA_BASE_PADRAO)
-    return cfg
 
 
 # ── Schemas ───────────────────────────────────────────────────────────────────

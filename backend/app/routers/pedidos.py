@@ -30,6 +30,7 @@ from app.schemas.pedido import (
 from app.services import pedido_service
 from app.utils.postos import abrev_posto as _abrev_posto
 from app.services.pedido_service import SUPERVISOR_TO_RM as _SUPERVISOR_TO_RM, RM_TO_SUPERVISOR as _RM_TO_SUPERVISOR
+from app.services.config_service import get_or_create_config, PRAZO_DEFAULT as PRAZOS_MINIMOS
 
 
 class ExportRequest(BaseModel):
@@ -170,8 +171,6 @@ async def create_pedido(
     db: AsyncSession = Depends(get_db),
     current_user: Usuario = Depends(get_current_user),
 ):
-    from app.routers.config import get_or_create_config, PRAZOS_MINIMOS
-
     ov = body.orgao_vinculante if body.orgao_vinculante is not None else current_user.orgao_vinculante
     if ov is None:
         raise HTTPException(status_code=400, detail="Informe o órgão vinculante ou configure-o no seu perfil")

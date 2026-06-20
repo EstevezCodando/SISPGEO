@@ -22,7 +22,7 @@ from app.models.pedido import Pedido
 from app.models.operacao import Operacao
 from app.models.user import Usuario
 from app.models.enums import (
-    StatusPedidoEnum, PerfilEnum, TipoProdutoEnum,
+    StatusPedidoEnum, PerfilEnum,
     SUPERVISOR_PROFILES, CONSOLIDADOR_PROFILES,
 )
 from app.services.email_service import send_email
@@ -39,16 +39,6 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # Constantes de negócio
 # ---------------------------------------------------------------------------
-
-FATOR_PRAZO: dict[TipoProdutoEnum, int] = {
-    TipoProdutoEnum.CARTA_TOPOGRAFICA: 180,
-    TipoProdutoEnum.CARTA_ORTOIMAGEM:  180,
-    TipoProdutoEnum.ORTOIMAGEM:        120,
-    TipoProdutoEnum.MDT:               120,
-    TipoProdutoEnum.MDS:               120,
-    TipoProdutoEnum.CDGV:              240,
-    TipoProdutoEnum.IMPRESSAO:          30,
-}
 
 # Perfis globais - não devem ser filtrados por orgao_vinculante nem regiao_militar.
 _PERFIS_GLOBAIS: frozenset[PerfilEnum] = frozenset({PerfilEnum.GESTOR_CARTOGRAFICO})
