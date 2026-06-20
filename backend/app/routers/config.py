@@ -1,5 +1,5 @@
 """Configuração global do sistema - data base de entrega e prazos mínimos por produto."""
-from datetime import date, datetime, timezone
+from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -12,6 +12,7 @@ from app.models.user import Usuario
 from app.services.config_service import (
     PRAZO_DEFAULT as PRAZOS_MINIMOS,
     get_or_create_config,
+    update_config,
     datas_minimas_para,
 )
 from app.utils.logging_config import get_logger
@@ -64,16 +65,8 @@ async def update_config_entrega(
             status_code=422,
             detail="A data base de entrega não pode ser no passado.",
         )
-    cfg = await get_or_create_config(db)
-    cfg.data_base = body.data_base
-    cfg.atualizado_em = datetime.now(timezone.utc)
-    cfg.atualizado_por = current_user.id
-    await db.commit()
-    await db.refresh(cfg)
-    logger.info(
-        "ConfigEntrega atualizada: data_base=%s  por=%s",
-        cfg.data_base, current_user.email,
-    )
+    cfg = await update_config(db, body.data_base, current_user.id)
+    logger.info("ConfigEntrega atualizada: data_base=%s  por=%s", cfg.data_base, current_user.email)
     return ConfigEntregaOut(
         data_base=cfg.data_base,
         prazos_minimos=PRAZOS_MINIMOS,

@@ -1,11 +1,10 @@
 from app.config import settings
+from app.utils.constantes import (
+    RESET_TOKEN_EXPIRY_HOURS as _RESET_TOKEN_HOURS,
+    EMAIL_CONFIRM_TOKEN_EXPIRY_HOURS as _CONFIRM_TOKEN_HOURS,
+    cmila_label as _cmila_label,
+)
 from app.utils.postos import abrev_posto as _abrev_posto
-
-# ── Prazos de expiração ───────────────────────────────────────────────────────
-# Devem coincidir com as constantes homônimas em app/services/auth_service.py.
-# Centralizar aqui evita importação circular (auth_service importa este módulo).
-_RESET_TOKEN_HOURS: int = 1    # RESET_TOKEN_EXPIRY_HOURS
-_CONFIRM_TOKEN_HOURS: int = 24  # EMAIL_CONFIRM_TOKEN_EXPIRY_HOURS
 
 # ── Paleta Militar Oliva ──────────────────────────────────────────────────────
 # Fundo geral:   #eae8de  (pergaminho/areia)
@@ -390,16 +389,6 @@ def pedido_submetido(
     posto_graduacao: str | None = None,
 ) -> tuple[str, str]:
     """Confirmação ao solicitante após submissão do pedido."""
-    _cmila_labels: dict[str, str] = {
-        "CMA":   "Comando Militar da Amazônia (CMA)",
-        "CMAO":  "Comando Militar da Amazônia Oriental (CMAO)",
-        "CML":   "Comando Militar do Leste (CML)",
-        "CMP":   "Comando Militar do Planalto (CMP)",
-        "CMO":   "Comando Militar do Oeste (CMO)",
-        "CMS":   "Comando Militar do Sul (CMS)",
-        "CMNE":  "Comando Militar do Nordeste (CMNE)",
-        "CMSE":  "Comando Militar do Sudeste (CMSE)",
-    }
     _org_labels: dict[str, str] = {
         "DSG":   "Consolidador da DSG",
         "DEC":   "Consolidador do DEC",
@@ -407,8 +396,7 @@ def pedido_submetido(
         "DECEx": "Consolidador do DECEx",
     }
     if orgao_vinculante == "COTER" and regiao_militar:
-        _cmila = _cmila_labels.get(regiao_militar, f"C Mil. A ({regiao_militar})")
-        proximo_escalao = f"Supervisor de Geoinformação - {_cmila}"
+        proximo_escalao = f"Supervisor de Geoinformação - {_cmila_label(regiao_militar)}"
     elif orgao_vinculante in _org_labels:
         proximo_escalao = _org_labels[orgao_vinculante]
     else:
@@ -600,20 +588,8 @@ def notificar_gestor(
     regiao_militar: str | None = None,
 ) -> tuple[str, str]:
     """Notificação ao gestor demandante de novo pedido aguardando revisão."""
-    _cmila_labels: dict[str, str] = {
-        "CMA":   "Comando Militar da Amazônia (CMA)",
-        "CMAO":  "Comando Militar da Amazônia Oriental (CMAO)",
-        "CML":   "Comando Militar do Leste (CML)",
-        "CMP":   "Comando Militar do Planalto (CMP)",
-        "CMO":   "Comando Militar do Oeste (CMO)",
-        "CMS":   "Comando Militar do Sul (CMS)",
-        "CMNE":  "Comando Militar do Nordeste (CMNE)",
-        "CMSE":  "Comando Militar do Sudeste (CMSE)",
-    }
-    # De onde veio (cadeia do solicitante)
     if orgao_vinculante == "COTER" and regiao_militar:
-        _cmila = _cmila_labels.get(regiao_militar, f"C Mil. A ({regiao_militar})")
-        origem_cadeia = f"Solicitante via {_cmila} (COTER)"
+        origem_cadeia = f"Solicitante via {_cmila_label(regiao_militar)} (COTER)"
     elif orgao_vinculante:
         origem_cadeia = f"Solicitante via {orgao_vinculante}"
     else:

@@ -24,6 +24,7 @@ from app.models.enums import (
     SUPERVISOR_PROFILES, CONSOLIDADOR_PROFILES,
 )
 from app.schemas.pedido import PedidoOut
+from app.utils.constantes import CMILA_NAMES
 from app.utils.postos import abrev_posto as _abrev_posto
 from app.routers.pedidos._guards import (
     _enrich, _rm_do_supervisor, GESTOR_PROFILES, _GESTORES_POR_RM,
@@ -297,13 +298,6 @@ async def exportar_relatorio(
         "CONSOLIDADOR_DEC": "Consolidador (DEC)", "CONSOLIDADOR_COLOG": "Consolidador (COLOG)",
         "CONSOLIDADOR_DECEX": "Consolidador (DECEx)", "GESTOR_CARTOGRAFICO": "Gestor Cartográfico (DSG)",
     }
-    _cmila_labels: dict[str, str] = {
-        "CMA": "CMA — Comando Militar da Amazônia", "CMAO": "CMAO — Comando Militar da Amazônia Oriental",
-        "CML": "CML — Comando Militar do Leste", "CMP": "CMP — Comando Militar do Planalto",
-        "CMO": "CMO — Comando Militar do Oeste", "CMS": "CMS — Comando Militar do Sul",
-        "CMNE": "CMNE — Comando Militar do Nordeste", "CMNOR": "CMNOR — Comando Militar do Norte",
-        "CMSE": "CMSE — Comando Militar do Sudeste",
-    }
     _ov_labels: dict[str, str] = {
         "DSG": "DSG  (Diretoria de Serviço Geográfico)", "COTER": "COTER  (Seção de Geoinformação e Cartografia)",
         "DEC": "DEC  (Departamento de Engenharia e Construção)", "COLOG": "COLOG  (Comando Logístico)",
@@ -311,7 +305,8 @@ async def exportar_relatorio(
     }
     perfil_label = _perfil_labels.get(current_user.perfil.value, current_user.perfil.value)
     cmila_code = (current_user.regiao_militar or "").strip()
-    cmila_label = _cmila_labels.get(cmila_code, cmila_code) if cmila_code else "—"
+    _cmila_name = CMILA_NAMES.get(cmila_code, cmila_code)
+    cmila_label = f"{cmila_code} — {_cmila_name}" if cmila_code else "—"
     ritex = (current_user.telefone_ritex or "").strip() or "—"
     telefone = (current_user.telefone or "").strip() or "—"
     secao = (current_user.secao_om or "").strip() or "—"

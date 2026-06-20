@@ -8,20 +8,18 @@ _INSECURE_KEY = "changeme_super_secret_key_minimum_32_chars"
 
 
 class Settings(BaseSettings):
-    # Componentes individuais do banco - usados para construir DATABASE_URL com
-    # encoding correto de caracteres especiais na senha (ex.: @, #, %).
     DB_HOST: str = "db"
     DB_PORT: int = 5432
     DB_USER: str = "sispgeo_user"
     DB_PASSWORD: str = "sispgeo_secret"
     DB_NAME: str = "sispgeo"
-    DATABASE_URL: str = ""  # construído pelo validator abaixo
 
     SECRET_KEY: str = _INSECURE_KEY
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 480
 
-    # Senha do usuário admin inicial - DEVE ser sobrescrita via .env em produção
+    # Credenciais do admin inicial — sobrescrever via .env em produção
+    ADMIN_EMAIL: str = "admin@eb.mil.br"
     ADMIN_PASSWORD: str = "Admin@1234"
 
     # Resend - deixe vazio para usar SMTP
@@ -52,27 +50,18 @@ class Settings(BaseSettings):
         env_file = ".env"
 
     @model_validator(mode="after")
-    def build_database_url(self) -> "Settings":
-        from sqlalchemy.engine.url import URL
-        self.DATABASE_URL = str(
-            URL.create(
-                drivername="postgresql+asyncpg",
-                username=self.DB_USER,
-                password=self.DB_PASSWORD,
-                host=self.DB_HOST,
-                port=self.DB_PORT,
-                database=self.DB_NAME,
-            )
-        )
-        return self
-
-    @model_validator(mode="after")
     def validate_production_secrets(self) -> "Settings":
         """Impede inicialização com valores inseguros em produção."""
         if self.ENV != "production":
             return self
 
         errors: list[str] = []
+
+        if self.DB_PASSWORD == "sispgeo_secret":
+            errors.append(
+                "DB_PASSWORD está com valor padrão inseguro. "
+                "Defina via variável de ambiente DB_PASSWORD."
+            )
 
         if self.SECRET_KEY == _INSECURE_KEY:
             errors.append(

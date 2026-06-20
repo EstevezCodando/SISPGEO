@@ -6,7 +6,7 @@ Fonte única de verdade para prazos mínimos de produção por produto e para a
 Outros módulos devem importar daqui — nunca duplicar as constantes.
 """
 
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -42,6 +42,22 @@ async def get_or_create_config(db: AsyncSession) -> ConfigEntrega:
         await db.commit()
         await db.refresh(cfg)
         logger.info("ConfigEntrega inicializada com data_base=%s", DATA_BASE_PADRAO)
+    return cfg
+
+
+async def update_config(
+    db: AsyncSession,
+    data_base: date,
+    user_id: int,
+) -> "ConfigEntrega":
+    """Persiste a nova data base e retorna a config atualizada."""
+    cfg = await get_or_create_config(db)
+    cfg.data_base = data_base
+    cfg.atualizado_em = datetime.now(timezone.utc)
+    cfg.atualizado_por = user_id
+    await db.commit()
+    await db.refresh(cfg)
+    logger.info("ConfigEntrega atualizada: data_base=%s  user_id=%s", data_base, user_id)
     return cfg
 
 

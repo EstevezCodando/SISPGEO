@@ -22,6 +22,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.models.enums import PerfilEnum
+from app.utils.constantes import (
+    RESET_TOKEN_EXPIRY_HOURS,
+    EMAIL_CONFIRM_TOKEN_EXPIRY_HOURS,
+)
 from app.models.user import Usuario, TokenSenha
 from app.services.email_service import send_email
 from app.utils.email_templates import ativacao_conta, reset_senha as tpl_reset
@@ -62,12 +66,6 @@ LOGIN_MAX_ATTEMPTS: int = 5
 
 LOCKOUT_MINUTES: int = 15
 """Duração do bloqueio após exceder ``LOGIN_MAX_ATTEMPTS`` (em minutos)."""
-
-RESET_TOKEN_EXPIRY_HOURS: int = 1
-"""Validade do token de redefinição de senha (em horas)."""
-
-EMAIL_CONFIRM_TOKEN_EXPIRY_HOURS: int = 24
-"""Validade do token de confirmação de e-mail (em horas)."""
 
 MAX_RESET_TOKENS_PER_DAY: int = 3
 """Limite de tokens de redefinição gerados por usuário por dia."""

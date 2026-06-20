@@ -4,104 +4,66 @@
 # Revisão técnica do projeto: Cel Azeredo <azeredo.marcio@eb.mil.br>  ·  Cartographic Engineer
 
 import asyncio
+import os
 from contextlib import asynccontextmanager
-from datetime import datetime, timezone
 
+from alembic import command as alembic_command
+from alembic.config import Config as AlembicConfig
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import select, text
+from sqlalchemy import create_engine, text
+from sqlalchemy.pool import NullPool
 
 from app.config import settings
-from app.database import engine, Base, AsyncSessionLocal
+from app.database import engine, Base
 from app.routers import auth, users, pedidos, operacoes, janelas, map_layers, om_data, historico, metricas, transferencias, oms
 from app.routers import config as config_router
 from app.middleware.metrics import metrics_middleware
+from app.services.seeder import create_admin_if_missing
 from app.utils.logging_config import setup_logging, get_logger
 
 setup_logging()
 logger = get_logger(__name__)
 
-
-async def _create_admin():
-    """Cria o usuário admin Gestor Cartográfico na primeira inicialização."""
-    from app.models.user import Usuario
-    from app.models.enums import PerfilEnum, PostoGraduacaoEnum
-    from app.utils.security import get_password_hash
-
-    async with AsyncSessionLocal() as db:
-        existing = await db.scalar(select(Usuario).where(Usuario.email == "admin@eb.mil.br"))
-        if existing:
-            return
-        user = Usuario(
-            nome="Administrador DSG",
-            nome_de_guerra="Admin",
-            email="admin@eb.mil.br",
-            telefone="(61) 3415-0000",
-            secao_om="Seção de TI",
-            om="DSG",
-            perfil=PerfilEnum.GESTOR_CARTOGRAFICO,
-            posto_graduacao=PostoGraduacaoEnum.CORONEL,
-            senha_hash=get_password_hash(settings.ADMIN_PASSWORD),
-            ativo=True,
-            email_confirmado=True,
-            ultima_senha_alterada=datetime.now(timezone.utc),
-        )
-        db.add(user)
-        await db.commit()
-        logger.info("✓ Usuário admin criado: admin@eb.mil.br")
+_BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_ALEMBIC_INI = os.path.join(_BACKEND_DIR, "alembic.ini")
+_SYNC_URL = (
+    f"postgresql+psycopg2://{settings.DB_USER}:{settings.DB_PASSWORD}"
+    f"@{settings.DB_HOST}:{settings.DB_PORT}/{settings.DB_NAME}"
+)
 
 
-async def _run_migrations():
-    """Aplica migrações de esquema para colunas adicionadas após a criação inicial.
+def _alembic_sync() -> None:
+    """Garante que Alembic está sincronizado com o banco (síncrono — roda em executor).
 
-    Usa ``ADD COLUMN IF NOT EXISTS`` (PostgreSQL ≥ 9.6) — seguro para re-execução.
-    Cada statement roda em transação isolada para que uma falha não silencie as seguintes.
-
-    Valores de enum NÃO ficam aqui — pertencem a models/enums.py. Em novos deploys,
-    ``Base.metadata.create_all`` cria os tipos PostgreSQL com todos os valores do Python
-    de uma vez. Em bancos existentes, os valores já foram adicionados por execuções anteriores.
+    Primeira subida após introdução do Alembic:
+      - Banco com tabelas mas sem alembic_version → stampa 0001 (baseline histórico).
+    Subidas subsequentes:
+      - alembic_version presente → aplica migrações pendentes normalmente.
+    Banco novo (create_all acabou de criar o schema):
+      - Também sem alembic_version → stampa 0001 (create_all já criou tudo correto).
     """
-    migrations = [
-        "ALTER TABLE bdgex_cache ALTER COLUMN geom TYPE geometry(GEOMETRY,4326) USING geom::geometry(GEOMETRY,4326)",
-        "ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS link_bdgex TEXT",
-        "ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS criador_id INTEGER REFERENCES usuarios(id)",
-        "UPDATE pedidos SET criador_id = usuario_id WHERE criador_id IS NULL",
-        "ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS pedidos_transferidos_em TIMESTAMPTZ",
-        "ALTER TABLE usuarios ALTER COLUMN regiao_militar TYPE VARCHAR(20)",
-        "ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS regiao_militar VARCHAR(20)",
-        "UPDATE pedidos p SET regiao_militar = u.regiao_militar FROM usuarios u WHERE u.id = p.criador_id AND p.regiao_militar IS NULL",
-        "ALTER TABLE itens_pedido ADD COLUMN IF NOT EXISTS prioridade SMALLINT DEFAULT 0",
-        "ALTER TABLE usuarios RENAME COLUMN demandante TO orgao_vinculante",
-        "ALTER TABLE pedidos RENAME COLUMN demandante TO orgao_vinculante",
-        "ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS telefone_ritex VARCHAR(10)",
-        "SELECT setval('pedidos_id_seq', 999, true) WHERE (SELECT last_value FROM pedidos_id_seq) < 1000",
-        "ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS auto_submitted BOOLEAN DEFAULT FALSE",
-        "ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS posto_graduacao VARCHAR(50)",
-        "ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS nome_de_guerra VARCHAR(100)",
-        """CREATE TABLE IF NOT EXISTS config_entrega (
-            id INTEGER PRIMARY KEY DEFAULT 1,
-            data_base DATE NOT NULL DEFAULT '2026-11-18',
-            atualizado_em TIMESTAMPTZ DEFAULT NOW(),
-            atualizado_por INTEGER REFERENCES usuarios(id)
-        )""",
-        "INSERT INTO config_entrega (id, data_base) VALUES (1, '2026-11-18') ON CONFLICT (id) DO NOTHING",
-        "ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS impressao_solicitada BOOLEAN DEFAULT FALSE",
-        "ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS impressao_quantidade SMALLINT",
-        "ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS impressao_tipo_material VARCHAR(20)",
-        "ALTER TABLE itens_pedido ADD COLUMN IF NOT EXISTS impressao_quantidade SMALLINT",
-        "ALTER TABLE itens_pedido ADD COLUMN IF NOT EXISTS impressao_tipo_material VARCHAR(20)",
-        "ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS finalidade_geo VARCHAR(100)",
-        "ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS activation_email_sent_at TIMESTAMPTZ",
-    ]
-    for stmt in migrations:
-        try:
-            async with engine.begin() as conn:
-                await conn.execute(text(stmt))
-            logger.debug("Migration OK: %s", stmt[:60])
-        except Exception as exc:
-            logger.warning("Migration skipped (%s): %s", stmt[:40], exc)
+    cfg = AlembicConfig(_ALEMBIC_INI)
+    sync_engine = create_engine(_SYNC_URL, poolclass=NullPool)
 
+    try:
+        with sync_engine.connect() as conn:
+            has_version_table = conn.execute(text(
+                "SELECT EXISTS("
+                "  SELECT 1 FROM information_schema.tables"
+                "  WHERE table_name = 'alembic_version'"
+                ")"
+            )).scalar()
 
+        if not has_version_table:
+            alembic_command.stamp(cfg, "0001")
+            logger.info("Alembic: banco stampado como baseline (0001)")
+            return
+
+        alembic_command.upgrade(cfg, "head")
+
+    finally:
+        sync_engine.dispose()
 
 
 @asynccontextmanager
@@ -110,15 +72,17 @@ async def lifespan(app: FastAPI):
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    await _run_migrations()
-    # asyncpg cacheia tipos enum na conexão - descartar o pool força reconexão
-    # com o cache atualizado após qualquer ALTER TYPE executado acima.
-    await engine.dispose()
-    await _create_admin()
 
-    # Pré-aquece caches de grade em background - servidor sobe imediatamente.
-    # Na 1ª execução: constrói os .gz a partir dos GeoJSONs e salva em disco.
-    # Reinicializações: lê os .gz do disco em < 1 s por arquivo.
+    loop = asyncio.get_event_loop()
+    await loop.run_in_executor(None, _alembic_sync)
+
+    # asyncpg cacheia tipos enum na conexão — descarta o pool para reconectar
+    # com o cache atualizado após qualquer ALTER TYPE das migrações.
+    await engine.dispose()
+
+    await create_admin_if_missing()
+
+    # Pré-aquece caches de grade em background — servidor sobe imediatamente.
     asyncio.create_task(preload_caches())
 
     yield
@@ -140,7 +104,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Middleware de métricas - deve ser adicionado APÓS o CORS
+# Middleware de métricas — deve ser adicionado APÓS o CORS
 app.middleware("http")(metrics_middleware)
 
 app.include_router(auth.router, prefix="/api/v1")
