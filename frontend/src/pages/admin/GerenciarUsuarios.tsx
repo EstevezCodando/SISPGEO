@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import toast from 'react-hot-toast'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -394,7 +394,7 @@ function EditOrgModal({ user, onClose, onSaved }: EditOrgModalProps) {
 
 // ─── Painel de detalhes (linha expansível) ────────────────────────────────────
 function DetailPanel({ u }: { u: Usuario }) {
-  const field = (label: string, value: React.ReactNode, icon?: React.ReactNode) => (
+  const field = (label: string, value: ReactNode, icon?: ReactNode) => (
     <div className="flex flex-col gap-0.5">
       <span className="text-[10px] uppercase tracking-wide text-zinc-500 font-medium flex items-center gap-1">
         {icon}{label}

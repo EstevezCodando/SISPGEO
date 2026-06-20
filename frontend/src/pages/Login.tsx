@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, type ElementType, type ReactNode, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   Eye, EyeOff, RefreshCw,
@@ -57,7 +57,7 @@ interface ErrorBlockProps {
 function ErrorBlock({ error, email, onResend, reenvioLoading }: ErrorBlockProps) {
   const base = 'mt-4 flex gap-3 rounded-lg border p-3.5 text-sm'
 
-  const configs: Record<ErrorKind, { cls: string; Icon: React.ElementType; title: string; body?: React.ReactNode }> = {
+  const configs: Record<ErrorKind, { cls: string; Icon: ElementType; title: string; body?: ReactNode }> = {
     credentials: {
       cls: `${base} bg-red-500/10 border-red-500/30`,
       Icon: XCircle,
@@ -170,7 +170,7 @@ export function Login() {
   }
   const navigate = useNavigate()
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     setLoading(true)
     try {

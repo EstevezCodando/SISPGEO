@@ -1,5 +1,5 @@
 import { ArrowLeft, CheckCircle2, Mail } from "lucide-react";
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import toast from "react-hot-toast";
 import { Link } from "react-router-dom";
 import { authApi } from "../api/auth";
@@ -9,7 +9,7 @@ export function EsqueciSenha() {
   const [loading, setLoading] = useState(false);
   const [enviado, setEnviado] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!email.endsWith("@eb.mil.br")) {
       toast.error("Somente emails @eb.mil.br são aceitos");

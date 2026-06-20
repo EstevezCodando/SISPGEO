@@ -1,7 +1,7 @@
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { Send } from 'lucide-react'
-import { useState } from 'react'
+import { useState, type FormEvent } from 'react'
 import toast from 'react-hot-toast'
 import api from '../../api/client'
 
@@ -15,7 +15,7 @@ export function ProrrogacaoModal({ onClose, dataEncerramento }: ProrrogacaoModal
   const [produtos, setProdutos] = useState('')
   const [sending, setSending] = useState(false)
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     if (!justificativa.trim() || !produtos.trim()) {
       toast.error('Preencha a justificativa e os produtos desejados')
