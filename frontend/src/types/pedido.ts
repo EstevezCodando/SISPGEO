@@ -20,7 +20,13 @@ export type TipoProduto =
   | "IMPRESSAO_COI"
   | "IMPRESSAO"; // legado
 
-export type Escala = "1:25.000" | "1:50.000" | "1:100.000" | "1:250.000";
+export const ESCALAS = [
+  "1:25.000",
+  "1:50.000",
+  "1:100.000",
+  "1:250.000",
+] as const satisfies readonly string[];
+export type Escala = (typeof ESCALAS)[number];
 
 export const TIPO_PRODUTO_LABELS: Record<TipoProduto, string> = {
   CARTA_TOPOGRAFICA: "Carta Topográfica",
@@ -193,3 +199,31 @@ export interface CartItem {
   /** FK → ItemImpressao.id; null enquanto !impressao */
   impressaoId: string | null;
 }
+
+// ─── Constantes de domínio compartilhadas ────────────────────────────────────
+
+export const FINALIDADES_GEO = [
+  "Operação Militar",
+  "Exercício Combinado",
+  "Exercício Integrador",
+  "Manobra Escolar",
+  "Instrução Militar",
+  "Atualização de Campo de Instrução",
+  "Atualização",
+  "Outra",
+] as const;
+export type FinalidadeGeo = (typeof FINALIDADES_GEO)[number];
+
+/** Prazos mínimos locais — usados como fallback se a API ainda não respondeu.
+ *  Valores autoritativos vêm de GET /config/entrega (PRAZOS_MINIMOS no backend). */
+export const PRAZO_FALLBACK: Record<TipoProduto, number> = {
+  CARTA_TOPOGRAFICA: 180,
+  CARTA_ORTOIMAGEM: 60,
+  ORTOIMAGEM: 40,
+  MDT: 40,
+  MDS: 40,
+  CDGV: 180,
+  IMPRESSAO_CT: 30,
+  IMPRESSAO_COI: 30,
+  IMPRESSAO: 30,
+};

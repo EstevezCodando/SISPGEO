@@ -13,8 +13,7 @@ import { format, formatDistanceToNow } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { usersApi } from '../../api/users'
 import type { Notificacao } from '../../types/user'
-
-const POLL_INTERVAL_MS = 90_000 // 90 s — só conta não-lidas
+import { POLL_INTERVAL_MS } from '../../constants'
 
 /** Ícone e cor de acordo com o título/tipo da notificação */
 function NotifIcon({ titulo }: { titulo: string }) {

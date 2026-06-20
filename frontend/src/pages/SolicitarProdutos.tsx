@@ -33,26 +33,14 @@ import { useAuthStore } from "../store/authStore";
 import { cartKey, useCartStore } from "../store/cartStore";
 import type { CartItem, Escala, TipoProduto } from "../types/pedido";
 import {
+    ESCALAS,
+    FINALIDADES_GEO,
     MATERIAIS_IMPRESSAO,
+    PRAZO_FALLBACK,
     TIPO_PRODUTO_LABELS,
     TIPOS_IMPRESSAO,
 } from "../types/pedido";
-
-const ESCALAS: Escala[] = ["1:25.000", "1:50.000", "1:100.000", "1:250.000"];
-
-// Prazos mínimos locais — usados como fallback se a API ainda não respondeu.
-// Valores autoritativos vêm de GET /config/entrega (PRAZOS_MINIMOS no backend).
-const PRAZO_FALLBACK: Record<TipoProduto, number> = {
-  CARTA_TOPOGRAFICA: 180,
-  CARTA_ORTOIMAGEM: 60,
-  ORTOIMAGEM: 40,
-  MDT: 40,
-  MDS: 40,
-  CDGV: 180,
-  IMPRESSAO_CT: 30,
-  IMPRESSAO_COI: 30,
-  IMPRESSAO: 30, // legado
-};
+import { DSG_RITEX, DSG_TELEFONE } from "../constants";
 
 // Tipos de produto exibidos no dropdown (sem IMPRESSAO legado)
 const TIPOS_PRODUTO_VISIVEIS: TipoProduto[] = [
@@ -65,16 +53,6 @@ const TIPOS_PRODUTO_VISIVEIS: TipoProduto[] = [
   "IMPRESSAO_CT",
   "IMPRESSAO_COI",
 ];
-
-const FINALIDADES_GEO = [
-  "Operação Militar",
-  "Exercício Combinado",
-  "Exercício Integrador",
-  "Manobra Escolar",
-  "Instrução Militar",
-  "Atualização de Campo de Instrução",
-  "Outra",
-] as const;
 
 const inputCls =
   "w-full bg-zinc-800 border border-zinc-700 rounded-lg px-2.5 py-1.5 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed";
@@ -690,7 +668,7 @@ export function SolicitarProdutos() {
     }
     if (!user?.orgao_vinculante) {
       toast.error(
-        "Seu perfil não tem órgão vinculante configurado. Contate o Gestor Cartográfico (DSG) pelo telefone (61) 3415-5237 ou 860-5237 (RITEx).",
+        `Seu perfil não tem órgão vinculante configurado. Contate o Gestor Cartográfico (DSG) pelo telefone ${DSG_TELEFONE} ou ${DSG_RITEX} (RITEx).`,
       );
       return;
     }

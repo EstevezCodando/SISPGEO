@@ -53,7 +53,11 @@ import { useExportRelatorio } from "../hooks/useExportRelatorio";
 import { useAuthStore } from "../store/authStore";
 import { cartKey, useCartStore } from "../store/cartStore";
 import type { ItemPedido, MaterialImpressao, Pedido } from "../types/pedido";
-import { TIPO_PRODUTO_LABELS, getStatusSolicitante } from "../types/pedido";
+import {
+    FINALIDADES_GEO,
+    TIPO_PRODUTO_LABELS,
+    getStatusSolicitante,
+} from "../types/pedido";
 
 // ─── Map layer helper ─────────────────────────────────────────────────────────
 function GeoJSONLayer({ geojson }: { geojson: FeatureCollection }) {
@@ -934,16 +938,6 @@ function EnviarPedidosModal({
 }
 
 // ─── Edit Modal ───────────────────────────────────────────────────────────────
-const FINALIDADES_GEO = [
-  "Operação Militar",
-  "Exercício Combinado",
-  "Exercício Integrador",
-  "Manobra Escolar",
-  "Instrução Militar",
-  "Atualização de Campo de Instrução",
-  "Atualização",
-] as const;
-
 interface EditModalProps {
   pedido: Pedido;
   onClose: () => void;
