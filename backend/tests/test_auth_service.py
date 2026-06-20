@@ -25,10 +25,11 @@ class TestRegisterUser:
         mock_db.scalar.return_value = MagicMock()  # usuário existente
 
         with pytest.raises(HTTPException) as exc:
-            await auth_service.register_user(
-                mock_db, "João Ferreira", "joao@eb.mil.br", "(61)99999-0000",
-                "1ª Brigada", "S3", "Senha@123",
-            )
+            await auth_service.register_user(mock_db, {
+                "nome": "João Ferreira", "email": "joao@eb.mil.br",
+                "telefone": "(61)99999-0000", "om": "1ª Brigada",
+                "secao_om": "S3", "senha": "Senha@123",
+            })
         assert exc.value.status_code == 400
 
     async def test_cadastro_bem_sucedido(self, mock_db):
@@ -41,10 +42,11 @@ class TestRegisterUser:
             patch("app.services.auth_service.send_email", new_callable=AsyncMock) as mock_email,
             patch("app.services.auth_service.ativacao_conta", return_value=("Assunto", "<html/>")),
         ):
-            await auth_service.register_user(
-                mock_db, "João Ferreira", "joao@eb.mil.br", "(61)99999-0000",
-                "1ª Brigada", "S3", "Senha@123",
-            )
+            await auth_service.register_user(mock_db, {
+                "nome": "João Ferreira", "email": "joao@eb.mil.br",
+                "telefone": "(61)99999-0000", "om": "1ª Brigada",
+                "secao_om": "S3", "senha": "Senha@123",
+            })
 
         # db.add chamado ao menos duas vezes: usuário + token de ativação
         assert mock_db.add.call_count >= 2
@@ -70,11 +72,12 @@ class TestRegisterUser:
             patch("app.services.auth_service.send_email", new_callable=AsyncMock),
             patch("app.services.auth_service.ativacao_conta", return_value=("Assunto", "<html/>")),
         ):
-            await auth_service.register_user(
-                mock_db, "Paulo Mendes", "paulo@eb.mil.br", "(61)99999-0001",
-                "CMDO C M P", "S2", "Senha@123",
-                nome_de_guerra="Paulo",
-            )
+            await auth_service.register_user(mock_db, {
+                "nome": "Paulo Mendes", "email": "paulo@eb.mil.br",
+                "telefone": "(61)99999-0001", "om": "CMDO C M P",
+                "secao_om": "S2", "senha": "Senha@123",
+                "nome_de_guerra": "Paulo",
+            })
 
         assert usuario_criado is not None
         assert usuario_criado.nome_de_guerra == "Paulo"

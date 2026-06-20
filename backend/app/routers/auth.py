@@ -42,13 +42,19 @@ async def register(
     ip = get_client_ip(request)
     logger.info("POST /auth/register → email=%s  ip=%s", body.email, ip)
 
-    user = await auth_service.register_user(
-        db, body.nome, body.email, body.telefone,
-        body.om, body.secao_om, body.senha,
-        body.regiao_militar, body.orgao_vinculante,
-        body.telefone_ritex, body.posto_graduacao,
-        body.nome_de_guerra,
-    )
+    user = await auth_service.register_user(db, {
+        "nome":              body.nome,
+        "email":             body.email,
+        "telefone":          body.telefone,
+        "om":                body.om,
+        "secao_om":          body.secao_om,
+        "senha":             body.senha,
+        "regiao_militar":    body.regiao_militar,
+        "orgao_vinculante":  body.orgao_vinculante,
+        "telefone_ritex":    body.telefone_ritex,
+        "posto_graduacao":   body.posto_graduacao,
+        "nome_de_guerra":    body.nome_de_guerra,
+    })
     db.add(AuditLog(
         usuario_id=user.id,
         acao="register",

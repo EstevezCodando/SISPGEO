@@ -113,27 +113,15 @@ def cadeia_aprovacao(orgao_vinculante: str, regiao_militar: str | None) -> list[
 # Funções do serviço
 # ---------------------------------------------------------------------------
 
-async def submit_pedido(db: AsyncSession, pedido: Pedido, current_user: Usuario) -> Pedido:
-    """Submete um pedido em rascunho para o próximo escalão.
-
-    Valida o estado do pedido, avança o status de acordo com o perfil do
-    usuário, envia e-mail de confirmação ao solicitante e notifica os gestores
-    do escalão seguinte.
-
-    Args:
-        db:           Sessão assíncrona do banco de dados.
-        pedido:       Instância ORM do pedido a submeter.
-        current_user: Usuário que realiza a ação.
-
-    Returns:
-        Pedido atualizado e persistido.
+def _validate_submit(
+    pedido: Pedido, current_user: Usuario
+) -> tuple[StatusPedidoEnum, PerfilEnum]:
+    """Valida pré-condições de submit e retorna (next_status, notify_perfil).
 
     Raises:
-        HTTPException 400: Pedido não está em rascunho ou sem itens.
-        HTTPException 403: Usuário sem permissão para submeter ou dono incorreto.
+        HTTPException 400: Pedido já submetido, sem itens ou OV inválido.
+        HTTPException 403: Usuário não é dono do pedido ou perfil não autorizado.
     """
-    logger.info("submit_pedido → pedido_id=%d  usuário=%s", pedido.id, current_user.email)
-
     if pedido.status != StatusPedidoEnum.RASCUNHO:
         raise HTTPException(status_code=400, detail="Pedido já foi submetido")
     if pedido.usuario_id != current_user.id:
@@ -146,7 +134,6 @@ async def submit_pedido(db: AsyncSession, pedido: Pedido, current_user: Usuario)
         str(current_user.orgao_vinculante.value) if current_user.orgao_vinculante else ""
     )
 
-    # Determina próximo status e perfil a notificar conforme perfil + órgão
     if perfil == PerfilEnum.SOLICITANTE:
         if ov == "COTER":
             supervisor_perfil = RM_TO_SUPERVISOR.get(pedido.regiao_militar or "")
@@ -156,31 +143,33 @@ async def submit_pedido(db: AsyncSession, pedido: Pedido, current_user: Usuario)
                     detail="Região Militar não configurada ou não mapeada para supervisor. "
                            "Atualize seu cadastro com o Comando Militar de Área.",
                 )
-            next_status = StatusPedidoEnum.AGUARDANDO_SUPERVISOR
-            notify_perfil = supervisor_perfil
+            return StatusPedidoEnum.AGUARDANDO_SUPERVISOR, supervisor_perfil
         elif ov in ORG_TO_CONSOLIDADOR:
-            next_status = StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR
-            notify_perfil = ORG_TO_CONSOLIDADOR[ov]
+            return StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR, ORG_TO_CONSOLIDADOR[ov]
         else:
             raise HTTPException(
                 status_code=400,
                 detail="Órgão vinculante não configurado. Contate o administrador.",
             )
     elif perfil in SUPERVISOR_PROFILES:
-        next_status = StatusPedidoEnum.AGUARDANDO_SUPERVISOR
-        notify_perfil = perfil
+        return StatusPedidoEnum.AGUARDANDO_SUPERVISOR, perfil
     elif perfil in CONSOLIDADOR_PROFILES:
-        next_status = StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR
-        notify_perfil = perfil
+        return StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR, perfil
     elif perfil == PerfilEnum.SUPERVISOR:   # legado
-        next_status = StatusPedidoEnum.AGUARDANDO_SUPERVISOR
-        notify_perfil = perfil
+        return StatusPedidoEnum.AGUARDANDO_SUPERVISOR, perfil
     elif perfil == PerfilEnum.CONSOLIDADOR:  # legado
-        next_status = StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR
-        notify_perfil = perfil
+        return StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR, perfil
     else:
         raise HTTPException(status_code=403, detail="Perfil não autorizado a submeter pedidos")
 
+
+async def _advance_pedido_status(
+    db: AsyncSession,
+    pedido: Pedido,
+    current_user: Usuario,
+    next_status: StatusPedidoEnum,
+) -> None:
+    """Aplica a transição de status e registra no histórico."""
     status_anterior = pedido.status
     pedido.status = next_status
     pedido.submetido_gestor_em = datetime.now(timezone.utc)
@@ -188,7 +177,18 @@ async def submit_pedido(db: AsyncSession, pedido: Pedido, current_user: Usuario)
     await db.commit()
     await db.refresh(pedido)
 
-    # E-mail de confirmação ao solicitante
+
+async def _notify_after_submit(
+    db: AsyncSession,
+    pedido: Pedido,
+    current_user: Usuario,
+    notify_perfil: PerfilEnum,
+) -> int:
+    """Envia e-mail ao solicitante e notifica gestores do próximo escalão.
+
+    Returns:
+        Número de gestores notificados.
+    """
     _ov_str = str(pedido.orgao_vinculante.value if pedido.orgao_vinculante else "") or (
         str(current_user.orgao_vinculante.value) if current_user.orgao_vinculante else ""
     )
@@ -205,21 +205,10 @@ async def submit_pedido(db: AsyncSession, pedido: Pedido, current_user: Usuario)
     )
     await send_email(current_user.email, subject, html)
 
-    # Notifica o perfil do próximo escalão por e-mail + in-app.
-    # Supervisores regionais → localizados apenas pelo perfil (já encapsula o CMilA).
-    # Consolidadores específicos → localizados pelo perfil (já encapsula o órgão).
-    # Gestor Cartográfico → global.
-    if notify_perfil in _PERFIS_GLOBAIS:
-        gestor_query = select(Usuario).where(
-            Usuario.perfil == notify_perfil,
-            Usuario.ativo == True,
-        )
-    else:
-        gestor_query = select(Usuario).where(
-            Usuario.perfil == notify_perfil,
-            Usuario.ativo == True,
-        )
-
+    gestor_query = select(Usuario).where(
+        Usuario.perfil == notify_perfil,
+        Usuario.ativo == True,
+    )
     gestores = list(await db.scalars(gestor_query))
     if not gestores:
         logger.warning(
@@ -249,12 +238,89 @@ async def submit_pedido(db: AsyncSession, pedido: Pedido, current_user: Usuario)
         pedido_id=pedido.id,
     )
     await db.commit()
+    return len(gestores)
+
+
+async def submit_pedido(db: AsyncSession, pedido: Pedido, current_user: Usuario) -> Pedido:
+    """Submete um pedido em rascunho para o próximo escalão.
+
+    Valida o estado do pedido, avança o status de acordo com o perfil do
+    usuário, envia e-mail de confirmação ao solicitante e notifica os gestores
+    do escalão seguinte.
+
+    Args:
+        db:           Sessão assíncrona do banco de dados.
+        pedido:       Instância ORM do pedido a submeter.
+        current_user: Usuário que realiza a ação.
+
+    Returns:
+        Pedido atualizado e persistido.
+
+    Raises:
+        HTTPException 400: Pedido não está em rascunho ou sem itens.
+        HTTPException 403: Usuário sem permissão para submeter ou dono incorreto.
+    """
+    logger.info("submit_pedido → pedido_id=%d  usuário=%s", pedido.id, current_user.email)
+
+    next_status, notify_perfil = _validate_submit(pedido, current_user)
+    await _advance_pedido_status(db, pedido, current_user, next_status)
+    notificados = await _notify_after_submit(db, pedido, current_user, notify_perfil)
 
     logger.info(
         "submit_pedido OK → pedido_id=%d  novo_status=%s  notificados=%d",
-        pedido.id, next_status.value, len(gestores),
+        pedido.id, next_status.value, notificados,
     )
     return pedido
+
+
+def _next_aprovar_status(gestor: Usuario) -> StatusPedidoEnum:
+    """Retorna o próximo status de aprovação conforme o perfil do gestor."""
+    if gestor.perfil in SUPERVISOR_PROFILES:
+        return StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR
+    if gestor.perfil in CONSOLIDADOR_PROFILES:
+        return StatusPedidoEnum.AGUARDANDO_CARTOGRAFICO
+    # Legado / fallback
+    _LEGADO: dict[PerfilEnum, StatusPedidoEnum] = {
+        PerfilEnum.SUPERVISOR:   StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR,
+        PerfilEnum.CONSOLIDADOR: StatusPedidoEnum.AGUARDANDO_CARTOGRAFICO,
+    }
+    return _LEGADO.get(gestor.perfil, StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR)
+
+
+async def _aprovar_pedido(
+    db: AsyncSession,
+    pedido: Pedido,
+    gestor: Usuario,
+    status_anterior: StatusPedidoEnum,
+    observacoes: str | None,
+) -> None:
+    """Aplica aprovação: avança status, registra histórico."""
+    if observacoes is not None:
+        pedido.observacoes = observacoes
+    pedido.status = _next_aprovar_status(gestor)
+    pedido.gestor_demandante_id = gestor.id
+    await registrar_historico(db, pedido, gestor, "aprovar", status_anterior)
+
+
+async def _reprovar_pedido(
+    db: AsyncSession,
+    pedido: Pedido,
+    gestor: Usuario,
+    status_anterior: StatusPedidoEnum,
+    motivo: str | None,
+    observacoes: str | None,
+) -> None:
+    """Aplica reprovação: cancela pedido, notifica solicitante por e-mail."""
+    if observacoes is not None:
+        pedido.observacoes = observacoes
+    pedido.status = StatusPedidoEnum.CANCELADO
+    pedido.motivo_reprovacao = motivo
+    pedido.cancelado_em = datetime.now(timezone.utc)
+    await registrar_historico(db, pedido, gestor, "reprovar", status_anterior, motivo)
+    usuario = await db.get(Usuario, pedido.usuario_id)
+    if usuario:
+        subject, html = pedido_reprovado(usuario.nome, pedido.id, motivo or "Sem motivo informado")
+        await send_email(usuario.email, subject, html)
 
 
 async def review_pedido(
@@ -293,45 +359,19 @@ async def review_pedido(
     if pedido.status not in allowed_statuses:
         raise HTTPException(status_code=400, detail="Pedido não está disponível para revisão")
 
-    if observacoes is not None:
-        pedido.observacoes = observacoes
-
     status_anterior = pedido.status
 
-    # Próximo status para "aprovar" depende do grupo de perfil do gestor
-    if gestor.perfil in SUPERVISOR_PROFILES:
-        _aprovar_status = StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR
-    elif gestor.perfil in CONSOLIDADOR_PROFILES:
-        _aprovar_status = StatusPedidoEnum.AGUARDANDO_CARTOGRAFICO
-    else:
-        # Legado / fallback
-        _REVIEW_APROVAR_STATUS: dict[PerfilEnum, StatusPedidoEnum] = {
-            PerfilEnum.SUPERVISOR:   StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR,
-            PerfilEnum.CONSOLIDADOR: StatusPedidoEnum.AGUARDANDO_CARTOGRAFICO,
-        }
-        _aprovar_status = _REVIEW_APROVAR_STATUS.get(gestor.perfil, StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR)
-
-    if acao == "reprovar":
-        pedido.status = StatusPedidoEnum.CANCELADO
-        pedido.motivo_reprovacao = motivo
-        pedido.cancelado_em = datetime.now(timezone.utc)
-        usuario = await db.get(Usuario, pedido.usuario_id)
-        if usuario:
-            subject, html = pedido_reprovado(usuario.nome, pedido.id, motivo or "Sem motivo informado")
-            await send_email(usuario.email, subject, html)
-
-    elif acao == "aprovar":
-        pedido.status = _aprovar_status
-        pedido.gestor_demandante_id = gestor.id
-
+    if acao == "aprovar":
+        await _aprovar_pedido(db, pedido, gestor, status_anterior, observacoes)
+    elif acao == "reprovar":
+        await _reprovar_pedido(db, pedido, gestor, status_anterior, motivo, observacoes)
     elif acao == "observar":
-        pass  # Salva apenas as observações sem alterar o status
-
+        if observacoes is not None:
+            pedido.observacoes = observacoes
+        # Salva apenas as observações sem alterar o status nem registrar histórico
     else:
         raise HTTPException(status_code=400, detail="Ação inválida")
 
-    if acao != "observar":
-        await registrar_historico(db, pedido, gestor, acao, status_anterior, motivo)
     await db.commit()
     await db.refresh(pedido)
 

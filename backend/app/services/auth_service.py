@@ -14,6 +14,7 @@ Princípios aplicados:
 
 import logging
 from datetime import datetime, timedelta, timezone
+from typing import TypedDict
 
 from fastapi import HTTPException
 from sqlalchemy import select, and_, func
@@ -27,6 +28,28 @@ from app.utils.email_templates import ativacao_conta, reset_senha as tpl_reset
 from app.utils.security import (
     create_access_token, generate_token, get_password_hash, verify_password,
 )
+
+
+class RegisterUserData(TypedDict, total=False):
+    """Dados necessários para registrar um novo usuário.
+
+    Campos obrigatórios: ``nome``, ``email``, ``telefone``, ``om``,
+    ``secao_om``, ``senha``.
+    Campos opcionais: ``regiao_militar``, ``orgao_vinculante``,
+    ``telefone_ritex``, ``posto_graduacao``, ``nome_de_guerra``.
+    """
+
+    nome: str
+    email: str
+    telefone: str
+    om: str
+    secao_om: str
+    senha: str
+    regiao_militar: str | None
+    orgao_vinculante: str | None
+    telefone_ritex: str | None
+    posto_graduacao: str | None
+    nome_de_guerra: str | None
 
 logger = logging.getLogger(__name__)
 
@@ -60,35 +83,15 @@ RESEND_ACTIVATION_COOLDOWN_MINUTES: int = 30
 # Funções do serviço
 # ---------------------------------------------------------------------------
 
-async def register_user(
-    db: AsyncSession,
-    nome: str,
-    email: str,
-    telefone: str,
-    om: str,
-    secao_om: str,
-    senha: str,
-    regiao_militar: str | None = None,
-    orgao_vinculante: str | None = None,
-    telefone_ritex: str | None = None,
-    posto_graduacao: str | None = None,
-    nome_de_guerra: str | None = None,
-) -> Usuario:
+async def register_user(db: AsyncSession, data: RegisterUserData) -> Usuario:
     """Cadastra um novo usuário e envia e-mail de confirmação.
 
     O usuário é criado com perfil ``SOLICITANTE``, inativo e com e-mail
     não confirmado. A ativação ocorre apenas após clicar no link enviado.
 
     Args:
-        db:                Sessão assíncrona do banco de dados.
-        nome:              Nome completo do usuário.
-        email:             E-mail institucional (``@eb.mil.br``).
-        telefone:          Telefone de contato.
-        om:                Organização Militar de lotação.
-        secao_om:          Seção dentro da OM.
-        senha:             Senha em texto claro (será aplicado hash).
-        regiao_militar:    Região Militar de lotação (opcional).
-        orgao_vinculante:  Órgão vinculante do usuário (opcional).
+        db:   Sessão assíncrona do banco de dados.
+        data: Dados do novo usuário (ver :class:`RegisterUserData`).
 
     Returns:
         Instância :class:`~app.models.user.Usuario` recém-criada.
@@ -96,6 +99,8 @@ async def register_user(
     Raises:
         HTTPException 400: E-mail já cadastrado no sistema.
     """
+    email = data["email"]
+    om = data["om"]
     logger.info("register_user → email=%s  om=%s", email, om)
 
     existing = await db.scalar(select(Usuario).where(Usuario.email == email))
@@ -103,23 +108,24 @@ async def register_user(
         raise HTTPException(status_code=400, detail="Email já cadastrado")
 
     from app.models.enums import OrgaoVinculanteEnum
+    orgao_vinculante = data.get("orgao_vinculante")
     ov = OrgaoVinculanteEnum(orgao_vinculante) if orgao_vinculante else None
 
     user = Usuario(
-        nome=nome,
-        nome_de_guerra=nome_de_guerra,
+        nome=data["nome"],
+        nome_de_guerra=data.get("nome_de_guerra"),
         email=email,
-        telefone=telefone,
-        telefone_ritex=telefone_ritex,
+        telefone=data["telefone"],
+        telefone_ritex=data.get("telefone_ritex"),
         om=om,
-        regiao_militar=regiao_militar,
-        secao_om=secao_om,
-        senha_hash=get_password_hash(senha),
+        regiao_militar=data.get("regiao_militar"),
+        secao_om=data["secao_om"],
+        senha_hash=get_password_hash(data["senha"]),
         perfil=PerfilEnum.SOLICITANTE,
         ativo=False,
         email_confirmado=False,
         orgao_vinculante=ov,
-        posto_graduacao=posto_graduacao,
+        posto_graduacao=data.get("posto_graduacao"),
     )
     db.add(user)
     await db.flush()
