@@ -6,14 +6,13 @@
  *   - Ao abrir o dropdown: busca a lista completa (máx. 50 itens)
  * Isso elimina a consulta pesada que bloqueava o event loop a cada minuto.
  */
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Bell, CheckCheck, Info, AlertTriangle, CheckCircle, XCircle, Clock, Loader2 } from 'lucide-react'
 import { format, formatDistanceToNow } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { usersApi } from '../../api/users'
 import type { Notificacao } from '../../types/user'
-import { POLL_INTERVAL_MS } from '../../constants'
+import { useNotifications } from '../../hooks/useNotifications'
 
 /** Ícone e cor de acordo com o título/tipo da notificação */
 function NotifIcon({ titulo }: { titulo: string }) {
@@ -30,52 +29,24 @@ function NotifIcon({ titulo }: { titulo: string }) {
 }
 
 export function NotificationBell() {
-  const [notifications, setNotifications] = useState<Notificacao[]>([])
-  const [unreadCount, setUnreadCount] = useState(0)
+  const {
+    notificacoes: notifications,
+    unreadCount,
+    loadingList,
+    fetchNotifications,
+    marcarLida,
+    marcarTodasLidas,
+  } = useNotifications()
   const [open, setOpen] = useState(false)
-  const [loadingList, setLoadingList] = useState(false)
-  const listFetchedRef = useRef(false)   // evita re-fetch desnecessário no mesmo open
   const dropdownRef = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
 
-  // ── Polling leve: apenas contagem de não-lidas ───────────────────────────
-  const fetchUnreadCount = useCallback(async () => {
-    try {
-      const res = await usersApi.getUnreadCount()
-      setUnreadCount(res.data.unread)
-    } catch {
-      // silently ignore — user may be logging out
-    }
-  }, [])
-
-  useEffect(() => {
-    fetchUnreadCount()
-    const timer = setInterval(fetchUnreadCount, POLL_INTERVAL_MS)
-    return () => clearInterval(timer)
-  }, [fetchUnreadCount])
-
-  // ── Lista completa: carregada apenas ao abrir o dropdown ─────────────────
-  const fetchNotifications = useCallback(async () => {
-    if (listFetchedRef.current) return
-    setLoadingList(true)
-    try {
-      const res = await usersApi.getNotifications()
-      setNotifications(res.data)
-      setUnreadCount(res.data.filter(n => !n.lida).length)
-      listFetchedRef.current = true
-    } catch {
-      // silently ignore
-    } finally {
-      setLoadingList(false)
-    }
-  }, [])
-
-  const handleToggleOpen = useCallback(() => {
-    setOpen(o => {
-      if (!o) fetchNotifications()  // busca lista ao abrir
+  const handleToggleOpen = () => {
+    setOpen((o) => {
+      if (!o) fetchNotifications() // busca lista ao abrir
       return !o
     })
-  }, [fetchNotifications])
+  }
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -88,19 +59,9 @@ export function NotificationBell() {
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
 
-  const unread = notifications.filter((n) => !n.lida)
-
   const handleMarkRead = async (n: Notificacao) => {
     if (!n.lida) {
-      try {
-        await usersApi.markNotificationRead(n.id)
-        setNotifications((prev) =>
-          prev.map((x) => (x.id === n.id ? { ...x, lida: true } : x))
-        )
-        setUnreadCount(c => Math.max(0, c - 1))
-      } catch {
-        // ignore
-      }
+      await marcarLida(n.id)
     }
     if (n.pedido_id) {
       navigate('/meus-pedidos')
@@ -109,11 +70,7 @@ export function NotificationBell() {
   }
 
   const handleMarkAllRead = async () => {
-    await Promise.allSettled(
-      unread.map((n) => usersApi.markNotificationRead(n.id))
-    )
-    setNotifications((prev) => prev.map((n) => ({ ...n, lida: true })))
-    setUnreadCount(0)
+    await marcarTodasLidas()
   }
 
   return (

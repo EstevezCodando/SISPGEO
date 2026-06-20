@@ -1,4 +1,3 @@
-import { addDays, format } from "date-fns";
 import type { FeatureCollection } from "geojson";
 import {
     AlertTriangle,
@@ -17,19 +16,17 @@ import { useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import api from "../api/client";
-import { configApi, type ConfigEntrega } from "../api/config";
-import { janelasApi, type MinhaJanela } from "../api/janelas";
 import { pedidosApi } from "../api/pedidos";
 import { RevisaoModal } from "../components/pedidos/RevisaoModal";
 import { InteractiveMap, type Basemap } from "../components/map/InteractiveMap";
 import { PedidosMap } from "../components/map/PedidosMap";
+import { useSolicitarForm } from "../hooks/useSolicitarForm";
 import { useAuthStore } from "../store/authStore";
-import { cartKey, useCartStore } from "../store/cartStore";
+import { cartKey } from "../store/cartStore";
 import type { CartItem, Escala, TipoProduto } from "../types/pedido";
 import {
     ESCALAS,
     FINALIDADES_GEO,
-    MATERIAIS_IMPRESSAO,
     PRAZO_FALLBACK,
     TIPO_PRODUTO_LABELS,
     TIPOS_IMPRESSAO,
@@ -74,9 +71,11 @@ export function SolicitarProdutos() {
     removeItemImpressao,
     removeItem,
     clear,
-  } = useCartStore();
-
-  const isImpressao = tipoProduto ? TIPOS_IMPRESSAO.has(tipoProduto) : false;
+    minhaJanela,
+    configEntrega,
+    minDate,
+    isImpressao,
+  } = useSolicitarForm();
 
   const [inomGrid, setInomGrid] = useState<FeatureCollection | null>(null);
   const [isLoadingGrid, setIsLoadingGrid] = useState(false);
@@ -87,34 +86,9 @@ export function SolicitarProdutos() {
   const [showPedidosMap, setShowPedidosMap] = useState(false);
   const [showRevisao, setShowRevisao] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [minhaJanela, setMinhaJanela] = useState<MinhaJanela | null>(null);
-  const [configEntrega, setConfigEntrega] = useState<ConfigEntrega | null>(
-    null,
-  );
-  useEffect(() => {
-    // Verifica janela ativa para este perfil
-    janelasApi
-      .minhaJanela()
-      .then((r) => setMinhaJanela(r.data))
-      .catch(() =>
-        setMinhaJanela({
-          aberta: true,
-          data_inicio: null,
-          data_fim: null,
-          tipo_janela: null,
-          dias_restantes: null,
-          configurada: false,
-        }),
-      );
-    // Carrega configuração global de datas mínimas de entrega
-    configApi
-      .getEntrega()
-      .then((r) => setConfigEntrega(r.data))
-      .catch(() => {});
-  }, []);
 
   useEffect(() => {
-    // Limpa o grid imediatamente ao resetar selecção — impede grid antigo no remount
+    // Limpa o grid ao resetar seleção — impede grid antigo no remount
     if (!escala || !dataEntrega || !tipoProduto) {
       setInomGrid(null);
       return;
@@ -144,21 +118,6 @@ export function SolicitarProdutos() {
       .finally(() => setIsLoadingGrid(false));
     return () => controller.abort();
   }, [escala, dataEntrega, tipoProduto]);
-
-  // minDate = data_base (global) + prazo_minimo do produto selecionado.
-  // Se a configuração ainda não carregou, usa fallback local.
-  const minDate = (() => {
-    if (!tipoProduto) return format(addDays(new Date(), 1), "yyyy-MM-dd");
-    if (configEntrega?.datas_minimas?.[tipoProduto]) {
-      return configEntrega.datas_minimas[tipoProduto];
-    }
-    // fallback enquanto API carrega — usa data atual como base se data_base ainda não veio
-    const prazo = PRAZO_FALLBACK[tipoProduto];
-    const base = configEntrega?.data_base
-      ? new Date(configEntrega.data_base + "T00:00:00")
-      : new Date();
-    return format(addDays(base, prazo), "yyyy-MM-dd");
-  })();
 
   const handleSubmit = async () => {
     if (items.length === 0) {

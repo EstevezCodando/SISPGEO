@@ -1,18 +1,10 @@
-﻿import { useEffect, useState } from 'react'
+﻿import { useState } from 'react'
 import { Clock, XCircle } from 'lucide-react'
 import { format, isBefore, isAfter } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import api from '../../api/client'
 import { useAuthStore } from '../../store/authStore'
 import { ProrrogacaoModal } from '../janelas/ProrrogacaoModal'
-
-interface Janela {
-  id: number
-  tipo_janela: string
-  data_inicio: string
-  data_fim: string
-  ano_referencia: number
-}
+import { useDeadlineWindow } from '../../hooks/useDeadlineWindow'
 
 /**
  * Qual tipo_janela é relevante para cada perfil.
@@ -37,12 +29,8 @@ const PERFIL_PRAZO_LABEL: Record<string, string> = {
 // ----- Banner principal -----
 export function DeadlineBanner() {
   const { user } = useAuthStore()
-  const [janelas, setJanelas] = useState<Janela[]>([])
+  const { janelas } = useDeadlineWindow()
   const [showModal, setShowModal] = useState(false)
-
-  useEffect(() => {
-    api.get<Janela[]>('/janelas/').then((r) => setJanelas(r.data)).catch(() => {})
-  }, [])
 
   if (!user) return null
 
