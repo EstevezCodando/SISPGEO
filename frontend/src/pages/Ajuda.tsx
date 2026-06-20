@@ -10,6 +10,9 @@ import {
     ZoomIn,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
+import { FAQItem } from "../components/ajuda/FAQItem";
+import { JornadaCard, type JornadaGuia } from "../components/ajuda/JornadaCard";
+import { SectionTitle } from "../components/ajuda/SectionTitle";
 
 // ─── Catálogo de produtos ────────────────────────────────────────────────────
 
@@ -877,12 +880,6 @@ const TUTORIAIS = {
   ],
 };
 
-interface JornadaGuia {
-  perfil: string;
-  cor: string;
-  passos: { n: string; title: string; desc: string }[];
-}
-
 const JORNADAS: JornadaGuia[] = [
   {
     perfil: "OMDS – Solicitante",
@@ -1059,38 +1056,7 @@ function EscalaCard({ escala }: { escala: Escala }) {
 
 // ─── Componentes utilitários ─────────────────────────────────────────────────
 
-function SectionTitle({ icon, title }: { icon: ReactNode; title: string }) {
-  return (
-    <div className="flex items-center gap-2 mb-4">
-      <span className="text-emerald-400">{icon}</span>
-      <h2 className="font-semibold text-zinc-100 text-base">{title}</h2>
-    </div>
-  );
-}
-
-function FAQItem({ q, a }: { q: string; a: ReactNode }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <div className="border border-white/10 rounded-xl overflow-hidden">
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-white/5 transition-colors gap-4"
-      >
-        <span className="text-sm font-medium text-zinc-200">{q}</span>
-        {open ? (
-          <ChevronUp className="h-4 w-4 text-zinc-500 shrink-0" />
-        ) : (
-          <ChevronDown className="h-4 w-4 text-zinc-500 shrink-0" />
-        )}
-      </button>
-      {open && (
-        <div className="px-5 pb-4 text-sm text-zinc-400 leading-relaxed border-t border-white/5 pt-3">
-          {a}
-        </div>
-      )}
-    </div>
-  );
-}
+// SectionTitle, FAQItem e JornadaCard foram extraídos para components/ajuda/
 
 // ─── Video Tutorial Accordion ────────────────────────────────────────────────
 function VideoTutorialAccordion({
@@ -1196,54 +1162,6 @@ function TutorialAccordion({
             {passos.map((s) => (
               <li key={s.n} className="flex gap-3">
                 <span className="w-6 h-6 shrink-0 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-bold flex items-center justify-center">
-                  {s.n}
-                </span>
-                <div>
-                  <p className="text-sm font-medium text-zinc-200">{s.title}</p>
-                  <p className="text-xs text-zinc-500 mt-0.5 leading-relaxed">
-                    {s.desc}
-                  </p>
-                </div>
-              </li>
-            ))}
-          </ol>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── Jornada Card ─────────────────────────────────────────────────────────────
-const COR_JORNADA: Record<string, string> = {
-  emerald: "bg-emerald-500/10 border-emerald-500/30 text-emerald-400",
-  amber: "bg-amber-500/10   border-amber-500/30   text-amber-400",
-  yellow: "bg-yellow-500/10  border-yellow-500/30  text-yellow-400",
-  orange: "bg-orange-500/10  border-orange-500/30  text-orange-400",
-  blue: "bg-blue-500/10    border-blue-500/30    text-blue-400",
-};
-
-function JornadaCard({ jornada }: { jornada: JornadaGuia }) {
-  const [open, setOpen] = useState(false);
-  const cls = COR_JORNADA[jornada.cor] ?? COR_JORNADA.emerald;
-  return (
-    <div className={`rounded-xl border overflow-hidden ${cls}`}>
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between px-4 py-3 text-left hover:opacity-80 transition-opacity gap-4"
-      >
-        <span className="text-sm font-semibold">{jornada.perfil}</span>
-        {open ? (
-          <ChevronUp className="h-4 w-4 shrink-0" />
-        ) : (
-          <ChevronDown className="h-4 w-4 shrink-0" />
-        )}
-      </button>
-      {open && (
-        <div className="px-4 pb-4 border-t border-current/20 pt-3 bg-zinc-900/60">
-          <ol className="space-y-3">
-            {jornada.passos.map((s) => (
-              <li key={s.n} className="flex gap-3">
-                <span className="w-5 h-5 shrink-0 rounded-full bg-current/10 border border-current/30 text-[10px] font-bold flex items-center justify-center">
                   {s.n}
                 </span>
                 <div>
