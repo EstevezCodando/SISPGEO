@@ -152,12 +152,10 @@ def _validate_submit(
                 detail="Órgão vinculante não configurado. Contate o administrador.",
             )
     elif perfil in SUPERVISOR_PROFILES:
+        # Inclui PerfilEnum.SUPERVISOR (legado) via SUPERVISOR_PROFILES
         return StatusPedidoEnum.AGUARDANDO_SUPERVISOR, perfil
     elif perfil in CONSOLIDADOR_PROFILES:
-        return StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR, perfil
-    elif perfil == PerfilEnum.SUPERVISOR:   # legado
-        return StatusPedidoEnum.AGUARDANDO_SUPERVISOR, perfil
-    elif perfil == PerfilEnum.CONSOLIDADOR:  # legado
+        # Inclui PerfilEnum.CONSOLIDADOR (legado) via CONSOLIDADOR_PROFILES
         return StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR, perfil
     else:
         raise HTTPException(status_code=403, detail="Perfil não autorizado a submeter pedidos")
@@ -274,17 +272,17 @@ async def submit_pedido(db: AsyncSession, pedido: Pedido, current_user: Usuario)
 
 
 def _next_aprovar_status(gestor: Usuario) -> StatusPedidoEnum:
-    """Retorna o próximo status de aprovação conforme o perfil do gestor."""
+    """Retorna o próximo status de aprovação conforme o perfil do gestor.
+
+    SUPERVISOR_PROFILES e CONSOLIDADOR_PROFILES já incluem os valores legados
+    (PerfilEnum.SUPERVISOR e PerfilEnum.CONSOLIDADOR respectivamente).
+    """
     if gestor.perfil in SUPERVISOR_PROFILES:
         return StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR
     if gestor.perfil in CONSOLIDADOR_PROFILES:
         return StatusPedidoEnum.AGUARDANDO_CARTOGRAFICO
-    # Legado / fallback
-    _LEGADO: dict[PerfilEnum, StatusPedidoEnum] = {
-        PerfilEnum.SUPERVISOR:   StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR,
-        PerfilEnum.CONSOLIDADOR: StatusPedidoEnum.AGUARDANDO_CARTOGRAFICO,
-    }
-    return _LEGADO.get(gestor.perfil, StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR)
+    # Fallback seguro: qualquer outro perfil gestor avança para consolidador
+    return StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR
 
 
 async def _aprovar_pedido(

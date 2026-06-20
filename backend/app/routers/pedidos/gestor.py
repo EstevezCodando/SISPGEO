@@ -26,12 +26,6 @@ from app.routers.pedidos._guards import (
 router = APIRouter(prefix="/pedidos", tags=["Pedidos — Gestores"])
 
 
-_PENDING_STATUS: dict[PerfilEnum, StatusPedidoEnum] = {
-    PerfilEnum.SUPERVISOR:   StatusPedidoEnum.AGUARDANDO_SUPERVISOR,
-    PerfilEnum.CONSOLIDADOR: StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR,
-}
-
-
 class ConsolidateRequest(BaseModel):
     pedido_ids: list[int]
 

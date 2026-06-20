@@ -24,10 +24,16 @@ class PerfilEnum(str, enum.Enum):
     GESTOR_CARTOGRAFICO  = "GESTOR_CARTOGRAFICO"
     ANALISTA_CGEO        = "ANALISTA_CGEO"
 
-    # Legados - mantidos para compatibilidade com dados existentes no banco.
-    # Não devem ser atribuídos a novos usuários. Admin deve migrar para os específicos.
-    SUPERVISOR   = "SUPERVISOR"
-    CONSOLIDADOR = "CONSOLIDADOR"
+    # ── Perfis legados ────────────────────────────────────────────────────────
+    # Mantidos EXCLUSIVAMENTE para compatibilidade com dados históricos no banco.
+    # Usuários existentes com esses perfis continuam funcionando porque
+    # SUPERVISOR_PROFILES e CONSOLIDADOR_PROFILES (abaixo) os incluem.
+    #
+    # NÃO atribua esses valores a novos usuários — use os perfis específicos
+    # (SUPERVISOR_CML, SUPERVISOR_CMP, etc. / CONSOLIDADOR_COTER, etc.).
+    # O administrador deve migrar gradualmente via painel de gestão de usuários.
+    SUPERVISOR   = "SUPERVISOR"    # legado: sem RM codificada no perfil
+    CONSOLIDADOR = "CONSOLIDADOR"  # legado: sem órgão vinculante codificado no perfil
 
 
 # ── Sets de conveniência para lógica de negócio ───────────────────────────────
