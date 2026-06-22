@@ -272,7 +272,13 @@ export function Login() {
                 </div>
               </div>
 
-              <div className="flex justify-end">
+              <div className="flex justify-between">
+                <Link
+                  to="/reenviar-ativacao"
+                  className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+                >
+                  Não recebi o e-mail de ativação
+                </Link>
                 <Link
                   to="/esqueci-senha"
                   className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors"

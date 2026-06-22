@@ -33,6 +33,7 @@ import { MeusDados } from "./pages/MeusDados";
 import { MeusPedidos } from "./pages/MeusPedidos";
 import { RedefinirSenha } from "./pages/RedefinirSenha";
 import { Register } from "./pages/Register";
+import { ReenviarAtivacao } from "./pages/ReenviarAtivacao";
 import { SolicitarProdutos } from "./pages/SolicitarProdutos";
 import { useAuthStore } from "./store/authStore";
 import { CONSOLIDADOR_PROFILES, SUPERVISOR_PROFILES } from "./types/user";
@@ -87,6 +88,7 @@ export default function App() {
         <Route path="/ativar/:token" element={<AtivarConta />} />
         <Route path="/esqueci-senha" element={<EsqueciSenha />} />
         <Route path="/redefinir-senha/:token" element={<RedefinirSenha />} />
+        <Route path="/reenviar-ativacao" element={<ReenviarAtivacao />} />
 
         {/* Protected */}
         <Route
