@@ -10,7 +10,7 @@ import { pedidosApi } from '../../api/pedidos'
 import { StatusBadge } from '../../components/shared/StatusBadge'
 import { LoadingSpinner } from '../../components/shared/LoadingSpinner'
 import type { Pedido } from '../../types/pedido'
-import { TIPO_PRODUTO_LABELS, STATUS_LABELS } from '../../types/pedido'
+import { TIPO_PRODUTO_LABELS, STATUS_LABELS, STATUS_RESPONSAVEL } from '../../types/pedido'
 import { formatNomeComPosto } from '../../data/postos'
 
 const ORG_CLS: Record<string, string> = {
@@ -19,19 +19,6 @@ const ORG_CLS: Record<string, string> = {
   COLOG: 'bg-orange-500/10 text-orange-300 border-orange-500/20',
   DECEx: 'bg-purple-500/10 text-purple-300 border-purple-500/20',
   DSG:   'bg-emerald-500/10 text-emerald-300 border-emerald-500/20',
-}
-
-/** Com quem está o pedido (escalão atual) */
-const STATUS_RESPONSAVEL: Record<string, string> = {
-  RASCUNHO:                'Solicitante (rascunho)',
-  AGUARDANDO_SUPERVISOR:   'Supervisor CMilA (COTER)',
-  AGUARDANDO_CONSOLIDADOR: 'Consolidador do órgão vinculante',
-  AGUARDANDO_CARTOGRAFICO: 'Gestor Cartográfico — DSG',
-  ATRIBUIDO_CGEO:          'CGEO (em análise)',
-  APROVADO:                'CGEO (em atendimento)',
-  REPROVADO:               'Encerrado — inviável',
-  CANCELADO:               'Encerrado — cancelado',
-  PRODUZIDO:               'Encerrado — produzido',
 }
 
 // Statuses eligible for "Dar o Pronto"

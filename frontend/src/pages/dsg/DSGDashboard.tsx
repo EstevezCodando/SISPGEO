@@ -14,22 +14,10 @@ import {
 import { StatusBadge } from '../../components/shared/StatusBadge'
 import { LoadingSpinner } from '../../components/shared/LoadingSpinner'
 import type { Pedido } from '../../types/pedido'
-import { TIPO_PRODUTO_LABELS, STATUS_LABELS } from '../../types/pedido'
+import { TIPO_PRODUTO_LABELS, STATUS_LABELS, ALL_STATUSES } from '../../types/pedido'
 import { formatNomeComPosto } from '../../data/postos'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-const ALL_STATUSES = [
-  'RASCUNHO',
-  'AGUARDANDO_SUPERVISOR',
-  'AGUARDANDO_CONSOLIDADOR',
-  'AGUARDANDO_CARTOGRAFICO',
-  'ATRIBUIDO_CGEO',
-  'APROVADO',
-  'REPROVADO',
-  'CANCELADO',
-  'PRODUZIDO',
-] as const
-
 const DSG_STATUSES = [
   'AGUARDANDO_CARTOGRAFICO',
   'ATRIBUIDO_CGEO',

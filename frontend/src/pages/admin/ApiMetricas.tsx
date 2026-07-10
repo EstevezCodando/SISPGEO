@@ -1,9 +1,11 @@
 import { useEffect, useState, useCallback, type ReactNode } from 'react'
 import { metricasApi, ResumoMetricas, EndpointMetrica, PedidosMetricas } from '../../api/metricas'
 import { Activity, Zap, AlertTriangle, Server, RefreshCw, Clock } from 'lucide-react'
+import { STATUS_LABELS, type StatusPedido } from '../../types/pedido'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
+// Cores sólidas para as barras do gráfico (propósito distinto dos pills em types).
 const STATUS_COLORS: Record<string, string> = {
   RASCUNHO: 'bg-zinc-500',
   AGUARDANDO_SUPERVISOR: 'bg-blue-500',
@@ -14,18 +16,6 @@ const STATUS_COLORS: Record<string, string> = {
   REPROVADO: 'bg-red-500',
   CANCELADO: 'bg-zinc-600',
   PRODUZIDO: 'bg-teal-500',
-}
-
-const STATUS_LABEL: Record<string, string> = {
-  RASCUNHO: 'Rascunho',
-  AGUARDANDO_SUPERVISOR: 'Aguard. Supervisor',
-  AGUARDANDO_CONSOLIDADOR: 'Aguard. Consolidador',
-  AGUARDANDO_CARTOGRAFICO: 'Aguard. DSG',
-  ATRIBUIDO_CGEO: 'Em Análise CGEO',
-  APROVADO: 'Aprovado',
-  REPROVADO: 'Reprovado',
-  CANCELADO: 'Cancelado',
-  PRODUZIDO: 'Produzido',
 }
 
 const METHOD_COLORS: Record<string, string> = {
@@ -196,7 +186,7 @@ export function ApiMetricas() {
   }))
 
   const donutItems = (pedidos?.pedidos_por_status ?? []).map((s, i) => ({
-    label: STATUS_LABEL[s.status] ?? s.status,
+    label: STATUS_LABELS[s.status as StatusPedido] ?? s.status,
     count: s.count,
     color: STATUS_DONUT_COLORS[i % STATUS_DONUT_COLORS.length],
   }))

@@ -43,17 +43,58 @@ export const TIPOS_IMPRESSAO = new Set<TipoProduto>([
 export const MATERIAIS_IMPRESSAO = ["Sulfite", "Glossy", "Tyvek"] as const;
 export type MaterialImpressao = (typeof MATERIAIS_IMPRESSAO)[number];
 
-// Labels técnicos — usados por gestores/DSG/CGEO que precisam do detalhe interno
+// Labels técnicos — usados por gestores/DSG/CGEO que precisam do detalhe interno.
+// Cada status tem um rótulo distinto (não usar o mesmo texto em dois status, sob
+// pena de gerar opções duplicadas em filtros que iteram STATUS_LABELS).
 export const STATUS_LABELS: Record<StatusPedido, string> = {
   RASCUNHO: "Rascunho",
-  AGUARDANDO_SUPERVISOR: "Não enviado",
-  AGUARDANDO_CONSOLIDADOR: "Não enviado",
+  AGUARDANDO_SUPERVISOR: "Aguardando Supervisor",
+  AGUARDANDO_CONSOLIDADOR: "Aguardando Consolidador",
   AGUARDANDO_CARTOGRAFICO: "Aguardando DSG",
   ATRIBUIDO_CGEO: "Em Análise CGEO",
   APROVADO: "Em Atendimento",
   REPROVADO: "Inviável",
   CANCELADO: "Cancelado",
   PRODUZIDO: "Produzido",
+};
+
+// Ordem canônica de todos os status — fonte única para dropdowns de filtro.
+// Reutilizar em vez de redeclarar arrays de status em cada página.
+export const ALL_STATUSES: readonly StatusPedido[] = [
+  "RASCUNHO",
+  "AGUARDANDO_SUPERVISOR",
+  "AGUARDANDO_CONSOLIDADOR",
+  "AGUARDANDO_CARTOGRAFICO",
+  "ATRIBUIDO_CGEO",
+  "APROVADO",
+  "PRODUZIDO",
+  "REPROVADO",
+  "CANCELADO",
+];
+
+// Progressão do "caminho feliz" (sem estados terminais negativos) — usada para
+// calcular a etapa atual na cadeia de aprovação.
+export const STATUS_PROGRESSION: readonly StatusPedido[] = [
+  "RASCUNHO",
+  "AGUARDANDO_SUPERVISOR",
+  "AGUARDANDO_CONSOLIDADOR",
+  "AGUARDANDO_CARTOGRAFICO",
+  "ATRIBUIDO_CGEO",
+  "APROVADO",
+  "PRODUZIDO",
+];
+
+// Responsável atual por cada status (visão administrativa).
+export const STATUS_RESPONSAVEL: Record<StatusPedido, string> = {
+  RASCUNHO: "Solicitante (rascunho)",
+  AGUARDANDO_SUPERVISOR: "Supervisor (CMilA / Diretoria DECEx)",
+  AGUARDANDO_CONSOLIDADOR: "Consolidador do órgão vinculante",
+  AGUARDANDO_CARTOGRAFICO: "Gestor Cartográfico — DSG",
+  ATRIBUIDO_CGEO: "CGEO (em análise)",
+  APROVADO: "CGEO (em atendimento)",
+  PRODUZIDO: "Encerrado — produzido",
+  REPROVADO: "Encerrado — inviável",
+  CANCELADO: "Encerrado — cancelado",
 };
 
 export const STATUS_COLORS: Record<StatusPedido, string> = {

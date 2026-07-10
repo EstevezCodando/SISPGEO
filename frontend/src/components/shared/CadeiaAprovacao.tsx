@@ -1,17 +1,12 @@
 import { CheckCircle2, Circle, ArrowRight } from 'lucide-react'
+import type { StatusPedido } from '../../types/pedido'
+import { STATUS_PROGRESSION } from '../../types/pedido'
 
-const STATUS_ORDER = [
-  'RASCUNHO',
-  'AGUARDANDO_SUPERVISOR',
-  'AGUARDANDO_CONSOLIDADOR',
-  'AGUARDANDO_CARTOGRAFICO',
-  'ATRIBUIDO_CGEO',
-  'APROVADO',
-  'PRODUZIDO',
-]
+// Ordenação do caminho feliz — fonte única em types/pedido.ts
+const STATUS_ORDER = STATUS_PROGRESSION
 
 function statusIndex(status: string): number {
-  const idx = STATUS_ORDER.indexOf(status)
+  const idx = STATUS_ORDER.indexOf(status as StatusPedido)
   return idx === -1 ? 0 : idx
 }
 
