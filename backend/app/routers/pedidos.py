@@ -21,7 +21,12 @@ from app.dependencies import get_current_user, require_profiles
 from app.models.pedido import Pedido, ItemPedido
 from app.models.operacao import Operacao
 from app.models.user import Usuario
-from app.models.enums import StatusPedidoEnum, PerfilEnum, OrgaoVinculanteEnum, SUPERVISOR_PROFILES, CONSOLIDADOR_PROFILES
+from app.models.enums import (
+    StatusPedidoEnum, PerfilEnum, OrgaoVinculanteEnum,
+    SUPERVISOR_PROFILES, CONSOLIDADOR_PROFILES, SUPERVISOR_DECEX_PROFILES,
+    DIRETORIA_TO_SUPERVISOR, SUPERVISOR_DECEX_TO_DIRETORIA,
+)
+from app.utils.diretorias_decex import diretoria_de_om
 from app.schemas.pedido import (
     PedidoCreate, PedidoUpdate, PedidoOut,
     ReviewPedidoRequest, AssignCGEORequest, CGEOReviewRequest,
@@ -105,7 +110,7 @@ async def _enrich(db: AsyncSession, pedidos: list[Pedido]) -> list[PedidoOut]:
         out.criador_id = p.criador_id
         out.criador_nome = users.get(p.criador_id, {}).get("nome") if p.criador_id else None
         ov = p.orgao_vinculante.value if p.orgao_vinculante else ""
-        out.cadeia_aprovacao = pedido_service.cadeia_aprovacao(ov, p.regiao_militar)
+        out.cadeia_aprovacao = pedido_service.cadeia_aprovacao(ov, p.regiao_militar, p.diretoria)
         result.append(out)
     return result
 
@@ -167,8 +172,9 @@ async def _check_janela_open(db: AsyncSession, user: Usuario) -> None:
 router = APIRouter(prefix="/pedidos", tags=["Pedidos"])
 
 GESTOR_PROFILES = tuple(SUPERVISOR_PROFILES | CONSOLIDADOR_PROFILES)
-# Alias — supervisores regionais roteiam pedidos por regiao_militar
-_GESTORES_POR_RM = SUPERVISOR_PROFILES
+# Conjunto de perfis de supervisor (regionais + DECEx). O escopo de cada um
+# (RM ou Diretoria) é resolvido por _supervisor_scope().
+_GESTORES_SUPERVISOR = SUPERVISOR_PROFILES
 
 
 def _rm_do_supervisor(user: Usuario) -> str | None:
@@ -180,6 +186,24 @@ def _rm_do_supervisor(user: Usuario) -> str | None:
     """
     rm = _SUPERVISOR_TO_RM.get(user.perfil)
     return rm if rm is not None else user.regiao_militar
+
+
+def _supervisor_scope(user: Usuario):
+    """Cláusula SQLAlchemy que restringe os pedidos ao escopo de um supervisor.
+
+    - Supervisores do **DECEx** filtram por ``Pedido.diretoria`` (Diretoria do perfil).
+    - Supervisores **regionais** filtram por ``Pedido.regiao_militar`` (C. Mil. A).
+    """
+    if user.perfil in SUPERVISOR_DECEX_PROFILES:
+        return Pedido.diretoria == SUPERVISOR_DECEX_TO_DIRETORIA.get(user.perfil)
+    return Pedido.regiao_militar == _rm_do_supervisor(user)
+
+
+def _supervisor_owns(user: Usuario, pedido: Pedido) -> bool:
+    """Versão em Python de :func:`_supervisor_scope` para um pedido já carregado."""
+    if user.perfil in SUPERVISOR_DECEX_PROFILES:
+        return pedido.diretoria == SUPERVISOR_DECEX_TO_DIRETORIA.get(user.perfil)
+    return pedido.regiao_militar == _rm_do_supervisor(user)
 
 
 
@@ -214,6 +238,8 @@ async def create_pedido(
 
     # impressao_solicitada derivado: verdadeiro se qualquer item tiver qty de impressão
     any_impressao = any(i.impressao_quantidade for i in body.itens if i.impressao_quantidade)
+    # Diretoria supervisora — só se aplica ao fluxo DECEx (derivada da OM do solicitante).
+    diretoria = diretoria_de_om(current_user.om) if ov == OrgaoVinculanteEnum.DECEx else None
     pedido = Pedido(
         usuario_id=current_user.id,
         criador_id=current_user.id,
@@ -223,6 +249,7 @@ async def create_pedido(
         finalidade=body.finalidade,
         orgao_vinculante=ov,
         regiao_militar=current_user.regiao_militar,
+        diretoria=diretoria,
         impressao_solicitada=any_impressao,
     )
     db.add(pedido)
@@ -265,11 +292,11 @@ async def list_pedidos(
             .where(Pedido.cgeo_id == current_user.cgeo_id)
             .order_by(Pedido.criado_em.desc())
         )
-    elif current_user.perfil in _GESTORES_POR_RM:
+    elif current_user.perfil in _GESTORES_SUPERVISOR:
         # Supervisor (C. Mil. A) — roteado pela RM derivada do perfil
         result = await db.scalars(
             select(Pedido)
-            .where(Pedido.regiao_militar == _rm_do_supervisor(current_user))
+            .where(_supervisor_scope(current_user))
             .order_by(Pedido.criado_em.desc())
         )
     elif current_user.perfil in CONSOLIDADOR_PROFILES:
@@ -299,13 +326,13 @@ async def list_pending(
     db: AsyncSession = Depends(get_db),
     current_user: Usuario = Depends(get_current_user),
 ):
-    if current_user.perfil in _GESTORES_POR_RM:
+    if current_user.perfil in _GESTORES_SUPERVISOR:
         # Supervisor regional — filtro por Região Militar
         result = await db.scalars(
             select(Pedido)
             .where(
                 Pedido.status == StatusPedidoEnum.AGUARDANDO_SUPERVISOR,
-                Pedido.regiao_militar == _rm_do_supervisor(current_user),
+                _supervisor_scope(current_user),
             )
             .order_by(Pedido.submetido_gestor_em.asc())
         )
@@ -350,8 +377,8 @@ async def get_map_features(
         )
     elif current_user.perfil == PerfilEnum.ANALISTA_CGEO:
         q = select(Pedido).where(Pedido.cgeo_id == current_user.cgeo_id)
-    elif current_user.perfil in _GESTORES_POR_RM:
-        q = select(Pedido).where(Pedido.regiao_militar == _rm_do_supervisor(current_user))
+    elif current_user.perfil in _GESTORES_SUPERVISOR:
+        q = select(Pedido).where(_supervisor_scope(current_user))
     elif current_user.perfil in CONSOLIDADOR_PROFILES:
         q = select(Pedido).where(Pedido.orgao_vinculante == current_user.orgao_vinculante)
     else:
@@ -411,7 +438,7 @@ async def listar_duplicatas(
     if current_user.perfil in SUPERVISOR_PROFILES:
         q = select(Pedido).where(
             Pedido.status == StatusPedidoEnum.AGUARDANDO_SUPERVISOR,
-            Pedido.regiao_militar == _rm_do_supervisor(current_user),
+            _supervisor_scope(current_user),
         )
     elif current_user.perfil in CONSOLIDADOR_PROFILES:
         q = select(Pedido).where(
@@ -495,7 +522,7 @@ async def exportar_relatorio(
 
     elif current_user.perfil in SUPERVISOR_PROFILES:
         q = select(Pedido).where(
-            Pedido.regiao_militar == _rm_do_supervisor(current_user),
+            _supervisor_scope(current_user),
             Pedido.status.notin_([StatusPedidoEnum.RASCUNHO, StatusPedidoEnum.CANCELADO]),
         ).order_by(Pedido.prioridade.asc(), Pedido.criado_em.asc())
 
@@ -1283,7 +1310,7 @@ async def delete_item(
     is_supervisor = (
         current_user.perfil in SUPERVISOR_PROFILES
         and pedido.status == StatusPedidoEnum.AGUARDANDO_SUPERVISOR
-        and pedido.regiao_militar == _rm_do_supervisor(current_user)
+        and _supervisor_owns(current_user, pedido)
     )
     is_consolidador = (
         current_user.perfil in CONSOLIDADOR_PROFILES
@@ -1337,7 +1364,7 @@ async def list_homologados(
             select(Pedido)
             .where(
                 Pedido.status.in_(forwarded),
-                Pedido.regiao_militar == _rm_do_supervisor(current_user),
+                _supervisor_scope(current_user),
             )
             .order_by(Pedido.atualizado_em.desc())
         )

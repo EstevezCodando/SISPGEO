@@ -150,6 +150,7 @@ export interface Pedido {
   atualizado_em: string;
   itens: ItemPedido[];
   regiao_militar: string | null;
+  diretoria: string | null;
   usuario_nome: string | null;
   operacao_nome: string | null;
   criador_id: number | null;

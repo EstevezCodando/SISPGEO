@@ -90,6 +90,8 @@ def _make_pedido(
     p.cgeo_id = None
     # regiao_militar necessário para roteamento COTER → SUPERVISOR_CMP em submit_pedido
     p.regiao_militar = "CMP"
+    # diretoria só é usada no fluxo DECEx; None nos demais (evita MagicMock truthy)
+    p.diretoria = None
     p.itens = [_make_item()] if with_items else []
     return p
 
@@ -129,6 +131,50 @@ def usuario_omds() -> MagicMock:
 def gestor_brigada() -> MagicMock:
     """Mock de usuário com perfil SUPERVISOR (legado) — Região Militar CMP, alinhado com pedido_submetido_brigada."""
     return _make_user(user_id=2, email="supervisor@eb.mil.br", perfil=PerfilEnum.SUPERVISOR, regiao_militar="CMP")
+
+
+@pytest.fixture
+def solicitante_decex_desmil() -> MagicMock:
+    """Solicitante do DECEx cuja OM (AMAN) é supervisionada pela DESMil."""
+    u = _make_user(
+        user_id=20, email="solicitante.decex@eb.mil.br",
+        perfil=PerfilEnum.SOLICITANTE, orgao_vinculante=OrgaoVinculanteEnum.DECEx,
+        regiao_militar="CML",
+    )
+    u.om = "AMAN"
+    return u
+
+
+@pytest.fixture
+def supervisor_desmil() -> MagicMock:
+    """Supervisor da Diretoria DESMil (fluxo DECEx)."""
+    return _make_user(
+        user_id=21, email="supervisor.desmil@eb.mil.br",
+        perfil=PerfilEnum.SUPERVISOR_DESMIL, orgao_vinculante=OrgaoVinculanteEnum.DECEx,
+    )
+
+
+@pytest.fixture
+def pedido_decex_desmil_rascunho(solicitante_decex_desmil) -> MagicMock:
+    """Pedido RASCUNHO de solicitante DECEx (OM→DESMil), diretoria ainda não gravada."""
+    p = _make_pedido(
+        pedido_id=200, usuario_id=solicitante_decex_desmil.id,
+        orgao_vinculante=OrgaoVinculanteEnum.DECEx,
+    )
+    p.diretoria = None
+    return p
+
+
+@pytest.fixture
+def pedido_decex_desmil_aguardando(solicitante_decex_desmil) -> MagicMock:
+    """Pedido AGUARDANDO_SUPERVISOR do fluxo DECEx, diretoria=DESMIL."""
+    p = _make_pedido(
+        pedido_id=201, usuario_id=solicitante_decex_desmil.id,
+        status=StatusPedidoEnum.AGUARDANDO_SUPERVISOR,
+        orgao_vinculante=OrgaoVinculanteEnum.DECEx,
+    )
+    p.diretoria = "DESMIL"
+    return p
 
 
 @pytest.fixture

@@ -74,6 +74,7 @@ class PedidoOut(BaseModel):
     atualizado_em: datetime
     itens: list[ItemPedidoOut] = []
     regiao_militar: str | None = None
+    diretoria: str | None = None
     # Campos enriquecidos (populados nos endpoints, não estão no modelo ORM)
     usuario_nome: str | None = None
     operacao_nome: str | None = None

@@ -19,8 +19,12 @@ cobrindo todos os Comandos Militares de Área e todos os órgãos consolidadores
   FLUXO COLOG:
     SOLICITANTE (OM) → CONSOLIDADOR_COLOG → GESTOR_CARTOGRAFICO
 
-  FLUXO DECEx:
-    SOLICITANTE (OM) → CONSOLIDADOR_DECEX → GESTOR_CARTOGRAFICO
+  FLUXO DECEx (SECEx):
+    SOLICITANTE (OM)
+      → SUPERVISOR_DESMIL / DETMIL / DEPA / DPHCEX / CCFEX  (Diretoria da OM)
+        → CONSOLIDADOR_DECEX (DCEX)
+          → GESTOR_CARTOGRAFICO (admin)
+            → ANALISTA_CGEO
 
   FLUXO DSG (direto):
     SOLICITANTE (OM) → CONSOLIDADOR_DSG → GESTOR_CARTOGRAFICO
@@ -328,23 +332,79 @@ HIERARQUIA: list[dict] = [
     ),
 
     # ══════════════════════════════════════════════════════════════════════════
-    # FLUXO DECEx
-    # SOLICITANTE (OM) → CONSOLIDADOR_DECEX → GESTOR_CARTOGRAFICO
-    # Nota: não há Supervisor CMilA intermediário neste fluxo.
+    # FLUXO DECEx (SECEx)
+    # SOLICITANTE (OM) → SUPERVISOR (Diretoria) → CONSOLIDADOR_DECEX → GESTOR_CARTOGRAFICO
+    # A Diretoria supervisora é inferida da OM do solicitante (auto-mapeamento),
+    # discriminada pelo órgão vinculante DECEx.
     # ══════════════════════════════════════════════════════════════════════════
+
+    # ── Consolidador DECEx (DCEX) ─────────────────────────────────────────────
     _u(
         "Roberto Consolidador DECEx", "Roberto",
         "consolidador.decex@eb.mil.br", "(61) 99904-0001",
         "DECEx", "Seção de Geoinformação",
         "CMP", "DECEx", "CONSOLIDADOR_DECEX", "DECEx",
-        "Consolidador DECEx — recebe pedidos diretos das OM subordinadas ao DECEx e envia à DSG (Brasília/CMP)",
+        "Consolidador DECEx (DCEX) — consolida pedidos dos supervisores das Diretorias e envia à DSG (Brasília/CMP)",
+    ),
+
+    # ── Supervisores por Diretoria/Centro ─────────────────────────────────────
+    _u(
+        "Sérgio Supervisor DESMil", "Sérgio",
+        "supervisor.desmil@eb.mil.br", "(21) 99904-0010",
+        "DESMil", "Seção de Geoinformação",
+        "CML", "DECEx", "SUPERVISOR_DESMIL", "DECEx",
+        "Supervisor DESMil — revisa pedidos das OM de Ensino Superior Militar (AMAN, ECEME, EsPCEx, CPOR, NPOR…)",
     ),
     _u(
-        "Tiago Solicitante DECEx", "Tiago",
+        "Marcos Supervisor DETMil", "Marcos",
+        "supervisor.detmil@eb.mil.br", "(21) 99904-0011",
+        "DETMil", "Seção de Geoinformação",
+        "CML", "DECEx", "SUPERVISOR_DETMIL", "DECEx",
+        "Supervisor DETMil — revisa pedidos das OM de Ensino Técnico/Formação (ESA, EsSLog, CIdEx, UETE…)",
+    ),
+    _u(
+        "André Supervisor DEPA", "André",
+        "supervisor.depa@eb.mil.br", "(21) 99904-0012",
+        "DEPA", "Seção de Geoinformação",
+        "CML", "DECEx", "SUPERVISOR_DEPA", "DECEx",
+        "Supervisor DEPA — revisa pedidos dos Colégios Militares (CMRJ, CMSP, CMPA…)",
+    ),
+    _u(
+        "Felipe Supervisor DPHCEx", "Felipe",
+        "supervisor.dphcex@eb.mil.br", "(21) 99904-0013",
+        "DPHCEx", "Seção de Geoinformação",
+        "CML", "DECEx", "SUPERVISOR_DPHCEX", "DECEx",
+        "Supervisor DPHCEx — revisa pedidos das OM do Patrimônio Histórico (AHEx, BIBLIEx, MHEx/FC, MNMSGM)",
+    ),
+    _u(
+        "Gustavo Supervisor CCFEx", "Gustavo",
+        "supervisor.ccfex@eb.mil.br", "(21) 99904-0014",
+        "CCFEx/FSJ", "Seção de Geoinformação",
+        "CML", "DECEx", "SUPERVISOR_CCFEX", "DECEx",
+        "Supervisor CCFEx — revisa pedidos das OM de Capacitação Física (EsEFEx, EsEqEx, IPCFEx…)",
+    ),
+
+    # ── Solicitantes DECEx — OM mapeia à Diretoria pelo auto-mapeamento ────────
+    _u(
+        "Tiago Solicitante DESMil", "Tiago",
         "subordinado_decex@eb.mil.br", "(11) 99904-0002",
-        "ESPCEX", "Seção de Instrução",
+        "EsPCEx", "Seção de Instrução",
         "CMSE", "DECEx", "SOLICITANTE", "DECEx",
-        "Solicitante DECEx — pedido: OM → CONSOLIDADOR_DECEX → DSG → CGEO (ESPCEX/Campinas, CMSE, sem C Mil A)",
+        "Solicitante DECEx — pedido: EsPCEx → SUPERVISOR DESMil → CONSOLIDADOR_DECEX → DSG → CGEO (Campinas/CMSE)",
+    ),
+    _u(
+        "Helena Solicitante DEPA", "Helena",
+        "subordinado_decex_depa@eb.mil.br", "(21) 99904-0003",
+        "CMRJ", "Seção de Ensino",
+        "CML", "DECEx", "SOLICITANTE", "DECEx",
+        "Solicitante DECEx — pedido: CMRJ → SUPERVISOR DEPA → CONSOLIDADOR_DECEX → DSG → CGEO (Rio/CML)",
+    ),
+    _u(
+        "Rui Solicitante DESMil (NPOR)", "Rui",
+        "subordinado_decex_npor@eb.mil.br", "(47) 99904-0004",
+        "20º BIB", "NPOR",
+        "CMS", "DECEx", "SOLICITANTE", "DECEx",
+        "Solicitante DECEx — discriminador: 20º BIB com órgão DECEx → SUPERVISOR DESMil (a mesma OM em COTER iria à RM)",
     ),
 
     # ══════════════════════════════════════════════════════════════════════════
@@ -383,12 +443,18 @@ PERFIL_LABEL: dict[str, str] = {
     "SUPERVISOR_CMAO":     "Supervisor CMAO (Amaz. Ocid.)",
     "SUPERVISOR_CMA":      "Supervisor CMA (Amazônia)",
     "SUPERVISOR_CMNE":     "Supervisor CMNE (Nordeste)",
+    # Supervisores DECEx por Diretoria/Centro
+    "SUPERVISOR_DESMIL":   "Supervisor DESMil",
+    "SUPERVISOR_DETMIL":   "Supervisor DETMil",
+    "SUPERVISOR_DEPA":     "Supervisor DEPA",
+    "SUPERVISOR_DPHCEX":   "Supervisor DPHCEx",
+    "SUPERVISOR_CCFEX":    "Supervisor CCFEx",
     # Consolidadores por órgão
     "CONSOLIDADOR_COTER":  "Consolidador COTER",
     "CONSOLIDADOR_DSG":    "Consolidador DSG",
     "CONSOLIDADOR_DEC":    "Consolidador DEC",
     "CONSOLIDADOR_COLOG":  "Consolidador COLOG",
-    "CONSOLIDADOR_DECEX":  "Consolidador DECEx",
+    "CONSOLIDADOR_DECEX":  "Consolidador DECEx (DCEX)",
     # Outros
     "GESTOR_CARTOGRAFICO": "Gestor Cartográfico (DSG)",
     "ANALISTA_CGEO":       "Analista CGEO",
@@ -399,7 +465,7 @@ GRUPO_HEADER: dict[str, str] = {
     "COTER": "COTER — SOLICITANTE → C Mil A (Supervisor) → CONSOLIDADOR_COTER → DSG",
     "DEC":   "DEC   — SOLICITANTE → CONSOLIDADOR_DEC → DSG  (sem C Mil A)",
     "COLOG": "COLOG — SOLICITANTE → CONSOLIDADOR_COLOG → DSG (sem C Mil A)",
-    "DECEx": "DECEx — SOLICITANTE → CONSOLIDADOR_DECEX → DSG (sem C Mil A)",
+    "DECEx": "DECEx — SOLICITANTE → SUPERVISOR (Diretoria) → CONSOLIDADOR_DECEX → DSG",
     "DSG":   "DSG   — SOLICITANTE → CONSOLIDADOR_DSG → Gestor Cartográfico",
 }
 

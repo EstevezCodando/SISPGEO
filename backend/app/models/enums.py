@@ -14,6 +14,15 @@ class PerfilEnum(str, enum.Enum):
     SUPERVISOR_CMNE  = "SUPERVISOR_CMNE"  # Comando Militar do Nordeste
     SUPERVISOR_CMSE = "SUPERVISOR_CMSE"   # Comando Militar do Sudeste
 
+    # Supervisores do DECEx - um por Diretoria/Centro subordinado ao DECEx.
+    # Diferente dos supervisores regionais (roteados por Região Militar),
+    # estes são roteados pela Diretoria supervisora da OM (campo pedido.diretoria).
+    SUPERVISOR_DESMIL  = "SUPERVISOR_DESMIL"   # Diretoria de Ensino Superior Militar
+    SUPERVISOR_DETMIL  = "SUPERVISOR_DETMIL"   # Diretoria de Ensino Técnico Militar
+    SUPERVISOR_DEPA    = "SUPERVISOR_DEPA"     # Diretoria de Ensino Preparatório e Assistencial
+    SUPERVISOR_DPHCEX  = "SUPERVISOR_DPHCEX"   # Diretoria do Patrimônio Histórico e Cultural do Exército
+    SUPERVISOR_CCFEX   = "SUPERVISOR_CCFEX"    # Centro de Capacitação Física do Exército
+
     # Consolidadores por órgão vinculante
     CONSOLIDADOR_COTER  = "CONSOLIDADOR_COTER"
     CONSOLIDADOR_DSG    = "CONSOLIDADOR_DSG"
@@ -32,7 +41,8 @@ class PerfilEnum(str, enum.Enum):
 
 # ── Sets de conveniência para lógica de negócio ───────────────────────────────
 
-SUPERVISOR_PROFILES: frozenset["PerfilEnum"] = frozenset({
+# Supervisores regionais - roteados pela Região Militar (C. Mil. A) do pedido.
+SUPERVISOR_REGIONAL_PROFILES: frozenset["PerfilEnum"] = frozenset({
     PerfilEnum.SUPERVISOR_CMP,
     PerfilEnum.SUPERVISOR_CML,
     PerfilEnum.SUPERVISOR_CMS,
@@ -44,6 +54,22 @@ SUPERVISOR_PROFILES: frozenset["PerfilEnum"] = frozenset({
     PerfilEnum.SUPERVISOR,   # legado
 })
 
+# Supervisores do DECEx - roteados pela Diretoria supervisora (pedido.diretoria).
+SUPERVISOR_DECEX_PROFILES: frozenset["PerfilEnum"] = frozenset({
+    PerfilEnum.SUPERVISOR_DESMIL,
+    PerfilEnum.SUPERVISOR_DETMIL,
+    PerfilEnum.SUPERVISOR_DEPA,
+    PerfilEnum.SUPERVISOR_DPHCEX,
+    PerfilEnum.SUPERVISOR_CCFEX,
+})
+
+# União — usada em checagens amplas de permissão ("é supervisor").
+# Atenção: para roteamento por escalão, use os subconjuntos específicos acima,
+# pois supervisores regionais consolidam ao COTER e os do DECEx ao CONSOLIDADOR_DECEX.
+SUPERVISOR_PROFILES: frozenset["PerfilEnum"] = (
+    SUPERVISOR_REGIONAL_PROFILES | SUPERVISOR_DECEX_PROFILES
+)
+
 CONSOLIDADOR_PROFILES: frozenset["PerfilEnum"] = frozenset({
     PerfilEnum.CONSOLIDADOR_COTER,
     PerfilEnum.CONSOLIDADOR_DSG,
@@ -52,6 +78,24 @@ CONSOLIDADOR_PROFILES: frozenset["PerfilEnum"] = frozenset({
     PerfilEnum.CONSOLIDADOR_DECEX,
     PerfilEnum.CONSOLIDADOR,   # legado
 })
+
+
+# Diretoria supervisora do DECEx → perfil de supervisor responsável.
+# A chave é o código gravado em pedido.diretoria (ver app.utils.diretorias_decex).
+DIRETORIA_TO_SUPERVISOR: dict[str, "PerfilEnum"] = {
+    "DESMIL":  PerfilEnum.SUPERVISOR_DESMIL,
+    "DETMIL":  PerfilEnum.SUPERVISOR_DETMIL,
+    "DEPA":    PerfilEnum.SUPERVISOR_DEPA,
+    "DPHCEX":  PerfilEnum.SUPERVISOR_DPHCEX,
+    "CCFEX":   PerfilEnum.SUPERVISOR_CCFEX,
+}
+
+# Inverso: perfil do supervisor DECEx → código da Diretoria (derivado do mapa acima).
+# Usar este mapa (em vez de qualquer campo no usuário) para filtrar pedidos por
+# supervisor, pois o perfil é autoritativo (SUPERVISOR_DESMIL → "DESMIL").
+SUPERVISOR_DECEX_TO_DIRETORIA: dict["PerfilEnum", str] = {
+    v: k for k, v in DIRETORIA_TO_SUPERVISOR.items()
+}
 
 
 class OrgaoVinculanteEnum(str, enum.Enum):

@@ -117,6 +117,8 @@ async def _run_migrations():
         "ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS finalidade_geo VARCHAR(100)",
         # 2026-05: timestamp do último envio de e-mail de ativação (controle de cooldown 30 min)
         "ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS activation_email_sent_at TIMESTAMPTZ",
+        # 2026-07: Diretoria supervisora do DECEx — roteia pedido ao supervisor da Diretoria
+        "ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS diretoria VARCHAR(20)",
     ]
     for stmt in migrations:
         try:
@@ -145,6 +147,12 @@ async def _run_migrations():
         "ALTER TYPE perfil_enum ADD VALUE IF NOT EXISTS 'CONSOLIDADOR_DEC'",
         "ALTER TYPE perfil_enum ADD VALUE IF NOT EXISTS 'CONSOLIDADOR_COLOG'",
         "ALTER TYPE perfil_enum ADD VALUE IF NOT EXISTS 'CONSOLIDADOR_DECEX'",
+        # 2026-07: supervisores do DECEx por Diretoria/Centro
+        "ALTER TYPE perfil_enum ADD VALUE IF NOT EXISTS 'SUPERVISOR_DESMIL'",
+        "ALTER TYPE perfil_enum ADD VALUE IF NOT EXISTS 'SUPERVISOR_DETMIL'",
+        "ALTER TYPE perfil_enum ADD VALUE IF NOT EXISTS 'SUPERVISOR_DEPA'",
+        "ALTER TYPE perfil_enum ADD VALUE IF NOT EXISTS 'SUPERVISOR_DPHCEX'",
+        "ALTER TYPE perfil_enum ADD VALUE IF NOT EXISTS 'SUPERVISOR_CCFEX'",
         # 2026-05: tipos de impressão específicos
         "ALTER TYPE tipo_produto_enum ADD VALUE IF NOT EXISTS 'IMPRESSAO_CT'",
         "ALTER TYPE tipo_produto_enum ADD VALUE IF NOT EXISTS 'IMPRESSAO_COI'",
