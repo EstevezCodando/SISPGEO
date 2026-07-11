@@ -45,6 +45,8 @@ CCFEX  = "CCFEX"
 _DESMIL_SUBORDINADAS = [
     "ECEME", "EsAO", "AMAN", "BCSv/AMAN", "CEO/AMAN", "B Log Acad", "B Adm/AMAN",
     "EsPCEx", "ESFCEx", "CPOR/RJ", "CPOR/BH", "CPOR/SP", "CPOR/PA", "CPOR/R",
+    # Sede da Diretoria (pessoal lotado na própria DESMil):
+    "DESMil",
     # Variantes de grafia presentes em frontend/src/data/omsData.ts (aliases):
     "B Log Acad / AMAN", "Ba Adm / AMAN", "ES P C EX", "CPOR/CM - BH",
 ]
@@ -63,6 +65,8 @@ _DESMIL_VINCULADAS = [  # hosts de NPOR (CFOR)
 _DETMIL_SUBORDINADAS = [
     "ESA", "BCSv/ESA", "EsSLog", "EASA", "EsACosAAe", "EsIE", "CEP",
     "CIdEx", "CPAEx", "CEADEx", "CCOPAB",
+    # Sede da Diretoria (pessoal lotado na própria DETMil):
+    "DETMil",
     # Variantes de grafia presentes em omsData.ts (aliases):
     "Es S Log", "CEP/FDC",
 ]
@@ -72,7 +76,7 @@ _DETMIL_VINCULADAS = [  # OMV (Centros de Instrução hospedados)
     "CIOpEsp", "17º BFron", "72º BIMtz", "CIPqdt GPB", "EsCom", "EsIMEx", "9º B Mnt",
     "2º CGEO", "ENaDCiber", "IEFEx", "CA - Leste",
     # Variantes de grafia da OM host (como cadastradas pelos usuários):
-    "CI Bld", "17º B FRON",
+    "CI Bld", "17º B FRON", "CIOU / 11ª Bda Inf Mec",
 ]
 _DETMIL_UETE = [  # UETE (Unidades Escola de Tiro de Emprego) — hosts
     "41º BIMtz", "12º GAC", "13º RCMec", "14º GAC", "10º BIL", "4º GACL",
@@ -82,12 +86,20 @@ _DETMIL_UETE = [  # UETE (Unidades Escola de Tiro de Emprego) — hosts
 _DEPA_SUBORDINADAS = [  # Colégios Militares
     "CMRJ", "CMM", "CMF", "CMPA", "CMR", "CMC", "CMB", "CMCG", "CMSM", "CMJF",
     "CMBel", "CMSP", "CMS", "CMBH", "CMVM",
+    # Sede da Diretoria (pessoal lotado na própria DEPA):
+    "DEPA",
 ]
 
-_DPHCEX_SUBORDINADAS = ["AHEx", "BIBLIEx", "MHEx/FC", "MNMSGM"]
+_DPHCEX_SUBORDINADAS = [
+    "AHEx", "BIBLIEx", "MHEx/FC", "MNMSGM",
+    # Sede da Diretoria:
+    "DPHCEx",
+]
 
 _CCFEX_SUBORDINADAS = [
     "CDE", "EsEFEx", "EsEqEx", "IPCFEx", "Bia C Sv/FSJ",
+    # Sede do Centro (inclui a grafia com localização):
+    "CCFEx", "CCFEx/FSJ",
     # Variantes de grafia presentes em omsData.ts (aliases):
     "Es Eq Ex", "Bia Cmdo Sv/FSJ",
 ]
@@ -114,6 +126,8 @@ _OVERRIDES: dict[str, str] = {
     "16º BIMtz": DESMIL,
     "2º BFv":    DESMIL,
     "72º BIMtz": DESMIL,
+    # 72º BI de Fortaleza (grafia "Caat") — host do NPOR/72º BIMtz.
+    "72º BI Caat": DESMIL,
 }
 
 
