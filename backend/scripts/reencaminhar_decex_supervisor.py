@@ -10,7 +10,12 @@ Modo padrão = PRÉVIA (não altera nada). Para aplicar de fato:
     APLICAR=1 python reencaminhar_decex_supervisor.py
 """
 import os
+import sys
 import asyncio
+
+# Garante que a raiz do backend (/app) esteja no sys.path, permitindo
+# `python scripts/reencaminhar_decex_supervisor.py` de qualquer diretório.
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from sqlalchemy import select
 
