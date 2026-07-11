@@ -19,7 +19,7 @@ cobrindo todos os Comandos Militares de Área e todos os órgãos consolidadores
   FLUXO COLOG:
     SOLICITANTE (OM) → CONSOLIDADOR_COLOG → GESTOR_CARTOGRAFICO
 
-  FLUXO DECEx (SECEx):
+  FLUXO DECEx:
     SOLICITANTE (OM)
       → SUPERVISOR_DESMIL / DETMIL / DEPA / DPHCEX / CCFEX  (Diretoria da OM)
         → CONSOLIDADOR_DECEX (DCEX)
@@ -332,7 +332,7 @@ HIERARQUIA: list[dict] = [
     ),
 
     # ══════════════════════════════════════════════════════════════════════════
-    # FLUXO DECEx (SECEx)
+    # FLUXO DECEx
     # SOLICITANTE (OM) → SUPERVISOR (Diretoria) → CONSOLIDADOR_DECEX → GESTOR_CARTOGRAFICO
     # A Diretoria supervisora é inferida da OM do solicitante (auto-mapeamento),
     # discriminada pelo órgão vinculante DECEx.

@@ -64,7 +64,7 @@ const PERFIL_GROUPS: { label: string; perfis: Perfil[] }[] = [
     ],
   },
   {
-    label: 'Supervisores DECEx (SECEx)',
+    label: 'Supervisores DECEx',
     perfis: [
       'SUPERVISOR_DESMIL', 'SUPERVISOR_DETMIL', 'SUPERVISOR_DEPA',
       'SUPERVISOR_DPHCEX', 'SUPERVISOR_CCFEX',

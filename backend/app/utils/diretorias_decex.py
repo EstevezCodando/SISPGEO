@@ -1,5 +1,5 @@
 """
-Mapeamento OM → Diretoria supervisora do DECEx (SECEx).
+Mapeamento OM → Diretoria supervisora do DECEx.
 
 O fluxo do órgão vinculante ``DECEx`` possui uma camada de supervisão por
 Diretoria/Centro entre o solicitante e o consolidador (DCEX):
@@ -12,7 +12,7 @@ supervisiona seus pedidos. **Só deve ser consultado quando
 supervisor da sua Região Militar quando o órgão é o COTER, e para o supervisor
 DESMil quando o órgão é o DECEx. O discriminador é o ``orgao_vinculante``.
 
-Fonte da verdade: documento ``OMDS e OMV SECEx``. As listas abaixo reproduzem as
+Fonte da verdade: documento oficial de OMDS e OMV do DECEx. As listas abaixo reproduzem as
 OM Subordinadas e Vinculadas de cada Diretoria. Os nomes devem casar com os de
 ``frontend/src/data/omsData.ts`` (de onde o solicitante seleciona sua OM no
 cadastro); a normalização (:func:`_norm`) torna o casamento tolerante a acentos,
