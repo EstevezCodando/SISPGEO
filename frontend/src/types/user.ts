@@ -9,6 +9,12 @@ export type Perfil =
   | 'SUPERVISOR_CMA'
   | 'SUPERVISOR_CMNE'
   | 'SUPERVISOR_CMSE'
+  // Supervisores do DECEx (por Diretoria/Centro)
+  | 'SUPERVISOR_DESMIL'
+  | 'SUPERVISOR_DETMIL'
+  | 'SUPERVISOR_DEPA'
+  | 'SUPERVISOR_DPHCEX'
+  | 'SUPERVISOR_CCFEX'
   // Consolidadores por órgão
   | 'CONSOLIDADOR_COTER'
   | 'CONSOLIDADOR_DSG'
@@ -24,6 +30,8 @@ export type Perfil =
 export const SUPERVISOR_PROFILES = new Set<Perfil>([
   'SUPERVISOR_CMP', 'SUPERVISOR_CML', 'SUPERVISOR_CMS', 'SUPERVISOR_CMO',
   'SUPERVISOR_CMAO', 'SUPERVISOR_CMA', 'SUPERVISOR_CMNE', 'SUPERVISOR_CMSE',
+  'SUPERVISOR_DESMIL', 'SUPERVISOR_DETMIL', 'SUPERVISOR_DEPA',
+  'SUPERVISOR_DPHCEX', 'SUPERVISOR_CCFEX',
   'SUPERVISOR',
 ])
 
@@ -43,6 +51,11 @@ export const PERFIL_LABELS: Record<Perfil, string> = {
   SUPERVISOR_CMA:      'Supervisor - C Mil Amazônia',
   SUPERVISOR_CMNE:    'Supervisor - C Mil Nordeste',
   SUPERVISOR_CMSE:     'Supervisor - C Mil Sudeste',
+  SUPERVISOR_DESMIL:   'Supervisor - DESMil (Ensino Superior)',
+  SUPERVISOR_DETMIL:   'Supervisor - DETMil (Ensino Técnico)',
+  SUPERVISOR_DEPA:     'Supervisor - DEPA (Colégios Militares)',
+  SUPERVISOR_DPHCEX:   'Supervisor - DPHCEx (Patrimônio Histórico)',
+  SUPERVISOR_CCFEX:    'Supervisor - CCFEx (Capacitação Física)',
   CONSOLIDADOR_COTER:  'Consolidador - COTER',
   CONSOLIDADOR_DSG:    'Consolidador - DSG',
   CONSOLIDADOR_DEC:    'Consolidador - DEC',

@@ -64,6 +64,13 @@ const PERFIL_GROUPS: { label: string; perfis: Perfil[] }[] = [
     ],
   },
   {
+    label: 'Supervisores DECEx (SECEx)',
+    perfis: [
+      'SUPERVISOR_DESMIL', 'SUPERVISOR_DETMIL', 'SUPERVISOR_DEPA',
+      'SUPERVISOR_DPHCEX', 'SUPERVISOR_CCFEX',
+    ],
+  },
+  {
     label: 'Consolidadores por Órgão',
     perfis: ['CONSOLIDADOR_COTER', 'CONSOLIDADOR_DSG', 'CONSOLIDADOR_DEC', 'CONSOLIDADOR_COLOG', 'CONSOLIDADOR_DECEX'],
   },
