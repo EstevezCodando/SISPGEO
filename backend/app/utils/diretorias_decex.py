@@ -71,6 +71,8 @@ _DETMIL_VINCULADAS = [  # OMV (Centros de Instrução hospedados)
     "CIAvEx", "CIBld GWP", "CECMA", "2º BFv", "CIGE", "CIGS", "CIOU", "11º BIMth",
     "CIOpEsp", "17º BFron", "72º BIMtz", "CIPqdt GPB", "EsCom", "EsIMEx", "9º B Mnt",
     "2º CGEO", "ENaDCiber", "IEFEx", "CA - Leste",
+    # Variantes de grafia da OM host (como cadastradas pelos usuários):
+    "CI Bld", "17º B FRON",
 ]
 _DETMIL_UETE = [  # UETE (Unidades Escola de Tiro de Emprego) — hosts
     "41º BIMtz", "12º GAC", "13º RCMec", "14º GAC", "10º BIL", "4º GACL",
