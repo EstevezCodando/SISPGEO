@@ -85,6 +85,7 @@ class ItemPedido(Base):
     disponivel_bdgex: Mapped[bool] = mapped_column(Boolean, default=False)
     data_producao_bdgex: Mapped[date | None] = mapped_column(Date)
     solicitar_mesmo_disponivel: Mapped[bool] = mapped_column(Boolean, default=False)
+    removido: Mapped[bool] = mapped_column(Boolean, default=False)
     prioridade: Mapped[int] = mapped_column(SmallInteger, default=0)
     impressao_quantidade: Mapped[int | None] = mapped_column(SmallInteger)
     impressao_tipo_material: Mapped[str | None] = mapped_column(String(20))

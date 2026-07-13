@@ -177,6 +177,10 @@ GESTOR_PROFILES = tuple(SUPERVISOR_PROFILES | CONSOLIDADOR_PROFILES)
 _GESTORES_SUPERVISOR = SUPERVISOR_PROFILES
 
 
+def _itens_ativos(pedido: Pedido | PedidoOut):
+    return [item for item in pedido.itens if not getattr(item, "removido", False)]
+
+
 def _rm_do_supervisor(user: Usuario) -> str | None:
     """Retorna o código da Região Militar de um supervisor derivado do seu **perfil**.
 
@@ -392,13 +396,13 @@ async def get_map_features(
     import asyncio as _asyncio
     _scale_geoms: dict[str, dict] = {}
     for _p in enriched:
-        for _it in _p.itens:
+        for _it in _itens_ativos(_p):
             _sv = _it.escala.value
             if _sv not in _scale_geoms:
                 _scale_geoms[_sv] = await _asyncio.to_thread(get_inom_geometries, EscalaEnum(_sv))
     features = []
     for p in enriched:
-        for item in p.itens:
+        for item in _itens_ativos(p):
             geom = _scale_geoms.get(item.escala.value, {}).get(item.inom)
             if not geom:
                 continue
@@ -429,6 +433,7 @@ async def get_map_features(
 
 @router.get("/duplicatas")
 async def listar_duplicatas(
+    todos: bool = Query(default=False),
     db: AsyncSession = Depends(get_db),
     current_user: Usuario = Depends(get_current_user),
 ):
@@ -436,13 +441,32 @@ async def listar_duplicatas(
     from collections import defaultdict
 
     if current_user.perfil in SUPERVISOR_PROFILES:
+        statuses = [StatusPedidoEnum.AGUARDANDO_SUPERVISOR]
+        if todos:
+            statuses.extend([
+                StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR,
+                StatusPedidoEnum.AGUARDANDO_CARTOGRAFICO,
+                StatusPedidoEnum.ATRIBUIDO_CGEO,
+                StatusPedidoEnum.APROVADO,
+                StatusPedidoEnum.PRODUZIDO,
+                StatusPedidoEnum.REPROVADO,
+            ])
         q = select(Pedido).where(
-            Pedido.status == StatusPedidoEnum.AGUARDANDO_SUPERVISOR,
+            Pedido.status.in_(statuses),
             _supervisor_scope(current_user),
         )
     elif current_user.perfil in CONSOLIDADOR_PROFILES:
+        statuses = [StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR]
+        if todos:
+            statuses.extend([
+                StatusPedidoEnum.AGUARDANDO_CARTOGRAFICO,
+                StatusPedidoEnum.ATRIBUIDO_CGEO,
+                StatusPedidoEnum.APROVADO,
+                StatusPedidoEnum.PRODUZIDO,
+                StatusPedidoEnum.REPROVADO,
+            ])
         q = select(Pedido).where(
-            Pedido.status == StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR,
+            Pedido.status.in_(statuses),
             Pedido.orgao_vinculante == current_user.orgao_vinculante,
         )
     elif current_user.perfil == PerfilEnum.GESTOR_CARTOGRAFICO:
@@ -462,9 +486,10 @@ async def listar_duplicatas(
 
     grupos: dict[tuple, list[dict]] = defaultdict(list)
     for p in enriched:
-        for item in p.itens:
+        for item in _itens_ativos(p):
             key = (item.inom, item.tipo_produto.value, item.escala.value)
             grupos[key].append({
+                "id": p.id,
                 "pedido_id": p.id,
                 "usuario_nome": p.usuario_nome,
                 "status": p.status.value,
@@ -550,7 +575,7 @@ async def exportar_relatorio(
     # ── Geometrias por escala (lazy, 1 chamada por escala presente) ───────────
     _scale_geoms: dict[str, dict] = {}
     for p in enriched:
-        for it in p.itens:
+        for it in _itens_ativos(p):
             sv = it.escala.value
             if sv not in _scale_geoms:
                 _scale_geoms[sv] = get_inom_geometries(EscalaEnum(sv))
@@ -568,7 +593,7 @@ async def exportar_relatorio(
         "Impressao_Solicitada", "Impressao_Quantidade", "Impressao_Material",
     ])
     for pedido_rank, p in enumerate(enriched, 1):
-        for item_rank, item in enumerate(sorted(p.itens, key=lambda x: x.prioridade), 1):
+        for item_rank, item in enumerate(sorted(_itens_ativos(p), key=lambda x: x.prioridade), 1):
             _disp, _dprod = _bdgex_info(item)
             idade_anos = (date.today() - _dprod).days // 365 if _dprod else ""
             _sol = (
@@ -609,7 +634,7 @@ async def exportar_relatorio(
     geojsons: dict[str, list[dict]] = {}  # sufixo → lista de features
     _suffix_map = {"1:25.000": "25k", "1:50.000": "50k", "1:100.000": "100k", "1:250.000": "250k"}
     for pedido_rank, p in enumerate(enriched, 1):
-        for item_rank, item in enumerate(sorted(p.itens, key=lambda x: x.prioridade), 1):
+        for item_rank, item in enumerate(sorted(_itens_ativos(p), key=lambda x: x.prioridade), 1):
             sv = item.escala.value
             suffix = _suffix_map.get(sv, sv.replace(":", "").replace(".", "").replace(" ", ""))
             geom = _scale_geoms.get(sv, {}).get(item.inom)
@@ -806,7 +831,7 @@ RESUMO
 -------------------------------------------------------
 
   Total de pedidos : {len(enriched)}
-  Total de itens   : {sum(len(p.itens) for p in enriched)}
+  Total de itens   : {sum(len(_itens_ativos(p)) for p in enriched)}
 
 -------------------------------------------------------
 CONTEÚDO DESTE PACOTE
@@ -910,7 +935,7 @@ async def _build_admin_zip(
     # ── Geometrias por escala ────────────────────────────────────────────────
     _scale_geoms: dict[str, dict] = {}
     for _p in enriched:
-        for _it in _p.itens:
+        for _it in _itens_ativos(_p):
             _sv = _it.escala.value
             if _sv not in _scale_geoms:
                 _scale_geoms[_sv] = get_inom_geometries(EscalaEnum(_sv))
@@ -933,7 +958,7 @@ async def _build_admin_zip(
     from collections import defaultdict as _defaultdict
     _dup_map: dict[tuple, list] = _defaultdict(list)
     for _p in enriched:
-        for _it in _p.itens:
+        for _it in _itens_ativos(_p):
             if _it.mi:
                 _dup_map[(_it.mi, _it.tipo_produto.value)].append((_p, _it))
     dup_entries: dict[tuple, list] = {
@@ -946,7 +971,7 @@ async def _build_admin_zip(
     geojsons: dict[str, list[dict]] = {}
     for p in enriched:
         _p_rank = _pedido_rank[p.id]
-        for item_rank, item in enumerate(sorted(p.itens, key=lambda x: x.prioridade), 1):
+        for item_rank, item in enumerate(sorted(_itens_ativos(p), key=lambda x: x.prioridade), 1):
             sv = item.escala.value
             suffix = suffix_map.get(sv, sv.replace(":", "").replace(".", "").replace(" ", ""))
             geom = _scale_geoms.get(sv, {}).get(item.inom)
@@ -1019,7 +1044,7 @@ async def _build_admin_zip(
     ])
     for p in enriched:
         _p_rank = _pedido_rank[p.id]
-        for item_rank, item in enumerate(sorted(p.itens, key=lambda x: x.prioridade), 1):
+        for item_rank, item in enumerate(sorted(_itens_ativos(p), key=lambda x: x.prioridade), 1):
             _disp, _dprod = _bdgex_info_adm(item)
             idade_anos = (date.today() - _dprod).days // 365 if _dprod else ""
             is_dup = "Sim" if (item.mi, item.tipo_produto.value) in dup_keys else "Não"
@@ -1065,7 +1090,7 @@ async def _build_admin_zip(
 
     # ── Relatório TXT (ficha por pedido) ─────────────────────────────────────
     hoje = datetime.now().strftime("%d/%m/%Y %H:%M")
-    total_itens = sum(len(p.itens) for p in enriched)
+    total_itens = sum(len(_itens_ativos(p)) for p in enriched)
     linhas = [
         "RELATÓRIO DE PEDIDOS — SisPGeo",
         "=" * 70,
@@ -1131,7 +1156,7 @@ async def _build_admin_zip(
         imp_pedido = f"Sim ({p.impressao_quantidade}x {p.impressao_tipo_material})" if p.impressao_solicitada and p.impressao_quantidade else ("Sim" if p.impressao_solicitada else "Não")
         # Itens com flag de duplicata
         _itens_dup = {
-            it.id for it in p.itens
+            it.id for it in _itens_ativos(p)
             if it.mi and (it.mi, it.tipo_produto.value) in dup_keys
         }
         linhas += [
@@ -1154,9 +1179,9 @@ async def _build_admin_zip(
             f"  Observações         : {p.observacoes or '—'}",
             f"  Motivo Reprovação   : {p.motivo_reprovacao or '—'}",
             f"  Link BDGEx          : {p.link_bdgex or '—'}",
-            f"  Itens ({len(p.itens)}):",
+            f"  Itens ({len(_itens_ativos(p))}):",
         ]
-        for i, item in enumerate(sorted(p.itens, key=lambda x: x.prioridade), 1):
+        for i, item in enumerate(sorted(_itens_ativos(p), key=lambda x: x.prioridade), 1):
             _disp, _dprod = _bdgex_info_adm(item)
             bdgex = "✓" if _disp else "✗"
             if _dprod:
@@ -1298,8 +1323,8 @@ async def delete_item(
     """Remove um item (célula) de um pedido.
 
     - Dono do pedido: pode remover se status RASCUNHO.
-    - Supervisor: pode remover itens de pedidos AGUARDANDO_SUPERVISOR na sua regiao_militar.
-    - Consolidador: pode remover itens de pedidos AGUARDANDO_CONSOLIDADOR no seu orgao_vinculante.
+    - Supervisor: pode remover itens de pedidos no seu escopo ate a atribuicao CGEO.
+    - Consolidador: pode remover itens de pedidos no seu orgao ate a atribuicao CGEO.
     O pedido deve ter ao menos 1 item restante.
     """
     pedido = await db.get(Pedido, pedido_id)
@@ -1307,14 +1332,26 @@ async def delete_item(
         raise HTTPException(status_code=404, detail="Pedido não encontrado")
 
     is_owner = pedido.usuario_id == current_user.id
+    supervisor_editable_statuses = {
+        StatusPedidoEnum.AGUARDANDO_SUPERVISOR,
+        StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR,
+        StatusPedidoEnum.AGUARDANDO_CARTOGRAFICO,
+        StatusPedidoEnum.ATRIBUIDO_CGEO,
+    }
+    consolidador_editable_statuses = {
+        StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR,
+        StatusPedidoEnum.AGUARDANDO_CARTOGRAFICO,
+        StatusPedidoEnum.ATRIBUIDO_CGEO,
+    }
+
     is_supervisor = (
         current_user.perfil in SUPERVISOR_PROFILES
-        and pedido.status == StatusPedidoEnum.AGUARDANDO_SUPERVISOR
+        and pedido.status in supervisor_editable_statuses
         and _supervisor_owns(current_user, pedido)
     )
     is_consolidador = (
         current_user.perfil in CONSOLIDADOR_PROFILES
-        and pedido.status == StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR
+        and pedido.status in consolidador_editable_statuses
         and pedido.orgao_vinculante == current_user.orgao_vinculante
     )
 
@@ -1332,12 +1369,29 @@ async def delete_item(
         raise HTTPException(status_code=404, detail="Item não encontrado")
 
     # Conta itens restantes após a remoção
+    if item.removido:
+        raise HTTPException(status_code=400, detail="Item ja removido")
+
     count_res = await db.execute(
         select(ItemPedido).where(ItemPedido.pedido_id == pedido_id)
     )
-    if len(count_res.all()) <= 1:
+    if len(count_res.all()) <= 0:
         raise HTTPException(status_code=400, detail="Não é possível remover o único item do pedido")
-    await db.delete(item)
+    item.removido = True
+    pedido.atualizado_em = datetime.now(timezone.utc)
+
+    from app.services.historico_service import registrar_historico
+    tipo = item.tipo_produto.value
+    escala = item.escala.value
+    label = item.mi or item.inom
+    await registrar_historico(
+        db,
+        pedido=pedido,
+        usuario=current_user,
+        acao="editar",
+        status_anterior=pedido.status,
+        motivo=f"Produto removido do pedido: {label} ({item.inom}) - {tipo} - {escala}",
+    )
     await db.commit()
 
 
@@ -1569,7 +1623,7 @@ async def admin_produtos_recentes_bdgex(
     pedidos_por_grupo: dict[tuple, list] = defaultdict(list)
 
     for p in enriched:
-        for item in p.itens:
+        for item in _itens_ativos(p):
             if item.data_producao_bdgex is None:
                 continue
             idade_dias = (hoje - item.data_producao_bdgex).days
@@ -1892,12 +1946,12 @@ async def get_pedido_features(
     from app.models.enums import EscalaEnum
     import asyncio as _asyncio
     _scale_geoms: dict[str, dict] = {}
-    for _it in pedido.itens:
+    for _it in _itens_ativos(pedido):
         _sv = _it.escala.value
         if _sv not in _scale_geoms:
             _scale_geoms[_sv] = await _asyncio.to_thread(get_inom_geometries, EscalaEnum(_sv))
     features = []
-    for item in pedido.itens:
+    for item in _itens_ativos(pedido):
         geom = _scale_geoms.get(item.escala.value, {}).get(item.inom)
         if geom:
             features.append({

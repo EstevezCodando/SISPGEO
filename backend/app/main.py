@@ -83,6 +83,7 @@ async def _run_migrations():
         "UPDATE pedidos p SET regiao_militar = u.regiao_militar FROM usuarios u WHERE u.id = p.criador_id AND p.regiao_militar IS NULL",
         # 2026-05: prioridade de item dentro do pedido
         "ALTER TABLE itens_pedido ADD COLUMN IF NOT EXISTS prioridade SMALLINT DEFAULT 0",
+        "ALTER TABLE itens_pedido ADD COLUMN IF NOT EXISTS removido BOOLEAN DEFAULT FALSE",
         # 2026-05: renomear coluna demandante → orgao_vinculante em usuarios
         "ALTER TABLE usuarios RENAME COLUMN demandante TO orgao_vinculante",
         # 2026-05: renomear coluna demandante → orgao_vinculante em pedidos

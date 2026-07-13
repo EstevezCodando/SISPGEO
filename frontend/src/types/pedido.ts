@@ -169,6 +169,7 @@ export interface ItemPedido {
   disponivel_bdgex: boolean;
   data_producao_bdgex: string | null;
   solicitar_mesmo_disponivel: boolean;
+  removido?: boolean;
   prioridade: number;
   impressao_quantidade: number | null;
   impressao_tipo_material: string | null;

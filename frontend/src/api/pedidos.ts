@@ -6,7 +6,7 @@ export interface DuplicateItem {
   mi: string | null
   tipo_produto: string
   escala: string
-  pedidos: Array<{ id: number; usuario_nome: string | null; status: string }>
+  pedidos: Array<{ id: number; pedido_id?: number; usuario_nome: string | null; status: string }>
 }
 
 export interface BDGExAgeItem {
@@ -70,7 +70,7 @@ export const pedidosApi = {
   reorderItems: (pedidoId: number, ordered_ids: number[]) =>
     api.put(`/pedidos/${pedidoId}/items/reorder`, { ordered_ids }),
   // Duplicates
-  getDuplicatas: () => api.get<DuplicateItem[]>('/pedidos/duplicatas'),
+  getDuplicatas: (params?: { todos?: boolean }) => api.get<DuplicateItem[]>('/pedidos/duplicatas', { params }),
   // BDGEx age validator — products newer than N years
   getProdutosRecentes: (anos: number) =>
     api.get<BDGExAgeItem[]>('/pedidos/admin/produtos-recentes', { params: { anos } }),

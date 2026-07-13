@@ -31,6 +31,7 @@ class ItemPedidoOut(BaseModel):
     disponivel_bdgex: bool
     data_producao_bdgex: date | None
     solicitar_mesmo_disponivel: bool
+    removido: bool = False
     prioridade: int = 0
     impressao_quantidade: int | None = None
     impressao_tipo_material: str | None = None
