@@ -17,6 +17,11 @@ _ASC_DBF_CANDIDATES = [
     os.path.join(_DADOS_DIR, "ASC", "Grid_MI.dbf"),
     r"C:\Cartografia\ASC\Grid_MI.dbf",
 ]
+_ASC_SHP_CANDIDATES = [
+    os.getenv("ASC_GRID_SHP"),
+    os.path.join(_DADOS_DIR, "ASC", "Grid_MI.shp"),
+    r"C:\Cartografia\ASC\Grid_MI.shp",
+]
 
 # Complementos para lacunas conhecidas no Grid_MI.dbf.
 # SD-23-Z-A cobre folhas 100k como SD-23-Z-A-VI / MI 2134 e pertence ao 3º CGEO.
@@ -36,6 +41,16 @@ def _parse_cgeo_id(value: object) -> int | None:
 
 def _resolve_dbf_path() -> Path | None:
     for candidate in _ASC_DBF_CANDIDATES:
+        if not candidate:
+            continue
+        path = Path(candidate)
+        if path.exists():
+            return path
+    return None
+
+
+def _resolve_shp_path() -> Path | None:
+    for candidate in _ASC_SHP_CANDIDATES:
         if not candidate:
             continue
         path = Path(candidate)
@@ -79,6 +94,57 @@ def _read_dbf_records(path: Path) -> list[dict[str, str]]:
             records.append(row)
 
     return records
+
+
+def _read_shp_polygons(path: Path) -> list[list[list[tuple[float, float]]]]:
+    """Le polygons de um ESRI Shapefile sem depender de bibliotecas GIS."""
+    shapes: list[list[list[tuple[float, float]]]] = []
+    with path.open("rb") as handle:
+        header = handle.read(100)
+        if len(header) < 100:
+            return shapes
+
+        while True:
+            record_header = handle.read(8)
+            if not record_header:
+                break
+            if len(record_header) < 8:
+                break
+
+            content_words = struct.unpack(">i", record_header[4:8])[0]
+            content = handle.read(content_words * 2)
+            if len(content) < 44:
+                shapes.append([])
+                continue
+
+            shape_type = struct.unpack("<i", content[:4])[0]
+            if shape_type == 0:
+                shapes.append([])
+                continue
+            if shape_type != 5:  # Polygon
+                shapes.append([])
+                continue
+
+            num_parts = struct.unpack("<i", content[36:40])[0]
+            num_points = struct.unpack("<i", content[40:44])[0]
+            parts_offset = 44
+            points_offset = parts_offset + (num_parts * 4)
+            parts = list(struct.unpack(f"<{num_parts}i", content[parts_offset:points_offset]))
+            points: list[tuple[float, float]] = []
+            for index in range(num_points):
+                start = points_offset + (index * 16)
+                x, y = struct.unpack("<dd", content[start:start + 16])
+                points.append((x, y))
+
+            polygons: list[list[tuple[float, float]]] = []
+            for idx, start in enumerate(parts):
+                end = parts[idx + 1] if idx + 1 < len(parts) else num_points
+                ring = points[start:end]
+                if len(ring) >= 4:
+                    polygons.append(ring)
+            shapes.append(polygons)
+
+    return shapes
 
 
 @lru_cache(maxsize=1)
@@ -129,3 +195,42 @@ def asc_cgeo_id_for_item(inom: object, mi: object | None = None) -> int | None:
             return cgeo_id
 
     return None
+
+
+@lru_cache(maxsize=1)
+def asc_merged_feature_collection() -> dict:
+    """Retorna uma camada ASC com uma feature MultiPolygon por CGEO."""
+    dbf_path = _resolve_dbf_path()
+    shp_path = _resolve_shp_path()
+    if not dbf_path or not shp_path:
+        logger.warning("Arquivos Grid_MI.dbf/shp nao encontrados; camada ASC vazia.")
+        return {"type": "FeatureCollection", "features": []}
+
+    records = _read_dbf_records(dbf_path)
+    shapes = _read_shp_polygons(shp_path)
+    grouped: dict[int, list[list[list[tuple[float, float]]]]] = {}
+
+    for row, polygons in zip(records, shapes):
+        cgeo_id = _parse_cgeo_id(row.get("ASC_"))
+        if not cgeo_id or not polygons:
+            continue
+        target = grouped.setdefault(cgeo_id, [])
+        for ring in polygons:
+            target.append([ring])
+
+    features = []
+    for cgeo_id in sorted(grouped):
+        features.append({
+            "type": "Feature",
+            "geometry": {
+                "type": "MultiPolygon",
+                "coordinates": grouped[cgeo_id],
+            },
+            "properties": {
+                "cgeo_id": cgeo_id,
+                "label": f"{cgeo_id}º CGEO",
+                "folhas": len(grouped[cgeo_id]),
+            },
+        })
+
+    return {"type": "FeatureCollection", "features": features}

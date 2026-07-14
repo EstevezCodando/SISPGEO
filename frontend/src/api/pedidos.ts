@@ -112,6 +112,8 @@ export const pedidosApi = {
     api.get<RelatorioAnalitico>('/pedidos/relatorio-analitico', { params }),
   relatorioAnaliticoFeatures: (params?: { cgeo_id?: number; sem_asc?: boolean; escopo?: 'todos' | 'dsg' }) =>
     api.get<FeatureCollection>('/pedidos/relatorio-analitico/features', { params }),
+  relatorioAnaliticoAscFeatures: () =>
+    api.get<FeatureCollection>('/pedidos/relatorio-analitico/asc-features'),
   // Export (DSG) — legacy ZIP export
   exportZip: () => api.get('/pedidos/export', { responseType: 'blob' }),
   // Dar o Pronto — DSG/Admin marks pedido as PRODUZIDO and notifies chain

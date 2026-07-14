@@ -52,9 +52,9 @@ function Card({ icon, label, value, sub }: { icon: ReactNode; label: string; val
   )
 }
 
-function Panel({ title, children, right }: { title: string; children: ReactNode; right?: ReactNode }) {
+function Panel({ title, children, right, className = '' }: { title: string; children: ReactNode; right?: ReactNode; className?: string }) {
   return (
-    <section className="rounded-lg border border-white/10 bg-zinc-900 p-5">
+    <section className={`rounded-lg border border-white/10 bg-zinc-900 p-5 ${className}`}>
       <div className="mb-4 flex items-center justify-between gap-3">
         <h2 className="text-sm font-semibold text-zinc-200">{title}</h2>
         {right}
@@ -160,6 +160,14 @@ const TIPO_COLORS: Record<string, string> = {
   IMPRESSAO: '#ec4899',
 }
 
+const ASC_COLORS: Record<number, string> = {
+  1: '#ef4444',
+  2: '#f59e0b',
+  3: '#10b981',
+  4: '#3b82f6',
+  5: '#8b5cf6',
+}
+
 function RelatorioGeoLayer({ geojson }: { geojson: FeatureCollection }) {
   const map = useMap()
 
@@ -206,6 +214,109 @@ function RelatorioGeoLayer({ geojson }: { geojson: FeatureCollection }) {
   }, [geojson, map])
 
   return null
+}
+
+function AscGeoLayer({ geojson }: { geojson: FeatureCollection }) {
+  const map = useMap()
+
+  useEffect(() => {
+    const layer = L.geoJSON(geojson, {
+      style: (feature) => {
+        const cgeoId = Number(feature?.properties?.cgeo_id)
+        const color = ASC_COLORS[cgeoId] ?? '#e4e4e7'
+        return {
+          color,
+          fillColor: color,
+          fillOpacity: 0.08,
+          weight: 2.4,
+          dashArray: '8 4',
+        }
+      },
+      onEachFeature: (feature, lyr) => {
+        const p = feature.properties ?? {}
+        lyr.bindTooltip(`
+          <div style="min-width:120px">
+            <strong style="color:#f4f4f5">${p.label ?? 'ASC'}</strong>
+            <div style="font-size:11px;color:#a1a1aa">${p.folhas ?? 0} folha${p.folhas === 1 ? '' : 's'} na grade ASC</div>
+          </div>
+        `, { sticky: true, className: 'leaflet-dark-tooltip' })
+      },
+    }).addTo(map)
+
+    return () => {
+      layer.remove()
+    }
+  }, [geojson, map])
+
+  return null
+}
+
+function RelatorioGeralMap({ escopo }: { escopo: EscopoRelatorio }) {
+  const [pedidosGeojson, setPedidosGeojson] = useState<FeatureCollection | null>(null)
+  const [ascGeojson, setAscGeojson] = useState<FeatureCollection | null>(null)
+  const [showAsc, setShowAsc] = useState(true)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    setLoading(true)
+    Promise.all([
+      pedidosApi.relatorioAnaliticoFeatures({ escopo }),
+      pedidosApi.relatorioAnaliticoAscFeatures(),
+    ])
+      .then(([pedidosRes, ascRes]) => {
+        setPedidosGeojson(pedidosRes.data)
+        setAscGeojson(ascRes.data)
+      })
+      .catch(() => toast.error('Erro ao carregar vista espacial'))
+      .finally(() => setLoading(false))
+  }, [escopo])
+
+  const totalFeatures = pedidosGeojson?.features.length ?? 0
+
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="text-xs text-zinc-500">
+          {totalFeatures} produto{totalFeatures !== 1 ? 's' : ''} espacializado{totalFeatures !== 1 ? 's' : ''}
+        </div>
+        <label className="inline-flex items-center gap-2 rounded-md border border-white/10 bg-zinc-950/60 px-3 py-1.5 text-xs text-zinc-300">
+          <input
+            type="checkbox"
+            checked={showAsc}
+            onChange={(event) => setShowAsc(event.target.checked)}
+            className="h-3.5 w-3.5 accent-emerald-500"
+          />
+          ASC
+        </label>
+      </div>
+
+      {loading ? (
+        <div className="flex h-[420px] items-center justify-center rounded-lg border border-white/10">
+          <Loader2 className="h-8 w-8 animate-spin text-emerald-400" />
+        </div>
+      ) : pedidosGeojson && pedidosGeojson.features.length > 0 ? (
+        <div className="h-[420px] overflow-hidden rounded-lg border border-white/10">
+          <MapContainer
+            center={[-15, -52]}
+            zoom={5}
+            style={{ height: '100%', width: '100%', background: '#18181b' }}
+            zoomControl
+          >
+            <TileLayer
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              attribution="&copy; OpenStreetMap contributors"
+            />
+            {showAsc && ascGeojson && <AscGeoLayer geojson={ascGeojson} />}
+            <RelatorioGeoLayer geojson={pedidosGeojson} />
+          </MapContainer>
+        </div>
+      ) : (
+        <div className="flex h-[420px] items-center justify-center rounded-lg border border-white/10 text-sm text-zinc-500">
+          Nenhuma geometria disponivel para os pedidos deste escopo.
+        </div>
+      )}
+    </div>
+  )
 }
 
 type AscResumo = RelatorioAnalitico['por_asc'][number]
@@ -411,6 +522,10 @@ export function Relatorios() {
 
         <Panel title="Totais por escala">
           <BarList items={relatorio?.por_escala ?? []} label={(item) => item.escala} />
+        </Panel>
+
+        <Panel title="Vista espacial geral" className="xl:col-span-2" right={<MapPinned className="h-4 w-4 text-zinc-500" />}>
+          <RelatorioGeralMap escopo={escopo} />
         </Panel>
 
         <Panel title="Folhas e produtos mais pedidos">

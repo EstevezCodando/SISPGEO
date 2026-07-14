@@ -1468,6 +1468,20 @@ async def relatorio_analitico_features(
     return {"type": "FeatureCollection", "features": features}
 
 
+@router.get("/relatorio-analitico/asc-features")
+async def relatorio_analitico_asc_features(
+    current_user: Usuario = Depends(require_profiles(
+        PerfilEnum.GESTOR_CARTOGRAFICO,
+        PerfilEnum.ANALISTA_CGEO,
+    )),
+):
+    """GeoJSON da ASC agrupada em uma feature MultiPolygon por CGEO."""
+    del current_user
+    from app.services.asc_service import asc_merged_feature_collection
+
+    return asc_merged_feature_collection()
+
+
 @router.get("/export")
 async def exportar_pedidos(
     db: AsyncSession = Depends(get_db),
