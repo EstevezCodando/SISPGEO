@@ -251,7 +251,7 @@ function AscGeoLayer({ geojson }: { geojson: FeatureCollection }) {
   return null
 }
 
-function RelatorioGeralMap({ escopo }: { escopo: EscopoRelatorio }) {
+function RelatorioGeralMap({ escopo, cgeoId }: { escopo: EscopoRelatorio; cgeoId: number | null }) {
   const [pedidosGeojson, setPedidosGeojson] = useState<FeatureCollection | null>(null)
   const [ascGeojson, setAscGeojson] = useState<FeatureCollection | null>(null)
   const [showAsc, setShowAsc] = useState(true)
@@ -260,7 +260,10 @@ function RelatorioGeralMap({ escopo }: { escopo: EscopoRelatorio }) {
   useEffect(() => {
     setLoading(true)
     Promise.all([
-      pedidosApi.relatorioAnaliticoFeatures({ escopo }),
+      pedidosApi.relatorioAnaliticoFeatures({
+        escopo,
+        ...(cgeoId != null ? { cgeo_id: cgeoId } : {}),
+      }),
       pedidosApi.relatorioAnaliticoAscFeatures(),
     ])
       .then(([pedidosRes, ascRes]) => {
@@ -269,9 +272,17 @@ function RelatorioGeralMap({ escopo }: { escopo: EscopoRelatorio }) {
       })
       .catch(() => toast.error('Erro ao carregar vista espacial'))
       .finally(() => setLoading(false))
-  }, [escopo])
+  }, [cgeoId, escopo])
 
   const totalFeatures = pedidosGeojson?.features.length ?? 0
+  const filteredAscGeojson = useMemo<FeatureCollection | null>(() => {
+    if (!ascGeojson) return null
+    if (cgeoId == null) return ascGeojson
+    return {
+      ...ascGeojson,
+      features: ascGeojson.features.filter((feature) => Number(feature.properties?.cgeo_id) === cgeoId),
+    }
+  }, [ascGeojson, cgeoId])
 
   return (
     <div className="space-y-3">
@@ -306,7 +317,7 @@ function RelatorioGeralMap({ escopo }: { escopo: EscopoRelatorio }) {
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               attribution="&copy; OpenStreetMap contributors"
             />
-            {showAsc && ascGeojson && <AscGeoLayer geojson={ascGeojson} />}
+            {showAsc && filteredAscGeojson && <AscGeoLayer geojson={filteredAscGeojson} />}
             <RelatorioGeoLayer geojson={pedidosGeojson} />
           </MapContainer>
         </div>
@@ -525,7 +536,10 @@ export function Relatorios() {
         </Panel>
 
         <Panel title="Vista espacial geral" className="xl:col-span-2" right={<MapPinned className="h-4 w-4 text-zinc-500" />}>
-          <RelatorioGeralMap escopo={escopo} />
+          <RelatorioGeralMap
+            escopo={escopo}
+            cgeoId={selectedAsc ? Number(selectedAsc) : null}
+          />
         </Panel>
 
         <Panel title="Folhas e produtos mais pedidos">
