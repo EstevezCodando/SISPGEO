@@ -36,6 +36,37 @@ export interface AdminUpdatePayload {
   orgao_vinculante?: string
 }
 
+export interface RelatorioAnalitico {
+  filtro: {
+    cgeo_id: number | null
+    cgeo_label: string
+    escopo: 'todos' | 'dsg'
+    escopo_label: string
+    status: string[]
+  }
+  totais: {
+    pedidos: number
+    itens: number
+  }
+  por_asc: Array<{
+    cgeo_id: number | null
+    label: string
+    pedidos: number
+    itens: number
+  }>
+  por_status: Array<{ status: string; total: number }>
+  por_tipo: Array<{ tipo_produto: string; total: number }>
+  por_escala: Array<{ escala: string; total: number }>
+  por_tipo_escala: Array<{ tipo_produto: string; escala: string; total: number }>
+  produtos_mais_pedidos: Array<{
+    inom: string
+    mi: string | null
+    tipo_produto: string
+    escala: string
+    total: number
+  }>
+}
+
 export const pedidosApi = {
   create: (data: object) => api.post<Pedido>('/pedidos/', data),
   list: () => api.get<Pedido[]>('/pedidos/'),
@@ -76,6 +107,8 @@ export const pedidosApi = {
     api.get<BDGExAgeItem[]>('/pedidos/admin/produtos-recentes', { params: { anos } }),
   // Relatório: ZIP com CSV + GeoJSONs por escala + LEIA-ME (SOLICITANTE / SUPERVISOR / CONSOLIDADOR)
   exportRelatorio: () => api.get('/pedidos/relatorio', { responseType: 'blob' }),
+  relatorioAnalitico: (params?: { cgeo_id?: number; escopo?: 'todos' | 'dsg' }) =>
+    api.get<RelatorioAnalitico>('/pedidos/relatorio-analitico', { params }),
   // Export (DSG) — legacy ZIP export
   exportZip: () => api.get('/pedidos/export', { responseType: 'blob' }),
   // Dar o Pronto — DSG/Admin marks pedido as PRODUZIDO and notifies chain

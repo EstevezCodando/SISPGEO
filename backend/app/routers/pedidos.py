@@ -54,6 +54,20 @@ class AdminPedidoUpdate(BaseModel):
     orgao_vinculante: OrgaoVinculanteEnum | None = None
 
 
+CGEO_LABELS: dict[int | None, str] = {
+    None: "Sem ASC",
+    1: "1o CGEO",
+    2: "2o CGEO",
+    3: "3o CGEO",
+    4: "4o CGEO",
+    5: "5o CGEO",
+}
+
+
+def _cgeo_label(cgeo_id: int | None) -> str:
+    return CGEO_LABELS.get(cgeo_id, f"CGEO #{cgeo_id}")
+
+
 async def _enrich(db: AsyncSession, pedidos: list[Pedido]) -> list[PedidoOut]:
     """Enrich pedido list with usuario_nome, contact info and operacao_nome."""
     if not pedidos:
@@ -1228,6 +1242,153 @@ async def _build_admin_zip(
         media_type="application/zip",
         headers={"Content-Disposition": f"attachment; filename={filename}"},
     )
+
+
+@router.get("/relatorio-analitico")
+async def relatorio_analitico(
+    cgeo_id: int | None = Query(default=None, ge=1, le=5),
+    escopo: str = Query(default="todos", pattern="^(todos|dsg)$"),
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(require_profiles(
+        PerfilEnum.GESTOR_CARTOGRAFICO,
+        PerfilEnum.ANALISTA_CGEO,
+    )),
+):
+    """Resumo analitico de demanda para a tela de relatorios DSG/CGEO."""
+    from collections import Counter, defaultdict
+    from app.services.asc_service import asc_cgeo_id_for_item
+
+    if escopo == "dsg":
+        status_permitidos = [
+            StatusPedidoEnum.AGUARDANDO_CARTOGRAFICO,
+            StatusPedidoEnum.ATRIBUIDO_CGEO,
+            StatusPedidoEnum.APROVADO,
+            StatusPedidoEnum.PRODUZIDO,
+            StatusPedidoEnum.REPROVADO,
+        ]
+        escopo_label = "Pedidos DSG"
+    else:
+        status_permitidos = [
+            StatusPedidoEnum.RASCUNHO,
+            StatusPedidoEnum.AGUARDANDO_SUPERVISOR,
+            StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR,
+            StatusPedidoEnum.AGUARDANDO_CARTOGRAFICO,
+            StatusPedidoEnum.ATRIBUIDO_CGEO,
+            StatusPedidoEnum.APROVADO,
+            StatusPedidoEnum.PRODUZIDO,
+            StatusPedidoEnum.REPROVADO,
+        ]
+        escopo_label = "Todos os pedidos"
+
+    efetivo_cgeo_id = current_user.cgeo_id if current_user.perfil == PerfilEnum.ANALISTA_CGEO else cgeo_id
+
+    pedidos = list(await db.scalars(
+        select(Pedido)
+        .where(Pedido.status.in_(status_permitidos))
+        .order_by(Pedido.criado_em.desc())
+    ))
+
+    rows: list[dict] = []
+    pedido_status: dict[int, str] = {}
+    asc_pedidos: dict[int | None, set[int]] = defaultdict(set)
+    asc_itens: Counter[int | None] = Counter()
+
+    for pedido in pedidos:
+        for item in _itens_ativos(pedido):
+            asc_id = asc_cgeo_id_for_item(item.inom, item.mi)
+            if efetivo_cgeo_id is not None and asc_id != efetivo_cgeo_id:
+                continue
+
+            pedido_status[pedido.id] = pedido.status.value
+            asc_pedidos[asc_id].add(pedido.id)
+            asc_itens[asc_id] += 1
+            rows.append({
+                "pedido_id": pedido.id,
+                "status": pedido.status.value,
+                "asc_id": asc_id,
+                "tipo_produto": item.tipo_produto.value,
+                "escala": item.escala.value,
+                "inom": item.inom,
+                "mi": item.mi,
+            })
+
+    pedido_ids_filtrados = {row["pedido_id"] for row in rows}
+    por_asc = [
+        {
+            "cgeo_id": asc_id,
+            "label": _cgeo_label(asc_id),
+            "pedidos": len(asc_pedidos.get(asc_id, set())),
+            "itens": int(asc_itens.get(asc_id, 0)),
+        }
+        for asc_id in [None, 1, 2, 3, 4, 5]
+        if efetivo_cgeo_id is None or asc_id == efetivo_cgeo_id
+    ]
+
+    status_counter = Counter(
+        status for pedido_id, status in pedido_status.items()
+        if pedido_id in pedido_ids_filtrados
+    )
+    por_status = [
+        {"status": status, "total": total}
+        for status, total in status_counter.most_common()
+    ]
+
+    tipo_counter = Counter(row["tipo_produto"] for row in rows)
+    por_tipo = [
+        {"tipo_produto": tipo, "total": total}
+        for tipo, total in tipo_counter.most_common()
+    ]
+
+    escala_counter = Counter(row["escala"] for row in rows)
+    por_escala = [
+        {"escala": escala, "total": escala_counter[escala]}
+        for escala in sorted(escala_counter)
+    ]
+
+    matriz_counter = Counter((row["tipo_produto"], row["escala"]) for row in rows)
+    por_tipo_escala = [
+        {
+            "tipo_produto": tipo,
+            "escala": escala,
+            "total": total,
+        }
+        for (tipo, escala), total in sorted(matriz_counter.items())
+    ]
+
+    produto_counter = Counter(
+        (row["inom"], row["mi"], row["tipo_produto"], row["escala"])
+        for row in rows
+    )
+    produtos_mais_pedidos = [
+        {
+            "inom": inom,
+            "mi": mi,
+            "tipo_produto": tipo,
+            "escala": escala,
+            "total": total,
+        }
+        for (inom, mi, tipo, escala), total in produto_counter.most_common(20)
+    ]
+
+    return {
+        "filtro": {
+            "cgeo_id": efetivo_cgeo_id,
+            "cgeo_label": _cgeo_label(efetivo_cgeo_id) if efetivo_cgeo_id is not None else "Todas as ASC",
+            "escopo": escopo,
+            "escopo_label": escopo_label,
+            "status": [status.value for status in status_permitidos],
+        },
+        "totais": {
+            "pedidos": len(pedido_ids_filtrados),
+            "itens": len(rows),
+        },
+        "por_asc": por_asc,
+        "por_status": por_status,
+        "por_tipo": por_tipo,
+        "por_escala": por_escala,
+        "por_tipo_escala": por_tipo_escala,
+        "produtos_mais_pedidos": produtos_mais_pedidos,
+    }
 
 
 @router.get("/export")
