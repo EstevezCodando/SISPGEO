@@ -54,6 +54,42 @@ class AdminPedidoUpdate(BaseModel):
     orgao_vinculante: OrgaoVinculanteEnum | None = None
 
 
+CGEO_LABELS: dict[int | None, str] = {
+    None: "Sem ASC",
+    1: "1º CGEO",
+    2: "2º CGEO",
+    3: "3º CGEO",
+    4: "4º CGEO",
+    5: "5º CGEO",
+}
+
+
+def _cgeo_label(cgeo_id: int | None) -> str:
+    return CGEO_LABELS.get(cgeo_id, f"CGEO #{cgeo_id}")
+
+
+def _relatorio_status_por_escopo(escopo: str) -> tuple[list[StatusPedidoEnum], str]:
+    if escopo == "dsg":
+        return [
+            StatusPedidoEnum.AGUARDANDO_CARTOGRAFICO,
+            StatusPedidoEnum.ATRIBUIDO_CGEO,
+            StatusPedidoEnum.APROVADO,
+            StatusPedidoEnum.PRODUZIDO,
+            StatusPedidoEnum.REPROVADO,
+        ], "Pedidos DSG"
+
+    return [
+        StatusPedidoEnum.RASCUNHO,
+        StatusPedidoEnum.AGUARDANDO_SUPERVISOR,
+        StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR,
+        StatusPedidoEnum.AGUARDANDO_CARTOGRAFICO,
+        StatusPedidoEnum.ATRIBUIDO_CGEO,
+        StatusPedidoEnum.APROVADO,
+        StatusPedidoEnum.PRODUZIDO,
+        StatusPedidoEnum.REPROVADO,
+    ], "Todos os pedidos"
+
+
 async def _enrich(db: AsyncSession, pedidos: list[Pedido]) -> list[PedidoOut]:
     """Enrich pedido list with usuario_nome, contact info and operacao_nome."""
     if not pedidos:
@@ -1228,6 +1264,208 @@ async def _build_admin_zip(
         media_type="application/zip",
         headers={"Content-Disposition": f"attachment; filename={filename}"},
     )
+
+
+@router.get("/relatorio-analitico")
+async def relatorio_analitico(
+    cgeo_id: int | None = Query(default=None, ge=1, le=5),
+    escopo: str = Query(default="todos", pattern="^(todos|dsg)$"),
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(require_profiles(
+        PerfilEnum.GESTOR_CARTOGRAFICO,
+        PerfilEnum.ANALISTA_CGEO,
+    )),
+):
+    """Resumo analitico de demanda para a tela de relatorios DSG/CGEO."""
+    from collections import Counter, defaultdict
+    from app.services.asc_service import asc_cgeo_id_for_item
+
+    status_permitidos, escopo_label = _relatorio_status_por_escopo(escopo)
+
+    efetivo_cgeo_id = current_user.cgeo_id if current_user.perfil == PerfilEnum.ANALISTA_CGEO else cgeo_id
+
+    pedidos = list(await db.scalars(
+        select(Pedido)
+        .where(Pedido.status.in_(status_permitidos))
+        .order_by(Pedido.criado_em.desc())
+    ))
+
+    rows: list[dict] = []
+    pedido_status: dict[int, str] = {}
+    asc_pedidos: dict[int | None, set[int]] = defaultdict(set)
+    asc_itens: Counter[int | None] = Counter()
+
+    for pedido in pedidos:
+        for item in _itens_ativos(pedido):
+            asc_id = asc_cgeo_id_for_item(item.inom, item.mi)
+            if efetivo_cgeo_id is not None and asc_id != efetivo_cgeo_id:
+                continue
+
+            pedido_status[pedido.id] = pedido.status.value
+            asc_pedidos[asc_id].add(pedido.id)
+            asc_itens[asc_id] += 1
+            rows.append({
+                "pedido_id": pedido.id,
+                "status": pedido.status.value,
+                "asc_id": asc_id,
+                "tipo_produto": item.tipo_produto.value,
+                "escala": item.escala.value,
+                "inom": item.inom,
+                "mi": item.mi,
+            })
+
+    pedido_ids_filtrados = {row["pedido_id"] for row in rows}
+    por_asc = [
+        {
+            "cgeo_id": asc_id,
+            "label": _cgeo_label(asc_id),
+            "pedidos": len(asc_pedidos.get(asc_id, set())),
+            "itens": int(asc_itens.get(asc_id, 0)),
+        }
+        for asc_id in [None, 1, 2, 3, 4, 5]
+        if efetivo_cgeo_id is None or asc_id == efetivo_cgeo_id
+    ]
+
+    status_counter = Counter(
+        status for pedido_id, status in pedido_status.items()
+        if pedido_id in pedido_ids_filtrados
+    )
+    por_status = [
+        {"status": status, "total": total}
+        for status, total in status_counter.most_common()
+    ]
+
+    tipo_counter = Counter(row["tipo_produto"] for row in rows)
+    por_tipo = [
+        {"tipo_produto": tipo, "total": total}
+        for tipo, total in tipo_counter.most_common()
+    ]
+
+    escala_counter = Counter(row["escala"] for row in rows)
+    por_escala = [
+        {"escala": escala, "total": escala_counter[escala]}
+        for escala in sorted(escala_counter)
+    ]
+
+    matriz_counter = Counter((row["tipo_produto"], row["escala"]) for row in rows)
+    por_tipo_escala = [
+        {
+            "tipo_produto": tipo,
+            "escala": escala,
+            "total": total,
+        }
+        for (tipo, escala), total in sorted(matriz_counter.items())
+    ]
+
+    produto_counter = Counter(
+        (row["inom"], row["mi"], row["tipo_produto"], row["escala"])
+        for row in rows
+    )
+    produtos_mais_pedidos = [
+        {
+            "inom": inom,
+            "mi": mi,
+            "tipo_produto": tipo,
+            "escala": escala,
+            "total": total,
+        }
+        for (inom, mi, tipo, escala), total in produto_counter.most_common(20)
+    ]
+
+    return {
+        "filtro": {
+            "cgeo_id": efetivo_cgeo_id,
+            "cgeo_label": _cgeo_label(efetivo_cgeo_id) if efetivo_cgeo_id is not None else "Todas as ASC",
+            "escopo": escopo,
+            "escopo_label": escopo_label,
+            "status": [status.value for status in status_permitidos],
+        },
+        "totais": {
+            "pedidos": len(pedido_ids_filtrados),
+            "itens": len(rows),
+        },
+        "por_asc": por_asc,
+        "por_status": por_status,
+        "por_tipo": por_tipo,
+        "por_escala": por_escala,
+        "por_tipo_escala": por_tipo_escala,
+        "produtos_mais_pedidos": produtos_mais_pedidos,
+    }
+
+
+@router.get("/relatorio-analitico/features")
+async def relatorio_analitico_features(
+    cgeo_id: int | None = Query(default=None, ge=1, le=5),
+    sem_asc: bool = Query(default=False),
+    escopo: str = Query(default="todos", pattern="^(todos|dsg)$"),
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(require_profiles(
+        PerfilEnum.GESTOR_CARTOGRAFICO,
+        PerfilEnum.ANALISTA_CGEO,
+    )),
+):
+    """GeoJSON das folhas do relatorio, filtradas pela ASC prevista."""
+    from app.models.enums import EscalaEnum
+    from app.services.asc_service import asc_cgeo_id_for_item
+    from app.services.bdgex_service import get_inom_geometries
+    import asyncio as _asyncio
+
+    if sem_asc and cgeo_id is not None:
+        raise HTTPException(status_code=400, detail="Use cgeo_id ou sem_asc, nao ambos")
+
+    efetivo_cgeo_id = current_user.cgeo_id if current_user.perfil == PerfilEnum.ANALISTA_CGEO else cgeo_id
+    if current_user.perfil == PerfilEnum.ANALISTA_CGEO and sem_asc:
+        raise HTTPException(status_code=403, detail="Analista CGEO nao pode consultar Sem ASC")
+
+    status_permitidos, _ = _relatorio_status_por_escopo(escopo)
+    pedidos = list(await db.scalars(
+        select(Pedido)
+        .where(Pedido.status.in_(status_permitidos))
+        .order_by(Pedido.criado_em.desc())
+    ))
+    enriched = await _enrich(db, pedidos)
+
+    scale_geoms: dict[str, dict] = {}
+    features = []
+    for pedido in enriched:
+        for item in _itens_ativos(pedido):
+            asc_id = asc_cgeo_id_for_item(item.inom, item.mi)
+            if sem_asc:
+                if asc_id is not None:
+                    continue
+            elif efetivo_cgeo_id is not None and asc_id != efetivo_cgeo_id:
+                continue
+
+            scale = item.escala.value
+            if scale not in scale_geoms:
+                scale_geoms[scale] = await _asyncio.to_thread(get_inom_geometries, EscalaEnum(scale))
+
+            geom = scale_geoms.get(scale, {}).get(item.inom)
+            if not geom:
+                continue
+
+            features.append({
+                "type": "Feature",
+                "geometry": geom,
+                "properties": {
+                    "pedido_id": pedido.id,
+                    "status": pedido.status.value,
+                    "asc_id": asc_id,
+                    "asc_label": _cgeo_label(asc_id),
+                    "inom": item.inom,
+                    "mi": item.mi,
+                    "tipo_produto": item.tipo_produto.value,
+                    "escala": item.escala.value,
+                    "data_entrega": pedido.data_entrega.isoformat() if pedido.data_entrega else None,
+                    "usuario_nome": pedido.usuario_nome,
+                    "usuario_om": pedido.usuario_om,
+                    "operacao_nome": pedido.operacao_nome,
+                    "disponivel_bdgex": item.disponivel_bdgex,
+                    "idade_anos": (date.today() - item.data_producao_bdgex).days // 365 if item.data_producao_bdgex else None,
+                },
+            })
+
+    return {"type": "FeatureCollection", "features": features}
 
 
 @router.get("/export")
