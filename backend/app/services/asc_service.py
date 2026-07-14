@@ -18,6 +18,12 @@ _ASC_DBF_CANDIDATES = [
     r"C:\Cartografia\ASC\Grid_MI.dbf",
 ]
 
+# Complementos para lacunas conhecidas no Grid_MI.dbf.
+# SD-23-Z-A cobre folhas 100k como SD-23-Z-A-VI / MI 2134 e pertence ao 3º CGEO.
+_ASC_PREFIX_OVERRIDES: dict[str, int] = {
+    "SD-23-Z-A": 3,
+}
+
 
 def _norm(value: object) -> str:
     return str(value or "").strip().upper()
@@ -114,6 +120,10 @@ def asc_cgeo_id_for_item(inom: object, mi: object | None = None) -> int | None:
     while len(parts) > 3:
         parts.pop()
         candidate = "-".join(parts)
+        override = _ASC_PREFIX_OVERRIDES.get(candidate)
+        if override:
+            return override
+
         cgeo_id = lookup.get(candidate)
         if cgeo_id:
             return cgeo_id
