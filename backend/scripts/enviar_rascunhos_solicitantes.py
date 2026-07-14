@@ -15,16 +15,33 @@ import asyncio
 import os
 import sys
 
+from sqlalchemy import text
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from app.database import AsyncSessionLocal
+from app.database import AsyncSessionLocal, engine
 from app.services.auto_submit_service import auto_submit_rascunhos_solicitantes
 
 APLICAR = os.environ.get("APLICAR") == "1"
 FORCAR = os.environ.get("FORCAR") == "1"
 
 
+async def garantir_schema():
+    """Garante colunas usadas por este script quando rodado fora do startup."""
+    statements = [
+        "ALTER TABLE itens_pedido ADD COLUMN IF NOT EXISTS removido BOOLEAN DEFAULT FALSE",
+        "UPDATE itens_pedido SET removido = FALSE WHERE removido IS NULL",
+        "ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS auto_submitted BOOLEAN DEFAULT FALSE",
+        "UPDATE pedidos SET auto_submitted = FALSE WHERE auto_submitted IS NULL",
+    ]
+    async with engine.begin() as conn:
+        for statement in statements:
+            await conn.execute(text(statement))
+
+
 async def main():
+    await garantir_schema()
+
     async with AsyncSessionLocal() as db:
         result = await auto_submit_rascunhos_solicitantes(
             db,
