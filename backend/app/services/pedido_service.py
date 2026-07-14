@@ -168,7 +168,7 @@ async def submit_pedido(db: AsyncSession, pedido: Pedido, current_user: Usuario)
         raise HTTPException(status_code=400, detail="Pedido já foi submetido")
     if pedido.usuario_id != current_user.id:
         raise HTTPException(status_code=403, detail="Acesso negado")
-    if not pedido.itens:
+    if not any(not getattr(item, "removido", False) for item in pedido.itens):
         raise HTTPException(status_code=400, detail="Adicione ao menos um produto ao pedido")
 
     perfil = current_user.perfil

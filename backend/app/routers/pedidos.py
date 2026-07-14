@@ -1334,14 +1334,9 @@ async def delete_item(
     is_owner = pedido.usuario_id == current_user.id
     supervisor_editable_statuses = {
         StatusPedidoEnum.AGUARDANDO_SUPERVISOR,
-        StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR,
-        StatusPedidoEnum.AGUARDANDO_CARTOGRAFICO,
-        StatusPedidoEnum.ATRIBUIDO_CGEO,
     }
     consolidador_editable_statuses = {
         StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR,
-        StatusPedidoEnum.AGUARDANDO_CARTOGRAFICO,
-        StatusPedidoEnum.ATRIBUIDO_CGEO,
     }
 
     is_supervisor = (

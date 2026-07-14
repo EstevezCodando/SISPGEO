@@ -173,6 +173,7 @@ async def _run_migrations():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     from app.services.bdgex_service import preload_caches
+    from app.services.auto_submit_service import auto_submit_rascunhos_scheduler
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
@@ -186,8 +187,16 @@ async def lifespan(app: FastAPI):
     # Na 1ª execução: constrói os .gz a partir dos GeoJSONs e salva em disco.
     # Reinicializações: lê os .gz do disco em < 1 s por arquivo.
     asyncio.create_task(preload_caches())
+    auto_submit_task = asyncio.create_task(auto_submit_rascunhos_scheduler())
 
-    yield
+    try:
+        yield
+    finally:
+        auto_submit_task.cancel()
+        try:
+            await auto_submit_task
+        except asyncio.CancelledError:
+            pass
 
 
 app = FastAPI(

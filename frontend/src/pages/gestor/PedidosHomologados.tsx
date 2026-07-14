@@ -6,7 +6,7 @@ import {
   Map, CheckCircle, ChevronDown, ChevronUp,
   Phone, Mail, Building2, Briefcase, Info,
   Download, Loader2, CalendarClock, Printer, ExternalLink, FileText,
-  MapPin, Copy, Trash2, X,
+  MapPin, Copy,
 } from 'lucide-react'
 import { pedidosApi, type DuplicateItem } from '../../api/pedidos'
 import { LoadingSpinner } from '../../components/shared/LoadingSpinner'
@@ -39,25 +39,9 @@ interface PedidoCardProps {
   isExpanded: boolean
   onToggleExpand: (id: number) => void
   onSpatialize: (pedido: Pedido) => void
-  onReload: () => void
 }
 
-function PedidoCard({ pedido: p, rank, isExpanded, onToggleExpand, onSpatialize, onReload }: PedidoCardProps) {
-  const [deletingItem, setDeletingItem] = useState<{ id: number; inom: string } | null>(null)
-
-  const handleDeleteItem = async () => {
-    if (!deletingItem) return
-    try {
-      await pedidosApi.deleteItem(p.id, deletingItem.id)
-      toast.success(`Item ${deletingItem.inom} marcado como removido`)
-      setDeletingItem(null)
-      onReload()
-    } catch (err: unknown) {
-      const e = err as { response?: { data?: { detail?: string } } }
-      toast.error(e.response?.data?.detail ?? 'Erro ao remover item')
-      setDeletingItem(null)
-    }
-  }
+function PedidoCard({ pedido: p, rank, isExpanded, onToggleExpand, onSpatialize }: PedidoCardProps) {
   const ativos = itensAtivos(p)
   const removidos = itensRemovidos(p)
   const tipos = [...new Set(ativos.map(i => TIPO_PRODUTO_LABELS[i.tipo_produto]))].join(' · ') || '—'
@@ -279,15 +263,6 @@ function PedidoCard({ pedido: p, rank, isExpanded, onToggleExpand, onSpatialize,
                         {item.impressao_quantidade}× {item.impressao_tipo_material}
                       </span>
                     )}
-                    {!item.removido && (
-                      <button
-                        onClick={() => setDeletingItem({ id: item.id, inom: item.inom })}
-                        className="ml-auto p-1 rounded text-red-400/70 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-                        title="Remover item"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    )}
                   </div>
                 )
               })}
@@ -340,26 +315,6 @@ function PedidoCard({ pedido: p, rank, isExpanded, onToggleExpand, onSpatialize,
               <MapPin className="h-3.5 w-3.5" />
               Ver no mapa
             </button>
-          </div>
-        </div>
-      )}
-      {deletingItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-          <div className="bg-zinc-900 border border-white/10 rounded-2xl shadow-2xl w-full max-w-sm p-5 space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-red-500/10 rounded-lg"><Trash2 className="h-5 w-5 text-red-400" /></div>
-              <h2 className="text-base font-semibold text-zinc-100">Remover item</h2>
-              <button onClick={() => setDeletingItem(null)} className="ml-auto text-zinc-500 hover:text-zinc-300">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <p className="text-sm text-zinc-400">
-              Remover <span className="font-mono text-emerald-400">{deletingItem.inom}</span> do pedido #{p.id}?
-            </p>
-            <div className="flex gap-2">
-              <button onClick={() => setDeletingItem(null)} className="flex-1 px-4 py-2 rounded-lg border border-white/10 text-zinc-400 text-sm hover:bg-white/5">Cancelar</button>
-              <button onClick={handleDeleteItem} className="flex-1 px-4 py-2 rounded-lg bg-red-500/80 text-white text-sm font-medium hover:bg-red-500">Remover</button>
-            </div>
           </div>
         </div>
       )}
@@ -481,7 +436,6 @@ export function PedidosHomologados() {
               isExpanded={expandedId === p.id}
               onToggleExpand={(id) => setExpandedId(expandedId === id ? null : id)}
               onSpatialize={setSpatializePedido}
-              onReload={load}
             />
           ))}
         </div>
