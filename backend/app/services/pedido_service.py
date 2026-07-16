@@ -81,6 +81,27 @@ ORG_TO_CONSOLIDADOR: dict[str, PerfilEnum] = {
     "COLOG": PerfilEnum.CONSOLIDADOR_COLOG,
     "DECEx": PerfilEnum.CONSOLIDADOR_DECEX,
 }
+CONSOLIDADOR_TO_ORG: dict[PerfilEnum, str] = {v: k for k, v in ORG_TO_CONSOLIDADOR.items()}
+
+
+def _supervisor_owns(gestor: Usuario, pedido: Pedido) -> bool:
+    if gestor.perfil in SUPERVISOR_DECEX_PROFILES:
+        diretoria = SUPERVISOR_DECEX_TO_DIRETORIA.get(gestor.perfil)
+        return pedido.diretoria == diretoria
+    rm = SUPERVISOR_TO_RM.get(gestor.perfil) or gestor.regiao_militar
+    return rm is not None and pedido.regiao_militar == rm
+
+
+def _org_do_consolidador(gestor: Usuario) -> str | None:
+    if gestor.perfil in CONSOLIDADOR_TO_ORG:
+        return CONSOLIDADOR_TO_ORG[gestor.perfil]
+    return gestor.orgao_vinculante.value if gestor.orgao_vinculante else None
+
+
+def _consolidador_owns(gestor: Usuario, pedido: Pedido) -> bool:
+    org = _org_do_consolidador(gestor)
+    pedido_org = pedido.orgao_vinculante.value if pedido.orgao_vinculante else None
+    return org is not None and pedido_org == org
 
 # Mapeamento perfil → (status atual esperado, próximo status, perfil a notificar)
 # Supervisores regionais avançam para CONSOLIDADOR_COTER.
@@ -338,6 +359,15 @@ async def review_pedido(
     if pedido.status not in allowed_statuses:
         raise HTTPException(status_code=400, detail="Pedido não está disponível para revisão")
 
+    if gestor.perfil in SUPERVISOR_PROFILES:
+        if pedido.status != StatusPedidoEnum.AGUARDANDO_SUPERVISOR or not _supervisor_owns(gestor, pedido):
+            raise HTTPException(status_code=403, detail="Acesso negado")
+    elif gestor.perfil in CONSOLIDADOR_PROFILES:
+        if pedido.status != StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR or not _consolidador_owns(gestor, pedido):
+            raise HTTPException(status_code=403, detail="Acesso negado")
+    else:
+        raise HTTPException(status_code=403, detail="Perfil nao autorizado a revisar pedidos")
+
     if observacoes is not None:
         pedido.observacoes = observacoes
 
@@ -444,6 +474,15 @@ async def consolidate_pedidos(
                 )
                 continue
 
+        if gestor.perfil in CONSOLIDADOR_PROFILES and not _consolidador_owns(gestor, p):
+            logger.warning(
+                "consolidate_pedidos: consolidador %s tentou consolidar pedido_id=%d de orgao=%s - ignorado",
+                gestor.perfil.value,
+                pid,
+                p.orgao_vinculante.value if p.orgao_vinculante else None,
+            )
+            continue
+
         p.status = to_status
         if to_status == StatusPedidoEnum.AGUARDANDO_CARTOGRAFICO:
             p.submetido_dsg_em = now
@@ -541,6 +580,9 @@ async def cgeo_review(
         "cgeo_review → pedido_id=%d  cgeo=%s  acao=%s",
         pedido.id, cgeo_user.email, acao,
     )
+
+    if pedido.cgeo_id != cgeo_user.cgeo_id:
+        raise HTTPException(status_code=403, detail="Acesso negado")
 
     usuario = await db.get(Usuario, pedido.usuario_id)
     status_anterior = pedido.status

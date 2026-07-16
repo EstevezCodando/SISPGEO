@@ -211,6 +211,13 @@ GESTOR_PROFILES = tuple(SUPERVISOR_PROFILES | CONSOLIDADOR_PROFILES)
 # Conjunto de perfis de supervisor (regionais + DECEx). O escopo de cada um
 # (RM ou Diretoria) é resolvido por _supervisor_scope().
 _GESTORES_SUPERVISOR = SUPERVISOR_PROFILES
+CONSOLIDADOR_TO_ORGAO: dict[PerfilEnum, OrgaoVinculanteEnum] = {
+    PerfilEnum.CONSOLIDADOR_COTER: OrgaoVinculanteEnum.COTER,
+    PerfilEnum.CONSOLIDADOR_DSG: OrgaoVinculanteEnum.DSG,
+    PerfilEnum.CONSOLIDADOR_DEC: OrgaoVinculanteEnum.DEC,
+    PerfilEnum.CONSOLIDADOR_COLOG: OrgaoVinculanteEnum.COLOG,
+    PerfilEnum.CONSOLIDADOR_DECEX: OrgaoVinculanteEnum.DECEx,
+}
 
 
 def _itens_ativos(pedido: Pedido | PedidoOut):
@@ -244,6 +251,53 @@ def _supervisor_owns(user: Usuario, pedido: Pedido) -> bool:
     if user.perfil in SUPERVISOR_DECEX_PROFILES:
         return pedido.diretoria == SUPERVISOR_DECEX_TO_DIRETORIA.get(user.perfil)
     return pedido.regiao_militar == _rm_do_supervisor(user)
+
+
+def _orgao_do_consolidador(user: Usuario) -> OrgaoVinculanteEnum | None:
+    return CONSOLIDADOR_TO_ORGAO.get(user.perfil) or user.orgao_vinculante
+
+
+def _consolidador_scope(user: Usuario):
+    orgao = _orgao_do_consolidador(user)
+    if orgao is None:
+        return Pedido.id.is_(None)
+    return Pedido.orgao_vinculante == orgao
+
+
+def _consolidador_owns(user: Usuario, pedido: Pedido) -> bool:
+    orgao = _orgao_do_consolidador(user)
+    return orgao is not None and pedido.orgao_vinculante == orgao
+
+
+def _pedido_scope_clause(user: Usuario):
+    if user.perfil == PerfilEnum.GESTOR_CARTOGRAFICO:
+        return None
+    if user.perfil == PerfilEnum.ANALISTA_CGEO:
+        return Pedido.cgeo_id == user.cgeo_id
+    if user.perfil in SUPERVISOR_PROFILES:
+        return _supervisor_scope(user)
+    if user.perfil in CONSOLIDADOR_PROFILES:
+        return _consolidador_scope(user)
+    if user.perfil == PerfilEnum.SOLICITANTE:
+        return (Pedido.usuario_id == user.id) | (Pedido.criador_id == user.id)
+    return Pedido.usuario_id == user.id
+
+
+def _pedido_in_user_scope(user: Usuario, pedido: Pedido) -> bool:
+    if user.perfil == PerfilEnum.GESTOR_CARTOGRAFICO:
+        return True
+    if user.perfil == PerfilEnum.ANALISTA_CGEO:
+        return pedido.cgeo_id == user.cgeo_id
+    if user.perfil in SUPERVISOR_PROFILES:
+        return _supervisor_owns(user, pedido)
+    if user.perfil in CONSOLIDADOR_PROFILES:
+        return _consolidador_owns(user, pedido)
+    return pedido.usuario_id == user.id or pedido.criador_id == user.id
+
+
+def _assert_pedido_in_user_scope(user: Usuario, pedido: Pedido) -> None:
+    if not _pedido_in_user_scope(user, pedido):
+        raise HTTPException(status_code=403, detail="Acesso negado")
 
 
 
@@ -343,7 +397,7 @@ async def list_pedidos(
         # Consolidador — roteado por orgao_vinculante
         result = await db.scalars(
             select(Pedido)
-            .where(Pedido.orgao_vinculante == current_user.orgao_vinculante)
+            .where(_consolidador_scope(current_user))
             .order_by(Pedido.criado_em.desc())
         )
     else:
@@ -382,7 +436,7 @@ async def list_pending(
             select(Pedido)
             .where(
                 Pedido.status == StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR,
-                Pedido.orgao_vinculante == current_user.orgao_vinculante,
+                _consolidador_scope(current_user),
             )
             .order_by(Pedido.submetido_gestor_em.asc())
         )
@@ -420,7 +474,7 @@ async def get_map_features(
     elif current_user.perfil in _GESTORES_SUPERVISOR:
         q = select(Pedido).where(_supervisor_scope(current_user))
     elif current_user.perfil in CONSOLIDADOR_PROFILES:
-        q = select(Pedido).where(Pedido.orgao_vinculante == current_user.orgao_vinculante)
+        q = select(Pedido).where(_consolidador_scope(current_user))
     else:
         q = select(Pedido).where(Pedido.usuario_id == current_user.id)
 
@@ -503,7 +557,7 @@ async def listar_duplicatas(
             ])
         q = select(Pedido).where(
             Pedido.status.in_(statuses),
-            Pedido.orgao_vinculante == current_user.orgao_vinculante,
+            _consolidador_scope(current_user),
         )
     elif current_user.perfil == PerfilEnum.GESTOR_CARTOGRAFICO:
         q = select(Pedido).where(
@@ -589,7 +643,7 @@ async def exportar_relatorio(
 
     else:  # CONSOLIDADOR_*
         q = select(Pedido).where(
-            Pedido.orgao_vinculante == current_user.orgao_vinculante,
+            _consolidador_scope(current_user),
             Pedido.status.notin_([StatusPedidoEnum.RASCUNHO, StatusPedidoEnum.CANCELADO]),
         ).order_by(Pedido.prioridade.asc(), Pedido.criado_em.asc())
 
@@ -1599,7 +1653,7 @@ async def delete_item(
     is_consolidador = (
         current_user.perfil in CONSOLIDADOR_PROFILES
         and pedido.status in consolidador_editable_statuses
-        and pedido.orgao_vinculante == current_user.orgao_vinculante
+        and _consolidador_owns(current_user, pedido)
     )
 
     if not (is_owner or is_supervisor or is_consolidador):
@@ -1681,7 +1735,7 @@ async def list_homologados(
             select(Pedido)
             .where(
                 Pedido.status.in_(forwarded),
-                Pedido.orgao_vinculante == current_user.orgao_vinculante,
+                _consolidador_scope(current_user),
             )
             .order_by(Pedido.atualizado_em.desc())
         )
@@ -1699,6 +1753,7 @@ async def get_pedido(
     pedido = await db.get(Pedido, pedido_id)
     if not pedido:
         raise HTTPException(status_code=404, detail="Pedido não encontrado")
+    _assert_pedido_in_user_scope(current_user, pedido)
     enriched = await _enrich(db, [pedido])
     return enriched[0]
 
@@ -1780,6 +1835,7 @@ async def review(
     pedido = await db.get(Pedido, pedido_id)
     if not pedido:
         raise HTTPException(status_code=404, detail="Pedido não encontrado")
+    _assert_pedido_in_user_scope(current_user, pedido)
     return await pedido_service.review_pedido(db, pedido, current_user, body.acao, body.motivo, body.observacoes)
 
 
@@ -1820,6 +1876,8 @@ async def cgeo_review(
     pedido = await db.get(Pedido, pedido_id)
     if not pedido:
         raise HTTPException(status_code=404, detail="Pedido não encontrado")
+    if pedido.cgeo_id != current_user.cgeo_id:
+        raise HTTPException(status_code=403, detail="Acesso negado")
     return await pedido_service.cgeo_review(db, pedido, current_user, body.acao, body.motivo, body.link_bdgex)
 
 
@@ -2054,12 +2112,16 @@ async def reorder_pedidos(
         raise HTTPException(status_code=403, detail="Perfil não autorizado")
     # Busca todos de uma vez (1 query) ao invés de N db.get() individuais
     from sqlalchemy import update as sa_update
+    scope_clause = _pedido_scope_clause(current_user)
+    reordenados = 0
     for rank, pid in enumerate(body.ordered_ids, start=1):
-        await db.execute(
-            sa_update(Pedido).where(Pedido.id == pid).values(prioridade=rank)
-        )
+        stmt = sa_update(Pedido).where(Pedido.id == pid).values(prioridade=rank)
+        if scope_clause is not None:
+            stmt = stmt.where(scope_clause)
+        result = await db.execute(stmt)
+        reordenados += result.rowcount or 0
     await db.commit()
-    return {"reordenados": len(body.ordered_ids)}
+    return {"reordenados": reordenados}
 
 
 @router.put("/{pedido_id}/items/reorder")
@@ -2073,6 +2135,7 @@ async def reorder_items(
     pedido = await db.get(Pedido, pedido_id)
     if not pedido:
         raise HTTPException(status_code=404, detail="Pedido não encontrado")
+    _assert_pedido_in_user_scope(current_user, pedido)
     from sqlalchemy import update as sa_update
     for rank, item_id in enumerate(body.ordered_ids, start=1):
         await db.execute(
@@ -2184,11 +2247,7 @@ async def get_pedido_features(
     if not pedido:
         raise HTTPException(status_code=404, detail="Pedido não encontrado")
 
-    # Owner ou qualquer gestor pode ver
-    is_owner = pedido.usuario_id == current_user.id
-    is_gestor = current_user.perfil in {PerfilEnum.GESTOR_CARTOGRAFICO, PerfilEnum.ANALISTA_CGEO, *GESTOR_PROFILES}
-    if not is_owner and not is_gestor:
-        raise HTTPException(status_code=403, detail="Acesso negado")
+    _assert_pedido_in_user_scope(current_user, pedido)
 
     from app.models.enums import EscalaEnum
     import asyncio as _asyncio
