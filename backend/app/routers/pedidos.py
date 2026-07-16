@@ -238,19 +238,30 @@ def _rm_do_supervisor(user: Usuario) -> str | None:
 def _supervisor_scope(user: Usuario):
     """Cláusula SQLAlchemy que restringe os pedidos ao escopo de um supervisor.
 
-    - Supervisores do **DECEx** filtram por ``Pedido.diretoria`` (Diretoria do perfil).
-    - Supervisores **regionais** filtram por ``Pedido.regiao_militar`` (C. Mil. A).
+    - Supervisores do **DECEx** filtram por ``orgao_vinculante=DECEx`` + Diretoria.
+    - Supervisores **regionais** filtram por ``orgao_vinculante=COTER`` + C. Mil. A.
     """
     if user.perfil in SUPERVISOR_DECEX_PROFILES:
-        return Pedido.diretoria == SUPERVISOR_DECEX_TO_DIRETORIA.get(user.perfil)
-    return Pedido.regiao_militar == _rm_do_supervisor(user)
+        return (
+            (Pedido.orgao_vinculante == OrgaoVinculanteEnum.DECEx)
+            & (Pedido.diretoria == SUPERVISOR_DECEX_TO_DIRETORIA.get(user.perfil))
+        )
+    orgao = user.orgao_vinculante if user.perfil == PerfilEnum.SUPERVISOR else OrgaoVinculanteEnum.COTER
+    return (
+        (Pedido.orgao_vinculante == orgao)
+        & (Pedido.regiao_militar == _rm_do_supervisor(user))
+    )
 
 
 def _supervisor_owns(user: Usuario, pedido: Pedido) -> bool:
     """Versão em Python de :func:`_supervisor_scope` para um pedido já carregado."""
     if user.perfil in SUPERVISOR_DECEX_PROFILES:
-        return pedido.diretoria == SUPERVISOR_DECEX_TO_DIRETORIA.get(user.perfil)
-    return pedido.regiao_militar == _rm_do_supervisor(user)
+        return (
+            pedido.orgao_vinculante == OrgaoVinculanteEnum.DECEx
+            and pedido.diretoria == SUPERVISOR_DECEX_TO_DIRETORIA.get(user.perfil)
+        )
+    orgao = user.orgao_vinculante if user.perfil == PerfilEnum.SUPERVISOR else OrgaoVinculanteEnum.COTER
+    return pedido.orgao_vinculante == orgao and pedido.regiao_militar == _rm_do_supervisor(user)
 
 
 def _orgao_do_consolidador(user: Usuario) -> OrgaoVinculanteEnum | None:

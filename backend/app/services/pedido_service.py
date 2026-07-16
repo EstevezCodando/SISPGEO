@@ -87,9 +87,16 @@ CONSOLIDADOR_TO_ORG: dict[PerfilEnum, str] = {v: k for k, v in ORG_TO_CONSOLIDAD
 def _supervisor_owns(gestor: Usuario, pedido: Pedido) -> bool:
     if gestor.perfil in SUPERVISOR_DECEX_PROFILES:
         diretoria = SUPERVISOR_DECEX_TO_DIRETORIA.get(gestor.perfil)
-        return pedido.diretoria == diretoria
+        pedido_org = pedido.orgao_vinculante.value if pedido.orgao_vinculante else None
+        return pedido_org == "DECEx" and pedido.diretoria == diretoria
     rm = SUPERVISOR_TO_RM.get(gestor.perfil) or gestor.regiao_militar
-    return rm is not None and pedido.regiao_militar == rm
+    gestor_org = (
+        gestor.orgao_vinculante.value
+        if gestor.perfil == PerfilEnum.SUPERVISOR and gestor.orgao_vinculante
+        else "COTER"
+    )
+    pedido_org = pedido.orgao_vinculante.value if pedido.orgao_vinculante else None
+    return pedido_org == gestor_org and rm is not None and pedido.regiao_militar == rm
 
 
 def _org_do_consolidador(gestor: Usuario) -> str | None:
