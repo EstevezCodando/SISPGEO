@@ -648,14 +648,11 @@ export function SolicitarProdutos() {
     return () => controller.abort();
   }, [escala, dataEntrega, tipoProduto]);
 
-  // minDate = data_base (global) + prazo_minimo do produto selecionado.
-  // Se a configuração ainda não carregou, usa fallback local.
   const minDate = (() => {
-    if (!tipoProduto) return format(addDays(new Date(), 1), "yyyy-MM-dd");
+    if (!tipoProduto) return undefined;
     if (configEntrega?.datas_minimas?.[tipoProduto]) {
       return configEntrega.datas_minimas[tipoProduto];
     }
-    // fallback enquanto API carrega — usa data atual como base se data_base ainda não veio
     const prazo = PRAZO_FALLBACK[tipoProduto];
     const base = configEntrega?.data_base
       ? new Date(configEntrega.data_base + "T00:00:00")
@@ -768,13 +765,20 @@ export function SolicitarProdutos() {
     setShowRevisao(true);
   };
 
-  // Janela fechada — só bloqueia SOLICITANTE; SUPERVISOR pode solicitar a qualquer momento
+  // Bloqueia SOLICITANTE sempre que a janela não estiver aberta (incluindo quando não há janela configurada).
+  // Aguarda o carregamento (minhaJanela === null) antes de bloquear para evitar falso positivo.
   const janelaFechada =
     user?.perfil === "SOLICITANTE" &&
-    minhaJanela?.configurada &&
+    minhaJanela !== null &&
     !minhaJanela?.aberta;
 
   if (janelaFechada) {
+    const proximaAbertura = minhaJanela?.data_inicio
+      ? new Date(minhaJanela.data_inicio) > new Date()
+        ? new Date(minhaJanela.data_inicio).toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })
+        : null
+      : null;
+
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6 text-center px-4">
         <div className="bg-zinc-900 border border-white/10 rounded-2xl p-10 max-w-md w-full shadow-2xl">
@@ -787,10 +791,12 @@ export function SolicitarProdutos() {
             Período de Solicitações Encerrado
           </h2>
           <p className="text-sm text-zinc-500 leading-relaxed mb-6">
-            O prazo para inclusão de novos produtos geoespaciais está encerrado.
-            Nenhum produto pode ser adicionado neste momento.
+            Não é possível realizar pedidos fora do prazo.{" "}
+            {proximaAbertura
+              ? `A janela de solicitações abrirá em ${proximaAbertura}.`
+              : "Aguarde a janela de solicitações ser aberta pela DSG."}
           </p>
-          {minhaJanela?.data_fim && (
+          {minhaJanela?.data_fim && new Date(minhaJanela.data_fim) < new Date() && (
             <p className="text-xs text-zinc-600 mb-4">
               Encerrado em{" "}
               {new Date(minhaJanela.data_fim).toLocaleDateString("pt-BR", {
@@ -812,7 +818,7 @@ export function SolicitarProdutos() {
           </div>
           <div className="mt-4 flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-zinc-800 border border-zinc-700 text-xs text-zinc-500">
             <Lock className="h-3.5 w-3.5" />
-            Acesso bloqueado pelo administrador
+            Acesso bloqueado pela DSG
           </div>
         </div>
       </div>
@@ -1133,13 +1139,9 @@ export function SolicitarProdutos() {
                       </button>
                     </div>
                     {/* Indicador de impressão por item no carrinho */}
-                    {isImpressao && (
-                      <div
-                        className={`mt-1.5 pt-1.5 border-t border-white/5 text-[10px] ${imp ? "text-emerald-400" : "text-amber-400"}`}
-                      >
-                        {imp
-                          ? `${imp.quantidade}x ${imp.tipo}`
-                          : "⚠ Configure quantidade e material de impressão na revisão"}
+                    {isImpressao && imp && (
+                      <div className="mt-1.5 pt-1.5 border-t border-white/5 text-[10px] text-emerald-400">
+                        {imp.quantidade}x {imp.tipo}
                       </div>
                     )}
                     {!isImpressao && item.impressao && imp && (
@@ -1154,15 +1156,6 @@ export function SolicitarProdutos() {
           </div>
 
           <div className="p-3 border-t border-white/10">
-            {items.length > 0 && isImpressao && (
-              <div className="flex flex-wrap gap-1.5 mb-2.5">
-                <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[11px] text-emerald-400">
-                  <ClipboardCheck className="h-3 w-3" />
-                  Impressão: configure quantidade e material de impressão na
-                  revisão
-                </span>
-              </div>
-            )}
             <button
               onClick={handleOpenRevisao}
               disabled={items.length === 0}

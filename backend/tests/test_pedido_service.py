@@ -12,6 +12,7 @@ from fastapi import HTTPException
 
 from app.models.enums import PerfilEnum, StatusPedidoEnum
 from app.services import pedido_service
+from app.utils.diretorias_decex import diretoria_de_om
 
 
 # ---------------------------------------------------------------------------
@@ -175,6 +176,8 @@ class TestAssignCgeo:
 
 class TestCgeoReview:
     async def test_status_invalido_levanta_400(self, mock_db, pedido_rascunho, gestor_cgeo):
+        # Pedido atribuído a este CGEO — isola a validação de status da de escopo (403).
+        pedido_rascunho.cgeo_id = gestor_cgeo.cgeo_id
         with pytest.raises(HTTPException) as exc:
             await pedido_service.cgeo_review(mock_db, pedido_rascunho, gestor_cgeo, "aprovar", None)
         assert exc.value.status_code == 400
@@ -227,3 +230,98 @@ class TestCgeoReview:
 
         assert result.status == StatusPedidoEnum.REPROVADO
         assert result.motivo_reprovacao == "Área não coberta"
+
+
+# ---------------------------------------------------------------------------
+# Fluxo DECEx — supervisão por Diretoria
+# ---------------------------------------------------------------------------
+
+class TestFluxoDECEx:
+    def test_mapeamento_om_para_diretoria(self):
+        # Discriminador: 20º BIB é vinculada NPOR do DESMil no contexto DECEx.
+        assert diretoria_de_om("20º BIB") == "DESMIL"
+        assert diretoria_de_om("AMAN") == "DESMIL"
+        assert diretoria_de_om("CMRJ") == "DEPA"
+        assert diretoria_de_om("EsEFEx") == "CCFEX"
+        assert diretoria_de_om("OM inexistente") is None
+
+    def test_cadeia_decex_inclui_etapa_supervisor(self):
+        cadeia = pedido_service.cadeia_aprovacao("DECEx", None, "DESMIL")
+        assert cadeia == [
+            "Solicitante",
+            "Supervisor DESMIL",
+            "Consolidador DECEx",
+            "Gestor Cartográfico (DSG)",
+            "Analista CGEO",
+        ]
+
+    async def test_submit_decex_roteia_ao_supervisor_da_diretoria(
+        self, mock_db, pedido_decex_desmil_rascunho, solicitante_decex_desmil
+    ):
+        mock_db.get.return_value = None
+        mock_db.scalars.return_value = MagicMock(__iter__=MagicMock(return_value=iter([])))
+
+        with (
+            patch("app.services.pedido_service.send_email", new_callable=AsyncMock),
+            patch("app.services.pedido_service.pedido_submetido", return_value=("s", "<html/>")),
+            patch("app.services.pedido_service.notificar_gestor", return_value=("s", "<html/>")),
+            patch("app.services.pedido_service.NotificationService") as mock_svc_cls,
+        ):
+            mock_svc = AsyncMock()
+            mock_svc.notify_by_perfil = AsyncMock(return_value=0)
+            mock_svc_cls.return_value = mock_svc
+
+            result = await pedido_service.submit_pedido(
+                mock_db, pedido_decex_desmil_rascunho, solicitante_decex_desmil
+            )
+
+        assert result.status == StatusPedidoEnum.AGUARDANDO_SUPERVISOR
+        # Diretoria derivada da OM (AMAN → DESMIL) foi persistida no pedido
+        assert result.diretoria == "DESMIL"
+        # Notificação foi endereçada ao perfil do supervisor DESMil
+        mock_svc.notify_by_perfil.assert_awaited()
+        assert mock_svc.notify_by_perfil.await_args.kwargs["perfil"] == PerfilEnum.SUPERVISOR_DESMIL
+
+    async def test_submit_decex_om_nao_mapeada_levanta_400(
+        self, mock_db, pedido_decex_desmil_rascunho, solicitante_decex_desmil
+    ):
+        solicitante_decex_desmil.om = "OM Fantasma XYZ"
+        pedido_decex_desmil_rascunho.diretoria = None
+        with pytest.raises(HTTPException) as exc:
+            await pedido_service.submit_pedido(
+                mock_db, pedido_decex_desmil_rascunho, solicitante_decex_desmil
+            )
+        assert exc.value.status_code == 400
+
+    async def test_supervisor_desmil_consolida_para_consolidador_decex(
+        self, mock_db, pedido_decex_desmil_aguardando, supervisor_desmil
+    ):
+        mock_db.get.return_value = pedido_decex_desmil_aguardando
+
+        with patch("app.services.pedido_service.NotificationService") as mock_svc_cls:
+            mock_svc = AsyncMock()
+            mock_svc.notify_by_perfil = AsyncMock(return_value=0)
+            mock_svc_cls.return_value = mock_svc
+
+            result = await pedido_service.consolidate_pedidos(mock_db, [201], supervisor_desmil)
+
+        assert result == {"submetidos": 1}
+        assert pedido_decex_desmil_aguardando.status == StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR
+        assert mock_svc.notify_by_perfil.await_args.kwargs["perfil"] == PerfilEnum.CONSOLIDADOR_DECEX
+
+    async def test_supervisor_desmil_ignora_pedido_de_outra_diretoria(
+        self, mock_db, pedido_decex_desmil_aguardando, supervisor_desmil
+    ):
+        # Pedido pertence à DEPA — supervisor DESMil não pode consolidá-lo
+        pedido_decex_desmil_aguardando.diretoria = "DEPA"
+        mock_db.get.return_value = pedido_decex_desmil_aguardando
+
+        with patch("app.services.pedido_service.NotificationService") as mock_svc_cls:
+            mock_svc = AsyncMock()
+            mock_svc.notify_by_perfil = AsyncMock(return_value=0)
+            mock_svc_cls.return_value = mock_svc
+
+            result = await pedido_service.consolidate_pedidos(mock_db, [201], supervisor_desmil)
+
+        assert result == {"submetidos": 0}
+        assert pedido_decex_desmil_aguardando.status == StatusPedidoEnum.AGUARDANDO_SUPERVISOR

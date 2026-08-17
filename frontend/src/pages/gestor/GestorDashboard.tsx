@@ -6,7 +6,7 @@ import {
   Send, Map, ChevronDown, ChevronUp, GripVertical, AlertTriangle,
   X, Copy, Trash2, Ban, Phone, Mail, Building2, Briefcase,
   Clock, CalendarX, CheckCircle, Info, Download, Loader2,
-  CalendarClock, User, Printer, ExternalLink, FileText,
+  CalendarClock, User, Printer, ExternalLink, FileText, MapPin, Search,
 } from 'lucide-react'
 import {
   DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent,
@@ -21,8 +21,12 @@ import { janelasApi, type MinhaJanela } from '../../api/janelas'
 import { StatusBadge } from '../../components/shared/StatusBadge'
 import { LoadingSpinner } from '../../components/shared/LoadingSpinner'
 import { PedidosMap } from '../../components/map/PedidosMap'
+import { PedidoSpatializeModal } from '../../components/map/PedidoSpatializeModal'
+import { DuplicateItemsModal } from '../../components/shared/DuplicateItemsModal'
 import type { Pedido } from '../../types/pedido'
-import { TIPO_PRODUTO_LABELS } from '../../types/pedido'
+import { TIPO_PRODUTO_LABELS, porPrioridade } from '../../types/pedido'
+import { CMILA_CODES, cmilaLabel } from '../../types/user'
+import { casaBusca } from '../../utils/busca'
 import { useAuthStore } from '../../store/authStore'
 import { useExportRelatorio } from '../../hooks/useExportRelatorio'
 
@@ -73,6 +77,10 @@ const ORG_CLS: Record<string, string> = {
   DECEx: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
   DSG:   'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
 }
+
+const itemAtivo = (item: { removido?: boolean }) => !item.removido
+const itensAtivos = (pedido: Pedido) => pedido.itens.filter(itemAtivo)
+const itensRemovidos = (pedido: Pedido) => pedido.itens.filter(i => i.removido)
 
 // ─── Janela Banner ────────────────────────────────────────────────────────────
 function JanelaBanner({ janela, perfil }: { janela: MinhaJanela | null; perfil: string }) {
@@ -253,6 +261,7 @@ interface PedidoCardProps {
   onToggleExpand: (id: number) => void
   onEncaminhar: (id: number) => void
   onReprovar: (id: number) => void
+  onSpatialize: (pedido: Pedido) => void
   onReload: () => void
 }
 
@@ -266,6 +275,7 @@ function PedidoCard({
   onToggleExpand,
   onEncaminhar,
   onReprovar,
+  onSpatialize,
   onReload,
 }: PedidoCardProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: p.id })
@@ -277,7 +287,7 @@ function PedidoCard({
     if (!deletingItem) return
     try {
       await pedidosApi.deleteItem(p.id, deletingItem.id)
-      toast.success(`Item ${deletingItem.inom} removido`)
+      toast.success(`Item ${deletingItem.inom} marcado como removido`)
       setDeletingItem(null)
       onReload()
     } catch (err: unknown) {
@@ -287,8 +297,10 @@ function PedidoCard({
     }
   }
 
-  const tipos = [...new Set(p.itens.map(i => TIPO_PRODUTO_LABELS[i.tipo_produto]))].join(' · ') || '—'
-  const temImpressao = p.impressao_solicitada || p.itens.some(i => i.impressao_quantidade)
+  const ativos = itensAtivos(p)
+  const removidos = itensRemovidos(p)
+  const tipos = [...new Set(ativos.map(i => TIPO_PRODUTO_LABELS[i.tipo_produto]))].join(' · ') || '—'
+  const temImpressao = p.impressao_solicitada || ativos.some(i => i.impressao_quantidade)
 
   const descricao = p.finalidade_geo
     ? p.finalidade_geo
@@ -366,7 +378,10 @@ function PedidoCard({
           <div className="flex items-center gap-1.5 mt-1 flex-wrap">
             <span className="text-[11px] text-zinc-500">{tipos}</span>
             <span className="text-zinc-700">·</span>
-            <span className="text-[11px] text-zinc-600">{p.itens.length} item(ns)</span>
+            <span className="text-[11px] text-zinc-600">{ativos.length} ativo(s)</span>
+            {removidos.length > 0 && (
+              <span className="text-[11px] text-red-400/70">{removidos.length} removido(s)</span>
+            )}
             {temImpressao && (
               <span className="inline-flex items-center gap-0.5 text-[10px] text-violet-400 shrink-0">
                 <Printer className="h-3 w-3" /> Impressão
@@ -501,27 +516,32 @@ function PedidoCard({
             <p className="text-xs font-medium text-zinc-500 mb-2 flex items-center gap-1.5">
               <FileText className="h-3.5 w-3.5" />
               Itens por prioridade
-              {janelaAberta && p.itens.length > 1 && (
+              {janelaAberta && ativos.length > 0 && (
                 <span className="ml-1 text-zinc-600">(passe o mouse para remover)</span>
               )}
             </p>
             <div className="space-y-1.5">
-              {[...p.itens].sort((a, b) => a.prioridade - b.prioridade).map((item, idx) => {
+              {[...p.itens].sort(porPrioridade).map((item, idx) => {
                 const age = item.data_producao_bdgex
                   ? Math.floor((Date.now() - new Date(item.data_producao_bdgex).getTime()) / (365.25 * 24 * 3600 * 1000))
                   : null
                 const ageColor = age === null ? '' : age < 5 ? 'text-emerald-400' : age < 10 ? 'text-lime-400' : age < 20 ? 'text-yellow-400' : age < 30 ? 'text-orange-400' : 'text-red-400'
                 return (
-                  <div key={item.id} className="flex items-center flex-wrap gap-x-2 gap-y-1 text-xs text-zinc-400 group bg-zinc-800/40 border border-zinc-700/30 rounded-lg px-3 py-2">
+                  <div key={item.id} className={`flex items-center flex-wrap gap-x-2 gap-y-1 text-xs group border rounded-lg px-3 py-2 ${item.removido ? 'bg-red-950/20 border-red-500/20 text-zinc-500' : 'bg-zinc-800/40 border-zinc-700/30 text-zinc-400'}`}>
                     <span className="text-zinc-600 w-4 text-center shrink-0">{idx + 1}</span>
                     {item.mi
-                      ? <span className="text-emerald-400 font-mono shrink-0 font-medium">{item.mi}</span>
-                      : <span className="text-emerald-400 font-mono shrink-0 font-medium">{item.inom}</span>
+                      ? <span className={`text-emerald-400 font-mono shrink-0 font-medium ${item.removido ? 'line-through decoration-red-400 decoration-2' : ''}`}>{item.mi}</span>
+                      : <span className={`text-emerald-400 font-mono shrink-0 font-medium ${item.removido ? 'line-through decoration-red-400 decoration-2' : ''}`}>{item.inom}</span>
                     }
-                    {item.mi && <span className="text-zinc-500 font-mono shrink-0 text-[10px]">({item.inom})</span>}
-                    <span className="shrink-0 text-zinc-300">{TIPO_PRODUTO_LABELS[item.tipo_produto]}</span>
+                    {item.mi && <span className={`text-zinc-500 font-mono shrink-0 text-[10px] ${item.removido ? 'line-through decoration-red-400 decoration-2' : ''}`}>({item.inom})</span>}
+                    <span className={`shrink-0 text-zinc-300 ${item.removido ? 'line-through decoration-red-400 decoration-2 text-zinc-500' : ''}`}>{TIPO_PRODUTO_LABELS[item.tipo_produto]}</span>
                     <span className="text-zinc-600 shrink-0">·</span>
-                    <span className="shrink-0">{item.escala}</span>
+                    <span className={`shrink-0 ${item.removido ? 'line-through decoration-red-400 decoration-2' : ''}`}>{item.escala}</span>
+                    {item.removido && (
+                      <span className="shrink-0 rounded border border-red-500/25 bg-red-500/10 px-1.5 py-0.5 text-[10px] font-medium text-red-300">
+                        Removido
+                      </span>
+                    )}
                     {item.disponivel_bdgex && (
                       <span className="text-emerald-500 shrink-0 font-medium">✓ BDGEx</span>
                     )}
@@ -536,7 +556,7 @@ function PedidoCard({
                         {item.impressao_quantidade}× {item.impressao_tipo_material}
                       </span>
                     )}
-                    {janelaAberta && p.itens.length > 1 && (
+                    {janelaAberta && !item.removido && (
                       <button
                         onClick={() => setDeletingItem({ id: item.id, inom: item.inom, tipo_produto: item.tipo_produto, escala: item.escala })}
                         className="ml-auto opacity-0 group-hover:opacity-100 p-1 rounded text-red-400/70 hover:text-red-400 hover:bg-red-500/10 transition-all"
@@ -590,6 +610,15 @@ function PedidoCard({
               {p.observacoes}
             </p>
           )}
+          <div className="pt-1 flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => onSpatialize(p)}
+              className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 transition-colors"
+            >
+              <MapPin className="h-3.5 w-3.5" />
+              Ver no mapa
+            </button>
+          </div>
         </div>
       )}
 
@@ -691,7 +720,7 @@ function EncaminharLoteModal({ pedidos: ps, label, onConfirm, onCancel }: Encami
                 {/* Expanded items */}
                 {isExp && (
                   <div className="border-t border-zinc-700/40 px-3 py-2.5 space-y-1.5">
-                    {[...p.itens].sort((a, b) => a.prioridade - b.prioridade).map((item, i) => (
+                    {[...p.itens].sort(porPrioridade).map((item, i) => (
                       <div
                         key={item.id}
                         className="flex items-center flex-wrap gap-x-2 gap-y-0.5 text-xs text-zinc-400 bg-zinc-800/60 border border-zinc-700/30 rounded-lg px-3 py-1.5"
@@ -758,8 +787,12 @@ export function GestorDashboard() {
   const [expandedId, setExpandedId] = useState<number | null>(null)
   const [pendingAction, setPendingAction] = useState<PendingAction>(null)
   const [duplicateModal, setDuplicateModal] = useState<{ dups: DuplicateItem[]; ids: number[] } | null>(null)
+  const [manualDuplicates, setManualDuplicates] = useState<DuplicateItem[] | null>(null)
+  const [spatializePedido, setSpatializePedido] = useState<Pedido | null>(null)
   const [processing, setProcessing] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
+  const [search, setSearch] = useState('')
+  const [cmila, setCmila] = useState('')   // filtro por Comando Militar de Área
   const { exportando, baixarRelatorio } = useExportRelatorio()
 
   const sensors = useSensors(useSensor(PointerSensor))
@@ -772,7 +805,7 @@ export function GestorDashboard() {
       janelasApi.minhaJanela(),
     ])
       .then(([pr, jr]) => {
-        const sorted = [...pr.data].sort((a, b) => a.prioridade - b.prioridade)
+        const sorted = [...pr.data].sort(porPrioridade)
         setPedidos(sorted)
         setJanela(jr.data)
         setSelectedIds(new Set())
@@ -799,8 +832,8 @@ export function GestorDashboard() {
   }
 
   const toggleSelectAll = () => {
-    if (selectedIds.size === pedidos.length) setSelectedIds(new Set())
-    else setSelectedIds(new Set(pedidos.map(p => p.id)))
+    if (selectedIds.size === visiveis.length) setSelectedIds(new Set())
+    else setSelectedIds(new Set(visiveis.map(p => p.id)))
   }
 
   // ── Encaminhar ───────────────────────────────────────────────────────────────
@@ -830,8 +863,21 @@ export function GestorDashboard() {
     await executeEncaminhar(ids)
   }
 
+  const handleVerificarDuplicatas = async () => {
+    setProcessing(true)
+    try {
+      const res = await pedidosApi.getDuplicatas({ todos: true })
+      setManualDuplicates(res.data)
+      if (res.data.length === 0) toast.success('Nenhuma duplicata encontrada')
+    } catch {
+      toast.error('Erro ao verificar duplicatas')
+    } finally {
+      setProcessing(false)
+    }
+  }
+
   const handleEncaminharLote = async () => {
-    const ids = selectedIds.size > 0 ? [...selectedIds] : pedidos.map(p => p.id)
+    const ids = selectedIds.size > 0 ? [...selectedIds] : visiveis.map(p => p.id)
     if (ids.length === 0) { toast.error('Nenhum pedido na fila'); return }
     setPendingAction({ type: 'encaminhar-lote', ids })
   }
@@ -877,6 +923,25 @@ export function GestorDashboard() {
     load()
   }
 
+  // ── Filtros de exibição ──────────────────────────────────────────────────────
+  // Atenção: reordenar envia a lista inteira ao backend, que grava a prioridade
+  // pela posição. Reordenar com filtro ativo reatribuiria as prioridades 1..N
+  // apenas ao subconjunto visível, corrompendo a ordem dos demais pedidos — por
+  // isso o arrasto fica desabilitado enquanto houver filtro.
+  const filtrosAtivos = Boolean(search.trim() || cmila)
+  const visiveis = pedidos
+    .filter(p => !cmila || p.regiao_militar === cmila)
+    .filter(p => casaBusca(search, [
+      String(p.id),
+      p.usuario_nome,
+      p.usuario_om,
+      p.status,
+      p.orgao_vinculante,
+      p.regiao_militar,
+      ...p.itens.map(i => i.inom),
+      ...p.itens.map(i => i.mi),
+    ]))
+
   // ── Drag reorder ─────────────────────────────────────────────────────────────
   const handleDragEnd = useCallback(async (event: DragEndEvent) => {
     const { active, over } = event
@@ -895,8 +960,8 @@ export function GestorDashboard() {
 
   if (loading) return <LoadingSpinner />
 
-  const allSelected = pedidos.length > 0 && selectedIds.size === pedidos.length
-  const someSelected = selectedIds.size > 0 && selectedIds.size < pedidos.length
+  const allSelected = visiveis.length > 0 && selectedIds.size === visiveis.length
+  const someSelected = selectedIds.size > 0 && selectedIds.size < visiveis.length
   const selCount = selectedIds.size
 
   return (
@@ -932,6 +997,17 @@ export function GestorDashboard() {
             >
               {exportando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
               Baixar pedidos
+            </button>
+          )}
+
+          {pedidos.length > 0 && (
+            <button
+              onClick={handleVerificarDuplicatas}
+              disabled={processing}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium border bg-zinc-800 text-zinc-400 border-zinc-700 hover:text-zinc-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {processing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Copy className="h-4 w-4" />}
+              Duplicatas
             </button>
           )}
 
@@ -990,21 +1066,68 @@ export function GestorDashboard() {
         </div>
       )}
 
+      {/* ── Busca + filtro por C Mil A ── */}
+      {pedidos.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative flex-1 min-w-[16rem]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-500 pointer-events-none" />
+            <input
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder={'Buscar por ID, solicitante, OM, INOM…  ("aspas" = exato)'}
+              className="w-full bg-zinc-900 border border-white/10 rounded-xl pl-9 pr-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+            />
+          </div>
+          <select
+            value={cmila}
+            onChange={e => setCmila(e.target.value)}
+            title="Filtrar por Comando Militar de Área"
+            className="bg-zinc-900 border border-white/10 rounded-xl px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+          >
+            <option value="">Todos os C Mil A</option>
+            {CMILA_CODES.map(c => <option key={c} value={c}>{cmilaLabel(c)}</option>)}
+          </select>
+          {filtrosAtivos && (
+            <button
+              onClick={() => { setSearch(''); setCmila('') }}
+              className="px-3 py-2 rounded-xl text-sm text-zinc-400 border border-white/10 hover:bg-white/5 transition-colors"
+            >
+              Limpar filtros
+            </button>
+          )}
+        </div>
+      )}
+
+      {filtrosAtivos && pedidos.length > 0 && (
+        <p className="text-xs text-amber-400/80">
+          Exibindo {visiveis.length} de {pedidos.length} pedidos. Para reordenar
+          por prioridade, limpe os filtros — o arrasto reordena a fila inteira.
+        </p>
+      )}
+
       {/* ── Lista de pedidos ── */}
-      {pedidos.length === 0 ? (
+      {visiveis.length === 0 ? (
         <div className="bg-zinc-900 border border-white/10 rounded-xl p-12 text-center">
           <CheckCircle className="h-10 w-10 text-emerald-500/40 mx-auto mb-3" />
-          <p className="text-zinc-500 text-sm">Nenhum pedido aguardando revisão.</p>
+          <p className="text-zinc-500 text-sm">
+            {pedidos.length === 0
+              ? 'Nenhum pedido aguardando revisão.'
+              : 'Nenhum pedido encontrado para este filtro.'}
+          </p>
         </div>
       ) : (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <SortableContext items={pedidos.map(p => p.id)} strategy={verticalListSortingStrategy}>
+          <SortableContext
+            items={filtrosAtivos ? [] : visiveis.map(p => p.id)}
+            strategy={verticalListSortingStrategy}
+          >
             <div className="space-y-2">
-              {pedidos.map((p, idx) => (
+              {visiveis.map((p) => (
                 <PedidoCard
                   key={p.id}
                   pedido={p}
-                  rank={idx + 1}
+                  rank={pedidos.findIndex(x => x.id === p.id) + 1}
                   isExpanded={expandedId === p.id}
                   janelaAberta={janelaAberta}
                   selected={selectedIds.has(p.id)}
@@ -1012,6 +1135,7 @@ export function GestorDashboard() {
                   onToggleExpand={(id) => setExpandedId(expandedId === id ? null : id)}
                   onEncaminhar={(id) => setPendingAction({ type: 'encaminhar', id })}
                   onReprovar={(id) => setPendingAction({ type: 'reprovar', id })}
+                  onSpatialize={setSpatializePedido}
                   onReload={load}
                 />
               ))}
@@ -1021,6 +1145,14 @@ export function GestorDashboard() {
       )}
 
       {/* ── Modais de confirmação ── */}
+
+      {spatializePedido && (
+        <PedidoSpatializeModal pedido={spatializePedido} onClose={() => setSpatializePedido(null)} />
+      )}
+
+      {manualDuplicates && (
+        <DuplicateItemsModal duplicates={manualDuplicates} onClose={() => setManualDuplicates(null)} />
+      )}
 
       {pendingAction?.type === 'encaminhar-lote' && (
         <EncaminharLoteModal

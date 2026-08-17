@@ -83,6 +83,7 @@ async def _run_migrations():
         "UPDATE pedidos p SET regiao_militar = u.regiao_militar FROM usuarios u WHERE u.id = p.criador_id AND p.regiao_militar IS NULL",
         # 2026-05: prioridade de item dentro do pedido
         "ALTER TABLE itens_pedido ADD COLUMN IF NOT EXISTS prioridade SMALLINT DEFAULT 0",
+        "ALTER TABLE itens_pedido ADD COLUMN IF NOT EXISTS removido BOOLEAN DEFAULT FALSE",
         # 2026-05: renomear coluna demandante → orgao_vinculante em usuarios
         "ALTER TABLE usuarios RENAME COLUMN demandante TO orgao_vinculante",
         # 2026-05: renomear coluna demandante → orgao_vinculante em pedidos
@@ -93,7 +94,7 @@ async def _run_migrations():
         "SELECT setval('pedidos_id_seq', 999, true) WHERE (SELECT last_value FROM pedidos_id_seq) < 1000",
         # 2026-05: flag de submissão automática ao fim da janela de solicitações
         "ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS auto_submitted BOOLEAN DEFAULT FALSE",
-        # 2026-05: posto/graduação do militar (Civil, Sd EV, Cb, Cap, TC, Cel...)
+        # 2026-05: posto/graduação do militar (3º Sgt ... Coronel)
         "ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS posto_graduacao VARCHAR(50)",
         # 2026-05: nome de guerra - exibido no lugar do nome completo nas referências do sistema
         "ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS nome_de_guerra VARCHAR(100)",
@@ -117,6 +118,8 @@ async def _run_migrations():
         "ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS finalidade_geo VARCHAR(100)",
         # 2026-05: timestamp do último envio de e-mail de ativação (controle de cooldown 30 min)
         "ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS activation_email_sent_at TIMESTAMPTZ",
+        # 2026-07: Diretoria supervisora do DECEx — roteia pedido ao supervisor da Diretoria
+        "ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS diretoria VARCHAR(20)",
     ]
     for stmt in migrations:
         try:
@@ -145,6 +148,12 @@ async def _run_migrations():
         "ALTER TYPE perfil_enum ADD VALUE IF NOT EXISTS 'CONSOLIDADOR_DEC'",
         "ALTER TYPE perfil_enum ADD VALUE IF NOT EXISTS 'CONSOLIDADOR_COLOG'",
         "ALTER TYPE perfil_enum ADD VALUE IF NOT EXISTS 'CONSOLIDADOR_DECEX'",
+        # 2026-07: supervisores do DECEx por Diretoria/Centro
+        "ALTER TYPE perfil_enum ADD VALUE IF NOT EXISTS 'SUPERVISOR_DESMIL'",
+        "ALTER TYPE perfil_enum ADD VALUE IF NOT EXISTS 'SUPERVISOR_DETMIL'",
+        "ALTER TYPE perfil_enum ADD VALUE IF NOT EXISTS 'SUPERVISOR_DEPA'",
+        "ALTER TYPE perfil_enum ADD VALUE IF NOT EXISTS 'SUPERVISOR_DPHCEX'",
+        "ALTER TYPE perfil_enum ADD VALUE IF NOT EXISTS 'SUPERVISOR_CCFEX'",
         # 2026-05: tipos de impressão específicos
         "ALTER TYPE tipo_produto_enum ADD VALUE IF NOT EXISTS 'IMPRESSAO_CT'",
         "ALTER TYPE tipo_produto_enum ADD VALUE IF NOT EXISTS 'IMPRESSAO_COI'",
@@ -164,6 +173,7 @@ async def _run_migrations():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     from app.services.bdgex_service import preload_caches
+    from app.services.auto_submit_service import auto_submit_rascunhos_scheduler
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
@@ -177,8 +187,16 @@ async def lifespan(app: FastAPI):
     # Na 1ª execução: constrói os .gz a partir dos GeoJSONs e salva em disco.
     # Reinicializações: lê os .gz do disco em < 1 s por arquivo.
     asyncio.create_task(preload_caches())
+    auto_submit_task = asyncio.create_task(auto_submit_rascunhos_scheduler())
 
-    yield
+    try:
+        yield
+    finally:
+        auto_submit_task.cancel()
+        try:
+            await auto_submit_task
+        except asyncio.CancelledError:
+            pass
 
 
 app = FastAPI(

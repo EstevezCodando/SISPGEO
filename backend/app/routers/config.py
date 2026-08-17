@@ -69,6 +69,13 @@ class ConfigEntregaUpdate(BaseModel):
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 
+@router.get("/ano", response_model=dict)
+async def get_ano_referencia(db: AsyncSession = Depends(get_db)):
+    """Retorna o ano de referência do PIT (público, sem autenticação)."""
+    cfg = await get_or_create_config(db)
+    return {"ano": cfg.data_base.year}
+
+
 @router.get("/entrega", response_model=ConfigEntregaOut)
 async def get_config_entrega(
     db: AsyncSession = Depends(get_db),

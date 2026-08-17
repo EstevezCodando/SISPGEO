@@ -46,6 +46,10 @@ class Pedido(Base):
     # Região Militar do solicitante — usada para rotear pedidos ao supervisor (C. Mil. A)
     # vinculado por RM. Consolidador e acima usam o campo orgao_vinculante.
     regiao_militar: Mapped[str | None] = mapped_column(String(20))
+    # Diretoria supervisora do DECEx (DESMIL/DETMIL/DEPA/DPHCEX/CCFEX) — análoga a
+    # regiao_militar, porém para o fluxo DECEx: roteia o pedido ao supervisor da
+    # Diretoria. Preenchida apenas quando orgao_vinculante == DECEx.
+    diretoria: Mapped[str | None] = mapped_column(String(20))
     # Impressão solicitada junto ao pedido
     impressao_solicitada: Mapped[bool] = mapped_column(Boolean, default=False)
     impressao_quantidade: Mapped[int | None] = mapped_column(SmallInteger)
@@ -81,6 +85,7 @@ class ItemPedido(Base):
     disponivel_bdgex: Mapped[bool] = mapped_column(Boolean, default=False)
     data_producao_bdgex: Mapped[date | None] = mapped_column(Date)
     solicitar_mesmo_disponivel: Mapped[bool] = mapped_column(Boolean, default=False)
+    removido: Mapped[bool] = mapped_column(Boolean, default=False)
     prioridade: Mapped[int] = mapped_column(SmallInteger, default=0)
     impressao_quantidade: Mapped[int | None] = mapped_column(SmallInteger)
     impressao_tipo_material: Mapped[str | None] = mapped_column(String(20))

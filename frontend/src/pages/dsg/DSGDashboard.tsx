@@ -14,22 +14,11 @@ import {
 import { StatusBadge } from '../../components/shared/StatusBadge'
 import { LoadingSpinner } from '../../components/shared/LoadingSpinner'
 import type { Pedido } from '../../types/pedido'
-import { TIPO_PRODUTO_LABELS, STATUS_LABELS } from '../../types/pedido'
+import { TIPO_PRODUTO_LABELS, STATUS_LABELS, ALL_STATUSES, porPrioridade } from '../../types/pedido'
+import { CMILA_CODES, cmilaLabel } from '../../types/user'
 import { formatNomeComPosto } from '../../data/postos'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-const ALL_STATUSES = [
-  'RASCUNHO',
-  'AGUARDANDO_SUPERVISOR',
-  'AGUARDANDO_CONSOLIDADOR',
-  'AGUARDANDO_CARTOGRAFICO',
-  'ATRIBUIDO_CGEO',
-  'APROVADO',
-  'REPROVADO',
-  'CANCELADO',
-  'PRODUZIDO',
-] as const
-
 const DSG_STATUSES = [
   'AGUARDANDO_CARTOGRAFICO',
   'ATRIBUIDO_CGEO',
@@ -798,7 +787,7 @@ function PedidoDSGCard({
               </span>
             </p>
             <div className="space-y-1.5">
-              {[...p.itens].sort((a, b) => a.prioridade - b.prioridade).map((item, idx) => {
+              {[...p.itens].sort(porPrioridade).map((item, idx) => {
                 const age = calcAge(item.data_producao_bdgex)
                 return (
                   <div key={item.id} className={`flex items-center flex-wrap gap-x-2 gap-y-1 text-xs text-zinc-400 border rounded-lg px-3 py-2 ${ageBgColor(age)}`}>
@@ -922,6 +911,7 @@ export function DSGDashboard() {
   const [filterStatus, setFilterStatus] = useState('')
   const [filterOrgao, setFilterOrgao] = useState('')
   const [filterQ, setFilterQ] = useState('')
+  const [filterCmila, setFilterCmila] = useState('')   // Comando Militar de Área
 
   // Selection
   const [selected, setSelected] = useState<Set<number>>(new Set())
@@ -934,7 +924,7 @@ export function DSGDashboard() {
   const [editingPedido, setEditingPedido] = useState<Pedido | null>(null)
   const [prontoTarget, setProntoTarget] = useState<Pedido | null>(null)
 
-  const load = (params?: { status?: string; orgao_vinculante?: string; q?: string }) => {
+  const load = (params?: { status?: string; orgao_vinculante?: string; regiao_militar?: string; q?: string }) => {
     setLoading(true)
     pedidosApi.adminAll(params)
       .then((r) => {
@@ -955,6 +945,7 @@ export function DSGDashboard() {
     load({
       status: filterStatus || undefined,
       orgao_vinculante: filterOrgao || undefined,
+      regiao_militar: filterCmila || undefined,
       q: filterQ || undefined,
     })
   }
@@ -1077,6 +1068,15 @@ export function DSGDashboard() {
             <option value="">Todos os órgãos</option>
             {ALL_ORGAOS.map(o => <option key={o} value={o}>{o}</option>)}
           </select>
+          <select
+            value={filterCmila}
+            onChange={e => setFilterCmila(e.target.value)}
+            title="Filtrar por Comando Militar de Área"
+            className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-zinc-200 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+          >
+            <option value="">Todos os C Mil A</option>
+            {CMILA_CODES.map(c => <option key={c} value={c}>{cmilaLabel(c)}</option>)}
+          </select>
           <div className="flex-1 min-w-48 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-500 pointer-events-none" />
             <input
@@ -1084,7 +1084,7 @@ export function DSGDashboard() {
               value={filterQ}
               onChange={e => setFilterQ(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && applyFilters()}
-              placeholder="Buscar por nome ou INOM…"
+              placeholder={'Buscar por nome, OM, INOM, órgão…  ("aspas" = exato)'}
               className="w-full bg-zinc-800 border border-zinc-700 rounded-lg pl-9 pr-3 py-1.5 text-sm text-zinc-200 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-emerald-500"
             />
           </div>

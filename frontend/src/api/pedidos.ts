@@ -1,12 +1,13 @@
 import api from './client'
 import type { Pedido } from '../types/pedido'
+import type { FeatureCollection } from 'geojson'
 
 export interface DuplicateItem {
   inom: string
   mi: string | null
   tipo_produto: string
   escala: string
-  pedidos: Array<{ id: number; usuario_nome: string | null; status: string }>
+  pedidos: Array<{ id: number; pedido_id?: number; usuario_nome: string | null; status: string }>
 }
 
 export interface BDGExAgeItem {
@@ -36,6 +37,37 @@ export interface AdminUpdatePayload {
   orgao_vinculante?: string
 }
 
+export interface RelatorioAnalitico {
+  filtro: {
+    cgeo_id: number | null
+    cgeo_label: string
+    escopo: 'todos' | 'dsg'
+    escopo_label: string
+    status: string[]
+  }
+  totais: {
+    pedidos: number
+    itens: number
+  }
+  por_asc: Array<{
+    cgeo_id: number | null
+    label: string
+    pedidos: number
+    itens: number
+  }>
+  por_status: Array<{ status: string; total: number }>
+  por_tipo: Array<{ tipo_produto: string; total: number }>
+  por_escala: Array<{ escala: string; total: number }>
+  por_tipo_escala: Array<{ tipo_produto: string; escala: string; total: number }>
+  produtos_mais_pedidos: Array<{
+    inom: string
+    mi: string | null
+    tipo_produto: string
+    escala: string
+    total: number
+  }>
+}
+
 export const pedidosApi = {
   create: (data: object) => api.post<Pedido>('/pedidos/', data),
   list: () => api.get<Pedido[]>('/pedidos/'),
@@ -45,7 +77,7 @@ export const pedidosApi = {
   review: (id: number, acao: string, motivo?: string, observacoes?: string) =>
     api.put<Pedido>(`/pedidos/${id}/review`, { acao, motivo, observacoes }),
   mapFeatures: () => api.get('/pedidos/map-features'),
-  adminAll: (params?: { status?: string; orgao_vinculante?: string; q?: string }) =>
+  adminAll: (params?: { status?: string; orgao_vinculante?: string; regiao_militar?: string; q?: string }) =>
     api.get<Pedido[]>('/pedidos/admin/all', { params }),
   adminDelete: (id: number) => api.delete(`/pedidos/admin/${id}`),
   adminUpdate: (id: number, data: Partial<AdminUpdatePayload>) =>
@@ -70,12 +102,18 @@ export const pedidosApi = {
   reorderItems: (pedidoId: number, ordered_ids: number[]) =>
     api.put(`/pedidos/${pedidoId}/items/reorder`, { ordered_ids }),
   // Duplicates
-  getDuplicatas: () => api.get<DuplicateItem[]>('/pedidos/duplicatas'),
+  getDuplicatas: (params?: { todos?: boolean }) => api.get<DuplicateItem[]>('/pedidos/duplicatas', { params }),
   // BDGEx age validator — products newer than N years
   getProdutosRecentes: (anos: number) =>
     api.get<BDGExAgeItem[]>('/pedidos/admin/produtos-recentes', { params: { anos } }),
   // Relatório: ZIP com CSV + GeoJSONs por escala + LEIA-ME (SOLICITANTE / SUPERVISOR / CONSOLIDADOR)
   exportRelatorio: () => api.get('/pedidos/relatorio', { responseType: 'blob' }),
+  relatorioAnalitico: (params?: { cgeo_id?: number; escopo?: 'todos' | 'dsg' }) =>
+    api.get<RelatorioAnalitico>('/pedidos/relatorio-analitico', { params }),
+  relatorioAnaliticoFeatures: (params?: { cgeo_id?: number; sem_asc?: boolean; escopo?: 'todos' | 'dsg' }) =>
+    api.get<FeatureCollection>('/pedidos/relatorio-analitico/features', { params }),
+  relatorioAnaliticoAscFeatures: () =>
+    api.get<FeatureCollection>('/pedidos/relatorio-analitico/asc-features'),
   // Export (DSG) — legacy ZIP export
   exportZip: () => api.get('/pedidos/export', { responseType: 'blob' }),
   // Dar o Pronto — DSG/Admin marks pedido as PRODUZIDO and notifies chain

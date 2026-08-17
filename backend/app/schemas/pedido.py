@@ -31,6 +31,7 @@ class ItemPedidoOut(BaseModel):
     disponivel_bdgex: bool
     data_producao_bdgex: date | None
     solicitar_mesmo_disponivel: bool
+    removido: bool = False
     prioridade: int = 0
     impressao_quantidade: int | None = None
     impressao_tipo_material: str | None = None
@@ -74,6 +75,7 @@ class PedidoOut(BaseModel):
     atualizado_em: datetime
     itens: list[ItemPedidoOut] = []
     regiao_militar: str | None = None
+    diretoria: str | None = None
     # Campos enriquecidos (populados nos endpoints, não estão no modelo ORM)
     usuario_nome: str | None = None
     operacao_nome: str | None = None

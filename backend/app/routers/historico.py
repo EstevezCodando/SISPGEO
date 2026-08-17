@@ -20,6 +20,7 @@ from app.models.pedido import Pedido
 from app.models.pedido_historico import PedidoHistorico
 from app.models.user import Usuario
 from app.models.enums import PerfilEnum
+from app.routers.pedidos import _pedido_in_user_scope
 from app.schemas.historico import PedidoHistoricoOut
 
 logger = logging.getLogger(__name__)
@@ -54,7 +55,7 @@ async def get_historico_pedido(
 ):
     """Retorna o histórico completo de transições de um pedido específico.
 
-    Acessível ao dono do pedido ou a qualquer gestor do sistema.
+    Acessível ao dono do pedido ou a gestor dentro do escopo do pedido.
 
     Args:
         pedido_id: ID do pedido a consultar.
@@ -63,10 +64,8 @@ async def get_historico_pedido(
     if not pedido:
         raise HTTPException(status_code=404, detail="Pedido não encontrado")
 
-    # Dono do pedido ou qualquer gestor pode consultar
-    is_owner = pedido.usuario_id == current_user.id
-    is_gestor = current_user.perfil not in (PerfilEnum.SOLICITANTE,)
-    if not (is_owner or is_gestor):
+    # Dono do pedido ou gestor dentro da mesma cadeia pode consultar
+    if not _pedido_in_user_scope(current_user, pedido):
         raise HTTPException(status_code=403, detail="Acesso não autorizado")
 
     rows = list(await db.scalars(

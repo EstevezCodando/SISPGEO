@@ -24,7 +24,10 @@ from app.models.user import Usuario
 from app.models.enums import (
     StatusPedidoEnum, PerfilEnum, TipoProdutoEnum,
     SUPERVISOR_PROFILES, CONSOLIDADOR_PROFILES,
+    SUPERVISOR_REGIONAL_PROFILES, SUPERVISOR_DECEX_PROFILES,
+    DIRETORIA_TO_SUPERVISOR, SUPERVISOR_DECEX_TO_DIRETORIA,
 )
+from app.utils.diretorias_decex import diretoria_de_om
 from app.services.email_service import send_email
 from app.services.notification_service import NotificationService
 from app.services.historico_service import registrar_historico
@@ -78,22 +81,57 @@ ORG_TO_CONSOLIDADOR: dict[str, PerfilEnum] = {
     "COLOG": PerfilEnum.CONSOLIDADOR_COLOG,
     "DECEx": PerfilEnum.CONSOLIDADOR_DECEX,
 }
+CONSOLIDADOR_TO_ORG: dict[PerfilEnum, str] = {v: k for k, v in ORG_TO_CONSOLIDADOR.items()}
+
+
+def _supervisor_owns(gestor: Usuario, pedido: Pedido) -> bool:
+    if gestor.perfil in SUPERVISOR_DECEX_PROFILES:
+        diretoria = SUPERVISOR_DECEX_TO_DIRETORIA.get(gestor.perfil)
+        pedido_org = pedido.orgao_vinculante.value if pedido.orgao_vinculante else None
+        return pedido_org == "DECEx" and pedido.diretoria == diretoria
+    rm = SUPERVISOR_TO_RM.get(gestor.perfil) or gestor.regiao_militar
+    gestor_org = (
+        gestor.orgao_vinculante.value
+        if gestor.perfil == PerfilEnum.SUPERVISOR and gestor.orgao_vinculante
+        else "COTER"
+    )
+    pedido_org = pedido.orgao_vinculante.value if pedido.orgao_vinculante else None
+    return pedido_org == gestor_org and rm is not None and pedido.regiao_militar == rm
+
+
+def _org_do_consolidador(gestor: Usuario) -> str | None:
+    if gestor.perfil in CONSOLIDADOR_TO_ORG:
+        return CONSOLIDADOR_TO_ORG[gestor.perfil]
+    return gestor.orgao_vinculante.value if gestor.orgao_vinculante else None
+
+
+def _consolidador_owns(gestor: Usuario, pedido: Pedido) -> bool:
+    org = _org_do_consolidador(gestor)
+    pedido_org = pedido.orgao_vinculante.value if pedido.orgao_vinculante else None
+    return org is not None and pedido_org == org
 
 # Mapeamento perfil → (status atual esperado, próximo status, perfil a notificar)
-# Supervisores regionais todos avançam para CONSOLIDADOR_COTER.
+# Supervisores regionais avançam para CONSOLIDADOR_COTER.
+# Supervisores do DECEx avançam para CONSOLIDADOR_DECEX (o DCEX consolida).
 # Consolidadores de qualquer órgão avançam para GESTOR_CARTOGRAFICO.
 _CONSOLIDATE_ROUTING: dict[PerfilEnum, tuple[StatusPedidoEnum, StatusPedidoEnum, PerfilEnum]] = {
-    **{p: (StatusPedidoEnum.AGUARDANDO_SUPERVISOR,   StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR, PerfilEnum.CONSOLIDADOR_COTER) for p in SUPERVISOR_PROFILES},
+    **{p: (StatusPedidoEnum.AGUARDANDO_SUPERVISOR,   StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR, PerfilEnum.CONSOLIDADOR_COTER) for p in SUPERVISOR_REGIONAL_PROFILES},
+    **{p: (StatusPedidoEnum.AGUARDANDO_SUPERVISOR,   StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR, PerfilEnum.CONSOLIDADOR_DECEX) for p in SUPERVISOR_DECEX_PROFILES},
     **{p: (StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR, StatusPedidoEnum.AGUARDANDO_CARTOGRAFICO, PerfilEnum.GESTOR_CARTOGRAFICO) for p in CONSOLIDADOR_PROFILES},
 }
 
 _CONSOLIDATE_LABELS: dict[PerfilEnum, str] = {
-    **{p: "encaminhado ao Consolidador COTER" for p in SUPERVISOR_PROFILES},
+    **{p: "encaminhado ao Consolidador COTER" for p in SUPERVISOR_REGIONAL_PROFILES},
+    **{p: "encaminhado ao Consolidador DECEx" for p in SUPERVISOR_DECEX_PROFILES},
     **{p: "submetido ao Gestor Cartográfico (DSG)" for p in CONSOLIDADOR_PROFILES},
 }
 
 
-def cadeia_aprovacao(orgao_vinculante: str, regiao_militar: str | None) -> list[str]:
+def cadeia_aprovacao(
+    orgao_vinculante: str,
+    regiao_militar: str | None,
+    diretoria: str | None = None,
+) -> list[str]:
     """Retorna a cadeia de aprovação de um pedido conforme seu órgão vinculante."""
     cmila_label = regiao_militar or "CMilA"
     if orgao_vinculante == "COTER":
@@ -101,6 +139,16 @@ def cadeia_aprovacao(orgao_vinculante: str, regiao_militar: str | None) -> list[
             "Solicitante",
             f"Supervisor {cmila_label}",
             "Consolidador COTER",
+            "Gestor Cartográfico (DSG)",
+            "Analista CGEO",
+        ]
+    if orgao_vinculante == "DECEx":
+        # Fluxo DECEx: Solicitante → Supervisor da Diretoria → Consolidador DECEx → ...
+        diretoria_label = diretoria or "Diretoria"
+        return [
+            "Solicitante",
+            f"Supervisor {diretoria_label}",
+            "Consolidador DECEx",
             "Gestor Cartográfico (DSG)",
             "Analista CGEO",
         ]
@@ -148,7 +196,7 @@ async def submit_pedido(db: AsyncSession, pedido: Pedido, current_user: Usuario)
         raise HTTPException(status_code=400, detail="Pedido já foi submetido")
     if pedido.usuario_id != current_user.id:
         raise HTTPException(status_code=403, detail="Acesso negado")
-    if not pedido.itens:
+    if not any(not getattr(item, "removido", False) for item in pedido.itens):
         raise HTTPException(status_code=400, detail="Adicione ao menos um produto ao pedido")
 
     perfil = current_user.perfil
@@ -166,6 +214,21 @@ async def submit_pedido(db: AsyncSession, pedido: Pedido, current_user: Usuario)
                     detail="Região Militar não configurada ou não mapeada para supervisor. "
                            "Atualize seu cadastro com o Comando Militar de Área.",
                 )
+            next_status = StatusPedidoEnum.AGUARDANDO_SUPERVISOR
+            notify_perfil = supervisor_perfil
+        elif ov == "DECEx":
+            # Fluxo DECEx: roteia ao supervisor da Diretoria que supervisiona a OM.
+            diretoria = pedido.diretoria or diretoria_de_om(current_user.om)
+            supervisor_perfil = DIRETORIA_TO_SUPERVISOR.get(diretoria or "")
+            if not supervisor_perfil:
+                raise HTTPException(
+                    status_code=400,
+                    detail="OM não vinculada a uma Diretoria do DECEx (DESMil/DETMil/DEPA/"
+                           "DPHCEx/CCFEx). Verifique o cadastro da OM ou contate o administrador.",
+                )
+            # Persiste a Diretoria no pedido para roteamento e filtragem posteriores.
+            if diretoria and not pedido.diretoria:
+                pedido.diretoria = diretoria
             next_status = StatusPedidoEnum.AGUARDANDO_SUPERVISOR
             notify_perfil = supervisor_perfil
         elif ov in ORG_TO_CONSOLIDADOR:
@@ -303,6 +366,15 @@ async def review_pedido(
     if pedido.status not in allowed_statuses:
         raise HTTPException(status_code=400, detail="Pedido não está disponível para revisão")
 
+    if gestor.perfil in SUPERVISOR_PROFILES:
+        if pedido.status != StatusPedidoEnum.AGUARDANDO_SUPERVISOR or not _supervisor_owns(gestor, pedido):
+            raise HTTPException(status_code=403, detail="Acesso negado")
+    elif gestor.perfil in CONSOLIDADOR_PROFILES:
+        if pedido.status != StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR or not _consolidador_owns(gestor, pedido):
+            raise HTTPException(status_code=403, detail="Acesso negado")
+    else:
+        raise HTTPException(status_code=403, detail="Perfil nao autorizado a revisar pedidos")
+
     if observacoes is not None:
         pedido.observacoes = observacoes
 
@@ -387,8 +459,19 @@ async def consolidate_pedidos(
             logger.debug("consolidate_pedidos: ignorando pedido_id=%d (status=%s)", pid, p.status.value if p else "N/A")
             continue
 
-        # Guarda: supervisor só pode consolidar pedidos da sua própria Região Militar
-        if gestor.perfil in SUPERVISOR_PROFILES:
+        # Guarda de escopo do supervisor:
+        #   • DECEx  → só consolida pedidos da sua própria Diretoria.
+        #   • regional → só consolida pedidos da sua própria Região Militar.
+        if gestor.perfil in SUPERVISOR_DECEX_PROFILES:
+            supervisor_dir = SUPERVISOR_DECEX_TO_DIRETORIA.get(gestor.perfil)
+            if supervisor_dir and p.diretoria != supervisor_dir:
+                logger.warning(
+                    "consolidate_pedidos: supervisor %s (Diretoria=%s) tentou consolidar "
+                    "pedido_id=%d de Diretoria=%s — ignorado",
+                    gestor.perfil.value, supervisor_dir, pid, p.diretoria,
+                )
+                continue
+        elif gestor.perfil in SUPERVISOR_PROFILES:
             supervisor_rm = SUPERVISOR_TO_RM.get(gestor.perfil) or gestor.regiao_militar
             if supervisor_rm and p.regiao_militar != supervisor_rm:
                 logger.warning(
@@ -397,6 +480,15 @@ async def consolidate_pedidos(
                     gestor.perfil.value, supervisor_rm, pid, p.regiao_militar,
                 )
                 continue
+
+        if gestor.perfil in CONSOLIDADOR_PROFILES and not _consolidador_owns(gestor, p):
+            logger.warning(
+                "consolidate_pedidos: consolidador %s tentou consolidar pedido_id=%d de orgao=%s - ignorado",
+                gestor.perfil.value,
+                pid,
+                p.orgao_vinculante.value if p.orgao_vinculante else None,
+            )
+            continue
 
         p.status = to_status
         if to_status == StatusPedidoEnum.AGUARDANDO_CARTOGRAFICO:
@@ -495,6 +587,9 @@ async def cgeo_review(
         "cgeo_review → pedido_id=%d  cgeo=%s  acao=%s",
         pedido.id, cgeo_user.email, acao,
     )
+
+    if pedido.cgeo_id != cgeo_user.cgeo_id:
+        raise HTTPException(status_code=403, detail="Acesso negado")
 
     usuario = await db.get(Usuario, pedido.usuario_id)
     status_anterior = pedido.status

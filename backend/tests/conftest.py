@@ -29,6 +29,8 @@ def _make_user(
     orgao_vinculante: OrgaoVinculanteEnum = OrgaoVinculanteEnum.COTER,
     ativo: bool = True,
     nome_de_guerra: str | None = "Teste",
+    regiao_militar: str | None = None,
+    cgeo_id: int | None = None,
 ) -> MagicMock:
     """Cria um mock de :class:`Usuario` sem persistência no banco."""
     u = MagicMock(spec=Usuario)
@@ -44,6 +46,9 @@ def _make_user(
     u.tentativas_login = 0
     u.bloqueado_ate = None
     u.ultima_senha_alterada = datetime.now(timezone.utc)
+    u.regiao_militar = regiao_militar
+    # Explícito para não virar MagicMock truthy nas comparações de escopo do CGEO.
+    u.cgeo_id = cgeo_id
     return u
 
 
@@ -57,6 +62,10 @@ def _make_item() -> MagicMock:
     item.disponivel_bdgex = False
     item.data_producao_bdgex = None
     item.solicitar_mesmo_disponivel = False
+    # Sem estes, o MagicMock(spec=...) devolve um mock truthy e o pedido é tratado
+    # como "sem itens ativos" pelas validações de submit/consolidação.
+    item.removido = False
+    item.prioridade = 0
     return item
 
 
@@ -88,6 +97,8 @@ def _make_pedido(
     p.cgeo_id = None
     # regiao_militar necessário para roteamento COTER → SUPERVISOR_CMP em submit_pedido
     p.regiao_militar = "CMP"
+    # diretoria só é usada no fluxo DECEx; None nos demais (evita MagicMock truthy)
+    p.diretoria = None
     p.itens = [_make_item()] if with_items else []
     return p
 
@@ -125,8 +136,52 @@ def usuario_omds() -> MagicMock:
 
 @pytest.fixture
 def gestor_brigada() -> MagicMock:
-    """Mock de usuário com perfil SUPERVISOR (antigo GESTOR_BRIGADA/CMA)."""
-    return _make_user(user_id=2, email="supervisor@eb.mil.br", perfil=PerfilEnum.SUPERVISOR)
+    """Mock de usuário com perfil SUPERVISOR (legado) — Região Militar CMP, alinhado com pedido_submetido_brigada."""
+    return _make_user(user_id=2, email="supervisor@eb.mil.br", perfil=PerfilEnum.SUPERVISOR, regiao_militar="CMP")
+
+
+@pytest.fixture
+def solicitante_decex_desmil() -> MagicMock:
+    """Solicitante do DECEx cuja OM (AMAN) é supervisionada pela DESMil."""
+    u = _make_user(
+        user_id=20, email="solicitante.decex@eb.mil.br",
+        perfil=PerfilEnum.SOLICITANTE, orgao_vinculante=OrgaoVinculanteEnum.DECEx,
+        regiao_militar="CML",
+    )
+    u.om = "AMAN"
+    return u
+
+
+@pytest.fixture
+def supervisor_desmil() -> MagicMock:
+    """Supervisor da Diretoria DESMil (fluxo DECEx)."""
+    return _make_user(
+        user_id=21, email="supervisor.desmil@eb.mil.br",
+        perfil=PerfilEnum.SUPERVISOR_DESMIL, orgao_vinculante=OrgaoVinculanteEnum.DECEx,
+    )
+
+
+@pytest.fixture
+def pedido_decex_desmil_rascunho(solicitante_decex_desmil) -> MagicMock:
+    """Pedido RASCUNHO de solicitante DECEx (OM→DESMil), diretoria ainda não gravada."""
+    p = _make_pedido(
+        pedido_id=200, usuario_id=solicitante_decex_desmil.id,
+        orgao_vinculante=OrgaoVinculanteEnum.DECEx,
+    )
+    p.diretoria = None
+    return p
+
+
+@pytest.fixture
+def pedido_decex_desmil_aguardando(solicitante_decex_desmil) -> MagicMock:
+    """Pedido AGUARDANDO_SUPERVISOR do fluxo DECEx, diretoria=DESMIL."""
+    p = _make_pedido(
+        pedido_id=201, usuario_id=solicitante_decex_desmil.id,
+        status=StatusPedidoEnum.AGUARDANDO_SUPERVISOR,
+        orgao_vinculante=OrgaoVinculanteEnum.DECEx,
+    )
+    p.diretoria = "DESMIL"
+    return p
 
 
 @pytest.fixture
@@ -137,8 +192,10 @@ def gestor_dsg() -> MagicMock:
 
 @pytest.fixture
 def gestor_cgeo() -> MagicMock:
-    """Mock de usuário com perfil ANALISTA_CGEO."""
-    return _make_user(user_id=11, email="cgeo@eb.mil.br", perfil=PerfilEnum.ANALISTA_CGEO)
+    """Mock de usuário com perfil ANALISTA_CGEO (1º CGEO)."""
+    return _make_user(
+        user_id=11, email="cgeo@eb.mil.br", perfil=PerfilEnum.ANALISTA_CGEO, cgeo_id=1,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -165,5 +222,7 @@ def pedido_submetido_dsg(usuario_omds) -> MagicMock:
 
 @pytest.fixture
 def pedido_atribuido_cgeo(usuario_omds) -> MagicMock:
-    """Mock de pedido com status ATRIBUIDO_CGEO."""
-    return _make_pedido(usuario_id=usuario_omds.id, status=StatusPedidoEnum.ATRIBUIDO_CGEO)
+    """Mock de pedido com status ATRIBUIDO_CGEO, atribuído ao 1º CGEO (ver gestor_cgeo)."""
+    p = _make_pedido(usuario_id=usuario_omds.id, status=StatusPedidoEnum.ATRIBUIDO_CGEO)
+    p.cgeo_id = 1
+    return p

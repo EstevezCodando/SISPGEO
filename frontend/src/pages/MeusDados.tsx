@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import toast from "react-hot-toast";
 import { usersApi } from "../api/users";
 import { POSTOS, formatNomeComPosto } from "../data/postos";
@@ -58,7 +58,7 @@ export function MeusDados() {
   const [posto, setPosto] = useState(user?.posto_graduacao ?? "");
   const [saving, setSaving] = useState(false);
 
-  const handleSaveData = async (e: React.FormEvent) => {
+  const handleSaveData = async (e: FormEvent) => {
     e.preventDefault();
     setSaving(true);
     try {

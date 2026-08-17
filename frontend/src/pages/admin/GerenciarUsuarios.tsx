@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import toast from 'react-hot-toast'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -6,27 +6,18 @@ import {
   ArrowRightLeft, X, History, ChevronDown, ChevronUp,
   Mail, Phone, Building2, MapPin, ShieldCheck, ShieldOff,
   AlertTriangle, Clock, CheckCircle2, XCircle, Users, Search,
-  Pencil,
+  Pencil, Download, Loader2,
 } from 'lucide-react'
 import { usersApi } from '../../api/users'
 import type { Transferencia } from '../../api/users'
 import { LoadingSpinner } from '../../components/shared/LoadingSpinner'
 import type { Usuario, Perfil } from '../../types/user'
-import { PERFIL_LABELS } from '../../types/user'
+import { PERFIL_LABELS, CMILA_CODES, CMILA_LABELS, cmilaLabel } from '../../types/user'
+import { casaBusca } from '../../utils/busca'
 import { formatNomeComPosto, POSTO_ABREV } from '../../data/postos'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const CMILA_LABELS: Record<string, string> = {
-  CMP:  'Comando Militar do Planalto',
-  CML:  'C Mil Leste (Rio de Janeiro)',
-  CMS:  'C Mil Sul (Porto Alegre)',
-  CMO:  'C Mil Oeste (Campo Grande)',
-  CMAO: 'C Mil Amazônia Ocidental (Boa Vista)',
-  CMA:  'C Mil Amazônia (Manaus)',
-  CMNE: 'C Mil Nordeste (Recife)',
-  CMSE: 'C Mil Sudeste (São Paulo)',
-}
 
 const ORGAO_LABELS: Record<string, string> = {
   COTER: 'COTER — Comando de Operações Terrestres',
@@ -61,6 +52,13 @@ const PERFIL_GROUPS: { label: string; perfis: Perfil[] }[] = [
     perfis: [
       'SUPERVISOR_CMP', 'SUPERVISOR_CML', 'SUPERVISOR_CMS', 'SUPERVISOR_CMO',
       'SUPERVISOR_CMAO', 'SUPERVISOR_CMA', 'SUPERVISOR_CMNE', 'SUPERVISOR_CMSE',
+    ],
+  },
+  {
+    label: 'Supervisores DECEx',
+    perfis: [
+      'SUPERVISOR_DESMIL', 'SUPERVISOR_DETMIL', 'SUPERVISOR_DEPA',
+      'SUPERVISOR_DPHCEX', 'SUPERVISOR_CCFEX',
     ],
   },
   {
@@ -394,7 +392,7 @@ function EditOrgModal({ user, onClose, onSaved }: EditOrgModalProps) {
 
 // ─── Painel de detalhes (linha expansível) ────────────────────────────────────
 function DetailPanel({ u }: { u: Usuario }) {
-  const field = (label: string, value: React.ReactNode, icon?: React.ReactNode) => (
+  const field = (label: string, value: ReactNode, icon?: ReactNode) => (
     <div className="flex flex-col gap-0.5">
       <span className="text-[10px] uppercase tracking-wide text-zinc-500 font-medium flex items-center gap-1">
         {icon}{label}
@@ -615,6 +613,8 @@ export function GerenciarUsuarios() {
   const [historicoSource, setHistoricoSource] = useState<Usuario | null>(null)
   const [editOrgSource, setEditOrgSource] = useState<Usuario | null>(null)
   const [search, setSearch] = useState('')
+  const [cmila, setCmila] = useState('')   // filtro por Comando Militar de Área
+  const [exportando, setExportando] = useState(false)
 
   const load = () => {
     usersApi.listUsers()
@@ -633,6 +633,29 @@ export function GerenciarUsuarios() {
     } catch { toast.error('Erro ao atualizar perfil') }
   }
 
+  const handleExportUsuarios = async () => {
+    setExportando(true)
+    try {
+      const res = await usersApi.exportUsuarios(cmila ? { regiao_militar: cmila } : undefined)
+      const blob = new Blob([res.data as BlobPart], { type: 'text/csv;charset=utf-8' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      const disposition = (res.headers as Record<string, string>)['content-disposition'] ?? ''
+      a.download = disposition.match(/filename=([^\s;]+)/)?.[1]
+        ?? `usuarios_sispgeo_${format(new Date(), 'yyyyMMdd_HHmm')}.csv`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+      toast.success('Cadastro de usuários exportado')
+    } catch {
+      toast.error('Erro ao exportar usuários')
+    } finally {
+      setExportando(false)
+    }
+  }
+
   const handleToggle = async (u: Usuario) => {
     try {
       await usersApi.toggleActivate(u.id)
@@ -641,11 +664,16 @@ export function GerenciarUsuarios() {
     } catch { toast.error('Erro ao alterar status') }
   }
 
-  const filtered = users.filter((u) => {
-    const q = search.toLowerCase()
-    return !q || [u.nome, u.email, u.om, u.perfil, u.orgao_vinculante ?? '', u.regiao_militar ?? '']
-      .some((v) => v.toLowerCase().includes(q))
-  })
+  // Termo entre aspas exige correspondencia exata — "DEC" nao traz DECEx.
+  const filtered = users
+    .filter((u) => !cmila || u.regiao_militar === cmila)
+    .filter((u) =>
+    casaBusca(search, [
+      u.nome, u.email, u.om, u.perfil, u.orgao_vinculante, u.regiao_militar,
+      CMILA_LABELS[u.regiao_militar ?? ''] ?? null,
+      u.ativo ? 'ativo' : 'inativo',
+    ]),
+  )
 
   if (loading) return <LoadingSpinner />
 
@@ -658,15 +686,39 @@ export function GerenciarUsuarios() {
           <span className="text-sm font-normal text-zinc-500 ml-1">({users.length})</span>
         </h1>
 
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-500 pointer-events-none" />
-          <input
-            type="text"
-            placeholder="Buscar por nome, e-mail, OM, perfil…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-8 pr-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 w-72"
-          />
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-500 pointer-events-none" />
+            <input
+              type="text"
+              placeholder={'Buscar por nome, e-mail, OM, perfil…  ("aspas" = exato)'}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-8 pr-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 w-72"
+            />
+          </div>
+          <select
+            value={cmila}
+            onChange={(e) => setCmila(e.target.value)}
+            title="Filtrar por Comando Militar de Área"
+            className="px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+          >
+            <option value="">Todos os C Mil A</option>
+            {CMILA_CODES.map((c) => (
+              <option key={c} value={c}>{cmilaLabel(c)}</option>
+            ))}
+          </select>
+          <button
+            onClick={handleExportUsuarios}
+            disabled={exportando}
+            title={cmila
+              ? `Exporta o cadastro e a situação dos usuários de ${cmilaLabel(cmila)}`
+              : 'Exporta o cadastro e a situação de todos os usuários'}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium bg-emerald-500 text-white hover:bg-emerald-400 disabled:opacity-60 transition-colors"
+          >
+            {exportando ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+            {exportando ? 'Exportando…' : 'Exportar CSV'}
+          </button>
         </div>
       </div>
 

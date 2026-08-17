@@ -31,6 +31,12 @@ export const usersApi = {
   getNotifications: () => api.get<Notificacao[]>('/users/me/notifications'),
   markNotificationRead: (id: number) => api.put(`/users/me/notifications/${id}/read`),
   listUsers: () => api.get<Usuario[]>('/users/'),
+  /** Baixa o cadastro de usuários e a situação de cada um como CSV. */
+  exportUsuarios: (params?: {
+    regiao_militar?: string
+    perfil?: string
+    apenas_ativos?: boolean
+  }) => api.get('/users/export', { params, responseType: 'blob' }),
   listMesmaOM: () => api.get<Usuario[]>('/users/mesma-om'),
   updateProfile: (userId: number, perfil: string, orgao_vinculante?: string, cgeo_id?: number) =>
     api.put(`/users/${userId}/profile`, { perfil, orgao_vinculante, cgeo_id }),

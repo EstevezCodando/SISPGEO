@@ -9,6 +9,12 @@ export type Perfil =
   | 'SUPERVISOR_CMA'
   | 'SUPERVISOR_CMNE'
   | 'SUPERVISOR_CMSE'
+  // Supervisores do DECEx (por Diretoria/Centro)
+  | 'SUPERVISOR_DESMIL'
+  | 'SUPERVISOR_DETMIL'
+  | 'SUPERVISOR_DEPA'
+  | 'SUPERVISOR_DPHCEX'
+  | 'SUPERVISOR_CCFEX'
   // Consolidadores por órgão
   | 'CONSOLIDADOR_COTER'
   | 'CONSOLIDADOR_DSG'
@@ -24,6 +30,8 @@ export type Perfil =
 export const SUPERVISOR_PROFILES = new Set<Perfil>([
   'SUPERVISOR_CMP', 'SUPERVISOR_CML', 'SUPERVISOR_CMS', 'SUPERVISOR_CMO',
   'SUPERVISOR_CMAO', 'SUPERVISOR_CMA', 'SUPERVISOR_CMNE', 'SUPERVISOR_CMSE',
+  'SUPERVISOR_DESMIL', 'SUPERVISOR_DETMIL', 'SUPERVISOR_DEPA',
+  'SUPERVISOR_DPHCEX', 'SUPERVISOR_CCFEX',
   'SUPERVISOR',
 ])
 
@@ -43,6 +51,11 @@ export const PERFIL_LABELS: Record<Perfil, string> = {
   SUPERVISOR_CMA:      'Supervisor - C Mil Amazônia',
   SUPERVISOR_CMNE:    'Supervisor - C Mil Nordeste',
   SUPERVISOR_CMSE:     'Supervisor - C Mil Sudeste',
+  SUPERVISOR_DESMIL:   'Supervisor - DESMil (Ensino Superior)',
+  SUPERVISOR_DETMIL:   'Supervisor - DETMil (Ensino Técnico)',
+  SUPERVISOR_DEPA:     'Supervisor - DEPA (Colégios Militares)',
+  SUPERVISOR_DPHCEX:   'Supervisor - DPHCEx (Patrimônio Histórico)',
+  SUPERVISOR_CCFEX:    'Supervisor - CCFEx (Capacitação Física)',
   CONSOLIDADOR_COTER:  'Consolidador - COTER',
   CONSOLIDADOR_DSG:    'Consolidador - DSG',
   CONSOLIDADOR_DEC:    'Consolidador - DEC',
@@ -89,4 +102,31 @@ export interface Notificacao {
   lida: boolean
   pedido_id: number | null
   criado_em: string
+}
+
+// ─── Comandos Militares de Área ───────────────────────────────────────────────
+// Códigos gravados em `regiao_militar` (pedido e usuário). Espelham
+// RM_TO_SUPERVISOR em backend/app/services/pedido_service.py.
+
+export const CMILA_CODES = [
+  'CMP', 'CML', 'CMS', 'CMO', 'CMAO', 'CMA', 'CMNE', 'CMSE',
+] as const
+
+export type CMilA = (typeof CMILA_CODES)[number]
+
+export const CMILA_LABELS: Record<string, string> = {
+  CMP:  'Comando Militar do Planalto (Brasília)',
+  CML:  'C Mil Leste (Rio de Janeiro)',
+  CMS:  'C Mil Sul (Porto Alegre)',
+  CMO:  'C Mil Oeste (Campo Grande)',
+  CMAO: 'C Mil Amazônia Oriental (Belém)',
+  CMA:  'C Mil Amazônia (Manaus)',
+  CMNE: 'C Mil Nordeste (Recife)',
+  CMSE: 'C Mil Sudeste (São Paulo)',
+}
+
+/** Rótulo legível de um C Mil A; devolve o próprio código se desconhecido. */
+export function cmilaLabel(codigo: string | null | undefined): string {
+  if (!codigo) return '—'
+  return CMILA_LABELS[codigo] ?? codigo
 }

@@ -21,7 +21,13 @@ from app.dependencies import get_current_user, require_profiles
 from app.models.pedido import Pedido, ItemPedido
 from app.models.operacao import Operacao
 from app.models.user import Usuario
-from app.models.enums import StatusPedidoEnum, PerfilEnum, OrgaoVinculanteEnum, SUPERVISOR_PROFILES, CONSOLIDADOR_PROFILES
+from app.models.enums import (
+    StatusPedidoEnum, PerfilEnum, OrgaoVinculanteEnum,
+    SUPERVISOR_PROFILES, CONSOLIDADOR_PROFILES, SUPERVISOR_DECEX_PROFILES,
+    DIRETORIA_TO_SUPERVISOR, SUPERVISOR_DECEX_TO_DIRETORIA,
+)
+from app.utils.diretorias_decex import diretoria_de_om
+from app.utils.busca import casa_busca
 from app.schemas.pedido import (
     PedidoCreate, PedidoUpdate, PedidoOut,
     ReviewPedidoRequest, AssignCGEORequest, CGEOReviewRequest,
@@ -47,6 +53,42 @@ class AdminPedidoUpdate(BaseModel):
     link_bdgex: str | None = None
     motivo_reprovacao: str | None = None
     orgao_vinculante: OrgaoVinculanteEnum | None = None
+
+
+CGEO_LABELS: dict[int | None, str] = {
+    None: "Sem ASC",
+    1: "1º CGEO",
+    2: "2º CGEO",
+    3: "3º CGEO",
+    4: "4º CGEO",
+    5: "5º CGEO",
+}
+
+
+def _cgeo_label(cgeo_id: int | None) -> str:
+    return CGEO_LABELS.get(cgeo_id, f"CGEO #{cgeo_id}")
+
+
+def _relatorio_status_por_escopo(escopo: str) -> tuple[list[StatusPedidoEnum], str]:
+    if escopo == "dsg":
+        return [
+            StatusPedidoEnum.AGUARDANDO_CARTOGRAFICO,
+            StatusPedidoEnum.ATRIBUIDO_CGEO,
+            StatusPedidoEnum.APROVADO,
+            StatusPedidoEnum.PRODUZIDO,
+            StatusPedidoEnum.REPROVADO,
+        ], "Pedidos DSG"
+
+    return [
+        StatusPedidoEnum.RASCUNHO,
+        StatusPedidoEnum.AGUARDANDO_SUPERVISOR,
+        StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR,
+        StatusPedidoEnum.AGUARDANDO_CARTOGRAFICO,
+        StatusPedidoEnum.ATRIBUIDO_CGEO,
+        StatusPedidoEnum.APROVADO,
+        StatusPedidoEnum.PRODUZIDO,
+        StatusPedidoEnum.REPROVADO,
+    ], "Todos os pedidos"
 
 
 async def _enrich(db: AsyncSession, pedidos: list[Pedido]) -> list[PedidoOut]:
@@ -105,7 +147,7 @@ async def _enrich(db: AsyncSession, pedidos: list[Pedido]) -> list[PedidoOut]:
         out.criador_id = p.criador_id
         out.criador_nome = users.get(p.criador_id, {}).get("nome") if p.criador_id else None
         ov = p.orgao_vinculante.value if p.orgao_vinculante else ""
-        out.cadeia_aprovacao = pedido_service.cadeia_aprovacao(ov, p.regiao_militar)
+        out.cadeia_aprovacao = pedido_service.cadeia_aprovacao(ov, p.regiao_militar, p.diretoria)
         result.append(out)
     return result
 
@@ -118,12 +160,16 @@ async def _check_janela_open(db: AsyncSession, user: Usuario) -> None:
     from app.models.janela import JanelaPedidos
     from app.models.enums import TipoJanelaEnum
 
-    if user.perfil in SUPERVISOR_PROFILES:
+    if user.perfil == PerfilEnum.SOLICITANTE:
+        tipo = TipoJanelaEnum.SOLICITANTE
+    elif user.perfil in SUPERVISOR_PROFILES:
         tipo = TipoJanelaEnum.SUPERVISOR
     elif user.perfil in CONSOLIDADOR_PROFILES:
         tipo = TipoJanelaEnum.CONSOLIDADOR
     else:
         return  # GESTOR_CARTOGRAFICO, ANALISTA_CGEO — sem restrição de janela
+
+    is_solicitante = (tipo == TipoJanelaEnum.SOLICITANTE)
 
     now = datetime.now(timezone.utc)
     result = await db.scalars(
@@ -133,23 +179,76 @@ async def _check_janela_open(db: AsyncSession, user: Usuario) -> None:
     )
     janelas = list(result)
     if not janelas:
+        if is_solicitante:
+            raise HTTPException(
+                status_code=403,
+                detail="Não é possível realizar pedidos fora do prazo. Aguarde a janela de solicitações ser aberta pela DSG.",
+            )
         raise HTTPException(status_code=403, detail="Fora do período de ação: janela não configurada para o seu perfil")
 
     ativa = next((j for j in janelas if j.data_inicio <= now <= j.data_fim), None)
     if not ativa:
         prox = next((j for j in sorted(janelas, key=lambda j: j.data_inicio) if j.data_inicio > now), None)
         if prox:
+            if is_solicitante:
+                raise HTTPException(
+                    status_code=403,
+                    detail=f"Não é possível realizar pedidos fora do prazo. A janela de solicitações abrirá em {prox.data_inicio.strftime('%d/%m/%Y')}.",
+                )
             raise HTTPException(
                 status_code=403,
                 detail=f"Sua janela de ação ainda não iniciou. Início previsto: {prox.data_inicio.strftime('%d/%m/%Y')}",
+            )
+        if is_solicitante:
+            raise HTTPException(
+                status_code=403,
+                detail="Não é possível realizar pedidos fora do prazo. Aguarde a janela de solicitações ser aberta pela DSG.",
             )
         raise HTTPException(status_code=403, detail="Sua janela de ação foi encerrada. Aguarde o próximo ciclo.")
 
 router = APIRouter(prefix="/pedidos", tags=["Pedidos"])
 
 GESTOR_PROFILES = tuple(SUPERVISOR_PROFILES | CONSOLIDADOR_PROFILES)
-# Alias — supervisores regionais roteiam pedidos por regiao_militar
-_GESTORES_POR_RM = SUPERVISOR_PROFILES
+# Conjunto de perfis de supervisor (regionais + DECEx). O escopo de cada um
+# (RM ou Diretoria) é resolvido por _supervisor_scope().
+_GESTORES_SUPERVISOR = SUPERVISOR_PROFILES
+CONSOLIDADOR_TO_ORGAO: dict[PerfilEnum, OrgaoVinculanteEnum] = {
+    PerfilEnum.CONSOLIDADOR_COTER: OrgaoVinculanteEnum.COTER,
+    PerfilEnum.CONSOLIDADOR_DSG: OrgaoVinculanteEnum.DSG,
+    PerfilEnum.CONSOLIDADOR_DEC: OrgaoVinculanteEnum.DEC,
+    PerfilEnum.CONSOLIDADOR_COLOG: OrgaoVinculanteEnum.COLOG,
+    PerfilEnum.CONSOLIDADOR_DECEX: OrgaoVinculanteEnum.DECEx,
+}
+
+
+def _itens_ativos(pedido: Pedido | PedidoOut):
+    return [item for item in pedido.itens if not getattr(item, "removido", False)]
+
+
+# ── Ordenação por prioridade ──────────────────────────────────────────────────
+# `prioridade` é 0 por padrão na coluna e só recebe um valor >= 1 quando alguém
+# reordena a lista (arrastar no dashboard do supervisor/consolidador). Portanto
+# 0 significa "ainda não priorizado" — e NÃO "primeira prioridade". Ordenar por
+# `prioridade ASC` puro colocaria um pedido nunca arrastado à frente daquele que
+# o escalão marcou explicitamente como nº 1, invertendo a decisão do escalão nos
+# relatórios e exportações (onde o rank é a posição na lista). As duas funções
+# abaixo mantêm SQL e Python com o mesmo critério: não priorizados por último.
+
+def chave_prioridade(obj) -> tuple[int, int]:
+    """Chave de ordenação para ``sorted()`` sobre pedidos ou itens de pedido."""
+    prio = getattr(obj, "prioridade", 0) or 0
+    return (1, 0) if prio == 0 else (0, prio)
+
+
+def ordem_prioridade():
+    """Critérios ``ORDER BY`` equivalentes a :func:`chave_prioridade`."""
+    from sqlalchemy import case
+
+    return (
+        case((Pedido.prioridade == 0, 1), else_=0),
+        Pedido.prioridade.asc(),
+        Pedido.criado_em.asc(),
+    )
 
 
 def _rm_do_supervisor(user: Usuario) -> str | None:
@@ -163,6 +262,82 @@ def _rm_do_supervisor(user: Usuario) -> str | None:
     return rm if rm is not None else user.regiao_militar
 
 
+def _supervisor_scope(user: Usuario):
+    """Cláusula SQLAlchemy que restringe os pedidos ao escopo de um supervisor.
+
+    - Supervisores do **DECEx** filtram por ``orgao_vinculante=DECEx`` + Diretoria.
+    - Supervisores **regionais** filtram por ``orgao_vinculante=COTER`` + C. Mil. A.
+    """
+    if user.perfil in SUPERVISOR_DECEX_PROFILES:
+        return (
+            (Pedido.orgao_vinculante == OrgaoVinculanteEnum.DECEx)
+            & (Pedido.diretoria == SUPERVISOR_DECEX_TO_DIRETORIA.get(user.perfil))
+        )
+    orgao = user.orgao_vinculante if user.perfil == PerfilEnum.SUPERVISOR else OrgaoVinculanteEnum.COTER
+    return (
+        (Pedido.orgao_vinculante == orgao)
+        & (Pedido.regiao_militar == _rm_do_supervisor(user))
+    )
+
+
+def _supervisor_owns(user: Usuario, pedido: Pedido) -> bool:
+    """Versão em Python de :func:`_supervisor_scope` para um pedido já carregado."""
+    if user.perfil in SUPERVISOR_DECEX_PROFILES:
+        return (
+            pedido.orgao_vinculante == OrgaoVinculanteEnum.DECEx
+            and pedido.diretoria == SUPERVISOR_DECEX_TO_DIRETORIA.get(user.perfil)
+        )
+    orgao = user.orgao_vinculante if user.perfil == PerfilEnum.SUPERVISOR else OrgaoVinculanteEnum.COTER
+    return pedido.orgao_vinculante == orgao and pedido.regiao_militar == _rm_do_supervisor(user)
+
+
+def _orgao_do_consolidador(user: Usuario) -> OrgaoVinculanteEnum | None:
+    return CONSOLIDADOR_TO_ORGAO.get(user.perfil) or user.orgao_vinculante
+
+
+def _consolidador_scope(user: Usuario):
+    orgao = _orgao_do_consolidador(user)
+    if orgao is None:
+        return Pedido.id.is_(None)
+    return Pedido.orgao_vinculante == orgao
+
+
+def _consolidador_owns(user: Usuario, pedido: Pedido) -> bool:
+    orgao = _orgao_do_consolidador(user)
+    return orgao is not None and pedido.orgao_vinculante == orgao
+
+
+def _pedido_scope_clause(user: Usuario):
+    if user.perfil == PerfilEnum.GESTOR_CARTOGRAFICO:
+        return None
+    if user.perfil == PerfilEnum.ANALISTA_CGEO:
+        return Pedido.cgeo_id == user.cgeo_id
+    if user.perfil in SUPERVISOR_PROFILES:
+        return _supervisor_scope(user)
+    if user.perfil in CONSOLIDADOR_PROFILES:
+        return _consolidador_scope(user)
+    if user.perfil == PerfilEnum.SOLICITANTE:
+        return (Pedido.usuario_id == user.id) | (Pedido.criador_id == user.id)
+    return Pedido.usuario_id == user.id
+
+
+def _pedido_in_user_scope(user: Usuario, pedido: Pedido) -> bool:
+    if user.perfil == PerfilEnum.GESTOR_CARTOGRAFICO:
+        return True
+    if user.perfil == PerfilEnum.ANALISTA_CGEO:
+        return pedido.cgeo_id == user.cgeo_id
+    if user.perfil in SUPERVISOR_PROFILES:
+        return _supervisor_owns(user, pedido)
+    if user.perfil in CONSOLIDADOR_PROFILES:
+        return _consolidador_owns(user, pedido)
+    return pedido.usuario_id == user.id or pedido.criador_id == user.id
+
+
+def _assert_pedido_in_user_scope(user: Usuario, pedido: Pedido) -> None:
+    if not _pedido_in_user_scope(user, pedido):
+        raise HTTPException(status_code=403, detail="Acesso negado")
+
+
 
 @router.post("/", response_model=PedidoOut, status_code=201)
 async def create_pedido(
@@ -171,6 +346,8 @@ async def create_pedido(
     current_user: Usuario = Depends(get_current_user),
 ):
     from app.routers.config import get_or_create_config, PRAZOS_MINIMOS
+
+    await _check_janela_open(db, current_user)
 
     ov = body.orgao_vinculante if body.orgao_vinculante is not None else current_user.orgao_vinculante
     if ov is None:
@@ -193,6 +370,8 @@ async def create_pedido(
 
     # impressao_solicitada derivado: verdadeiro se qualquer item tiver qty de impressão
     any_impressao = any(i.impressao_quantidade for i in body.itens if i.impressao_quantidade)
+    # Diretoria supervisora — só se aplica ao fluxo DECEx (derivada da OM do solicitante).
+    diretoria = diretoria_de_om(current_user.om) if ov == OrgaoVinculanteEnum.DECEx else None
     pedido = Pedido(
         usuario_id=current_user.id,
         criador_id=current_user.id,
@@ -202,6 +381,7 @@ async def create_pedido(
         finalidade=body.finalidade,
         orgao_vinculante=ov,
         regiao_militar=current_user.regiao_militar,
+        diretoria=diretoria,
         impressao_solicitada=any_impressao,
     )
     db.add(pedido)
@@ -244,18 +424,18 @@ async def list_pedidos(
             .where(Pedido.cgeo_id == current_user.cgeo_id)
             .order_by(Pedido.criado_em.desc())
         )
-    elif current_user.perfil in _GESTORES_POR_RM:
+    elif current_user.perfil in _GESTORES_SUPERVISOR:
         # Supervisor (C. Mil. A) — roteado pela RM derivada do perfil
         result = await db.scalars(
             select(Pedido)
-            .where(Pedido.regiao_militar == _rm_do_supervisor(current_user))
+            .where(_supervisor_scope(current_user))
             .order_by(Pedido.criado_em.desc())
         )
     elif current_user.perfil in CONSOLIDADOR_PROFILES:
         # Consolidador — roteado por orgao_vinculante
         result = await db.scalars(
             select(Pedido)
-            .where(Pedido.orgao_vinculante == current_user.orgao_vinculante)
+            .where(_consolidador_scope(current_user))
             .order_by(Pedido.criado_em.desc())
         )
     else:
@@ -278,13 +458,13 @@ async def list_pending(
     db: AsyncSession = Depends(get_db),
     current_user: Usuario = Depends(get_current_user),
 ):
-    if current_user.perfil in _GESTORES_POR_RM:
+    if current_user.perfil in _GESTORES_SUPERVISOR:
         # Supervisor regional — filtro por Região Militar
         result = await db.scalars(
             select(Pedido)
             .where(
                 Pedido.status == StatusPedidoEnum.AGUARDANDO_SUPERVISOR,
-                Pedido.regiao_militar == _rm_do_supervisor(current_user),
+                _supervisor_scope(current_user),
             )
             .order_by(Pedido.submetido_gestor_em.asc())
         )
@@ -294,7 +474,7 @@ async def list_pending(
             select(Pedido)
             .where(
                 Pedido.status == StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR,
-                Pedido.orgao_vinculante == current_user.orgao_vinculante,
+                _consolidador_scope(current_user),
             )
             .order_by(Pedido.submetido_gestor_em.asc())
         )
@@ -329,10 +509,10 @@ async def get_map_features(
         )
     elif current_user.perfil == PerfilEnum.ANALISTA_CGEO:
         q = select(Pedido).where(Pedido.cgeo_id == current_user.cgeo_id)
-    elif current_user.perfil in _GESTORES_POR_RM:
-        q = select(Pedido).where(Pedido.regiao_militar == _rm_do_supervisor(current_user))
+    elif current_user.perfil in _GESTORES_SUPERVISOR:
+        q = select(Pedido).where(_supervisor_scope(current_user))
     elif current_user.perfil in CONSOLIDADOR_PROFILES:
-        q = select(Pedido).where(Pedido.orgao_vinculante == current_user.orgao_vinculante)
+        q = select(Pedido).where(_consolidador_scope(current_user))
     else:
         q = select(Pedido).where(Pedido.usuario_id == current_user.id)
 
@@ -344,13 +524,13 @@ async def get_map_features(
     import asyncio as _asyncio
     _scale_geoms: dict[str, dict] = {}
     for _p in enriched:
-        for _it in _p.itens:
+        for _it in _itens_ativos(_p):
             _sv = _it.escala.value
             if _sv not in _scale_geoms:
                 _scale_geoms[_sv] = await _asyncio.to_thread(get_inom_geometries, EscalaEnum(_sv))
     features = []
     for p in enriched:
-        for item in p.itens:
+        for item in _itens_ativos(p):
             geom = _scale_geoms.get(item.escala.value, {}).get(item.inom)
             if not geom:
                 continue
@@ -381,6 +561,7 @@ async def get_map_features(
 
 @router.get("/duplicatas")
 async def listar_duplicatas(
+    todos: bool = Query(default=False),
     db: AsyncSession = Depends(get_db),
     current_user: Usuario = Depends(get_current_user),
 ):
@@ -388,14 +569,33 @@ async def listar_duplicatas(
     from collections import defaultdict
 
     if current_user.perfil in SUPERVISOR_PROFILES:
+        statuses = [StatusPedidoEnum.AGUARDANDO_SUPERVISOR]
+        if todos:
+            statuses.extend([
+                StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR,
+                StatusPedidoEnum.AGUARDANDO_CARTOGRAFICO,
+                StatusPedidoEnum.ATRIBUIDO_CGEO,
+                StatusPedidoEnum.APROVADO,
+                StatusPedidoEnum.PRODUZIDO,
+                StatusPedidoEnum.REPROVADO,
+            ])
         q = select(Pedido).where(
-            Pedido.status == StatusPedidoEnum.AGUARDANDO_SUPERVISOR,
-            Pedido.regiao_militar == _rm_do_supervisor(current_user),
+            Pedido.status.in_(statuses),
+            _supervisor_scope(current_user),
         )
     elif current_user.perfil in CONSOLIDADOR_PROFILES:
+        statuses = [StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR]
+        if todos:
+            statuses.extend([
+                StatusPedidoEnum.AGUARDANDO_CARTOGRAFICO,
+                StatusPedidoEnum.ATRIBUIDO_CGEO,
+                StatusPedidoEnum.APROVADO,
+                StatusPedidoEnum.PRODUZIDO,
+                StatusPedidoEnum.REPROVADO,
+            ])
         q = select(Pedido).where(
-            Pedido.status == StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR,
-            Pedido.orgao_vinculante == current_user.orgao_vinculante,
+            Pedido.status.in_(statuses),
+            _consolidador_scope(current_user),
         )
     elif current_user.perfil == PerfilEnum.GESTOR_CARTOGRAFICO:
         q = select(Pedido).where(
@@ -414,9 +614,10 @@ async def listar_duplicatas(
 
     grupos: dict[tuple, list[dict]] = defaultdict(list)
     for p in enriched:
-        for item in p.itens:
+        for item in _itens_ativos(p):
             key = (item.inom, item.tipo_produto.value, item.escala.value)
             grupos[key].append({
+                "id": p.id,
                 "pedido_id": p.id,
                 "usuario_nome": p.usuario_nome,
                 "status": p.status.value,
@@ -470,19 +671,19 @@ async def exportar_relatorio(
         q = select(Pedido).where(
             (Pedido.usuario_id == current_user.id) | (Pedido.criador_id == current_user.id),
             Pedido.status.notin_([StatusPedidoEnum.CANCELADO, StatusPedidoEnum.REPROVADO]),
-        ).order_by(Pedido.prioridade.asc(), Pedido.criado_em.asc())
+        ).order_by(*ordem_prioridade())
 
     elif current_user.perfil in SUPERVISOR_PROFILES:
         q = select(Pedido).where(
-            Pedido.regiao_militar == _rm_do_supervisor(current_user),
+            _supervisor_scope(current_user),
             Pedido.status.notin_([StatusPedidoEnum.RASCUNHO, StatusPedidoEnum.CANCELADO]),
-        ).order_by(Pedido.prioridade.asc(), Pedido.criado_em.asc())
+        ).order_by(*ordem_prioridade())
 
     else:  # CONSOLIDADOR_*
         q = select(Pedido).where(
-            Pedido.orgao_vinculante == current_user.orgao_vinculante,
+            _consolidador_scope(current_user),
             Pedido.status.notin_([StatusPedidoEnum.RASCUNHO, StatusPedidoEnum.CANCELADO]),
-        ).order_by(Pedido.prioridade.asc(), Pedido.criado_em.asc())
+        ).order_by(*ordem_prioridade())
 
     pedidos = list(await db.scalars(q))
     enriched = await _enrich(db, pedidos)
@@ -502,7 +703,7 @@ async def exportar_relatorio(
     # ── Geometrias por escala (lazy, 1 chamada por escala presente) ───────────
     _scale_geoms: dict[str, dict] = {}
     for p in enriched:
-        for it in p.itens:
+        for it in _itens_ativos(p):
             sv = it.escala.value
             if sv not in _scale_geoms:
                 _scale_geoms[sv] = get_inom_geometries(EscalaEnum(sv))
@@ -520,7 +721,7 @@ async def exportar_relatorio(
         "Impressao_Solicitada", "Impressao_Quantidade", "Impressao_Material",
     ])
     for pedido_rank, p in enumerate(enriched, 1):
-        for item_rank, item in enumerate(sorted(p.itens, key=lambda x: x.prioridade), 1):
+        for item_rank, item in enumerate(sorted(_itens_ativos(p), key=chave_prioridade), 1):
             _disp, _dprod = _bdgex_info(item)
             idade_anos = (date.today() - _dprod).days // 365 if _dprod else ""
             _sol = (
@@ -561,7 +762,7 @@ async def exportar_relatorio(
     geojsons: dict[str, list[dict]] = {}  # sufixo → lista de features
     _suffix_map = {"1:25.000": "25k", "1:50.000": "50k", "1:100.000": "100k", "1:250.000": "250k"}
     for pedido_rank, p in enumerate(enriched, 1):
-        for item_rank, item in enumerate(sorted(p.itens, key=lambda x: x.prioridade), 1):
+        for item_rank, item in enumerate(sorted(_itens_ativos(p), key=chave_prioridade), 1):
             sv = item.escala.value
             suffix = _suffix_map.get(sv, sv.replace(":", "").replace(".", "").replace(" ", ""))
             geom = _scale_geoms.get(sv, {}).get(item.inom)
@@ -758,7 +959,7 @@ RESUMO
 -------------------------------------------------------
 
   Total de pedidos : {len(enriched)}
-  Total de itens   : {sum(len(p.itens) for p in enriched)}
+  Total de itens   : {sum(len(_itens_ativos(p)) for p in enriched)}
 
 -------------------------------------------------------
 CONTEÚDO DESTE PACOTE
@@ -862,7 +1063,7 @@ async def _build_admin_zip(
     # ── Geometrias por escala ────────────────────────────────────────────────
     _scale_geoms: dict[str, dict] = {}
     for _p in enriched:
-        for _it in _p.itens:
+        for _it in _itens_ativos(_p):
             _sv = _it.escala.value
             if _sv not in _scale_geoms:
                 _scale_geoms[_sv] = get_inom_geometries(EscalaEnum(_sv))
@@ -885,7 +1086,7 @@ async def _build_admin_zip(
     from collections import defaultdict as _defaultdict
     _dup_map: dict[tuple, list] = _defaultdict(list)
     for _p in enriched:
-        for _it in _p.itens:
+        for _it in _itens_ativos(_p):
             if _it.mi:
                 _dup_map[(_it.mi, _it.tipo_produto.value)].append((_p, _it))
     dup_entries: dict[tuple, list] = {
@@ -898,7 +1099,7 @@ async def _build_admin_zip(
     geojsons: dict[str, list[dict]] = {}
     for p in enriched:
         _p_rank = _pedido_rank[p.id]
-        for item_rank, item in enumerate(sorted(p.itens, key=lambda x: x.prioridade), 1):
+        for item_rank, item in enumerate(sorted(_itens_ativos(p), key=chave_prioridade), 1):
             sv = item.escala.value
             suffix = suffix_map.get(sv, sv.replace(":", "").replace(".", "").replace(" ", ""))
             geom = _scale_geoms.get(sv, {}).get(item.inom)
@@ -971,7 +1172,7 @@ async def _build_admin_zip(
     ])
     for p in enriched:
         _p_rank = _pedido_rank[p.id]
-        for item_rank, item in enumerate(sorted(p.itens, key=lambda x: x.prioridade), 1):
+        for item_rank, item in enumerate(sorted(_itens_ativos(p), key=chave_prioridade), 1):
             _disp, _dprod = _bdgex_info_adm(item)
             idade_anos = (date.today() - _dprod).days // 365 if _dprod else ""
             is_dup = "Sim" if (item.mi, item.tipo_produto.value) in dup_keys else "Não"
@@ -1017,7 +1218,7 @@ async def _build_admin_zip(
 
     # ── Relatório TXT (ficha por pedido) ─────────────────────────────────────
     hoje = datetime.now().strftime("%d/%m/%Y %H:%M")
-    total_itens = sum(len(p.itens) for p in enriched)
+    total_itens = sum(len(_itens_ativos(p)) for p in enriched)
     linhas = [
         "RELATÓRIO DE PEDIDOS — SisPGeo",
         "=" * 70,
@@ -1083,7 +1284,7 @@ async def _build_admin_zip(
         imp_pedido = f"Sim ({p.impressao_quantidade}x {p.impressao_tipo_material})" if p.impressao_solicitada and p.impressao_quantidade else ("Sim" if p.impressao_solicitada else "Não")
         # Itens com flag de duplicata
         _itens_dup = {
-            it.id for it in p.itens
+            it.id for it in _itens_ativos(p)
             if it.mi and (it.mi, it.tipo_produto.value) in dup_keys
         }
         linhas += [
@@ -1106,9 +1307,9 @@ async def _build_admin_zip(
             f"  Observações         : {p.observacoes or '—'}",
             f"  Motivo Reprovação   : {p.motivo_reprovacao or '—'}",
             f"  Link BDGEx          : {p.link_bdgex or '—'}",
-            f"  Itens ({len(p.itens)}):",
+            f"  Itens ({len(_itens_ativos(p))}):",
         ]
-        for i, item in enumerate(sorted(p.itens, key=lambda x: x.prioridade), 1):
+        for i, item in enumerate(sorted(_itens_ativos(p), key=chave_prioridade), 1):
             _disp, _dprod = _bdgex_info_adm(item)
             bdgex = "✓" if _disp else "✗"
             if _dprod:
@@ -1157,6 +1358,222 @@ async def _build_admin_zip(
     )
 
 
+@router.get("/relatorio-analitico")
+async def relatorio_analitico(
+    cgeo_id: int | None = Query(default=None, ge=1, le=5),
+    escopo: str = Query(default="todos", pattern="^(todos|dsg)$"),
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(require_profiles(
+        PerfilEnum.GESTOR_CARTOGRAFICO,
+        PerfilEnum.ANALISTA_CGEO,
+    )),
+):
+    """Resumo analitico de demanda para a tela de relatorios DSG/CGEO."""
+    from collections import Counter, defaultdict
+    from app.services.asc_service import asc_cgeo_id_for_item
+
+    status_permitidos, escopo_label = _relatorio_status_por_escopo(escopo)
+
+    efetivo_cgeo_id = current_user.cgeo_id if current_user.perfil == PerfilEnum.ANALISTA_CGEO else cgeo_id
+
+    pedidos = list(await db.scalars(
+        select(Pedido)
+        .where(Pedido.status.in_(status_permitidos))
+        .order_by(Pedido.criado_em.desc())
+    ))
+
+    rows: list[dict] = []
+    pedido_status: dict[int, str] = {}
+    asc_pedidos: dict[int | None, set[int]] = defaultdict(set)
+    asc_itens: Counter[int | None] = Counter()
+
+    for pedido in pedidos:
+        for item in _itens_ativos(pedido):
+            asc_id = asc_cgeo_id_for_item(item.inom, item.mi)
+            if efetivo_cgeo_id is not None and asc_id != efetivo_cgeo_id:
+                continue
+
+            pedido_status[pedido.id] = pedido.status.value
+            asc_pedidos[asc_id].add(pedido.id)
+            asc_itens[asc_id] += 1
+            rows.append({
+                "pedido_id": pedido.id,
+                "status": pedido.status.value,
+                "asc_id": asc_id,
+                "tipo_produto": item.tipo_produto.value,
+                "escala": item.escala.value,
+                "inom": item.inom,
+                "mi": item.mi,
+            })
+
+    pedido_ids_filtrados = {row["pedido_id"] for row in rows}
+    por_asc = [
+        {
+            "cgeo_id": asc_id,
+            "label": _cgeo_label(asc_id),
+            "pedidos": len(asc_pedidos.get(asc_id, set())),
+            "itens": int(asc_itens.get(asc_id, 0)),
+        }
+        for asc_id in [None, 1, 2, 3, 4, 5]
+        if efetivo_cgeo_id is None or asc_id == efetivo_cgeo_id
+    ]
+
+    status_counter = Counter(
+        status for pedido_id, status in pedido_status.items()
+        if pedido_id in pedido_ids_filtrados
+    )
+    por_status = [
+        {"status": status, "total": total}
+        for status, total in status_counter.most_common()
+    ]
+
+    tipo_counter = Counter(row["tipo_produto"] for row in rows)
+    por_tipo = [
+        {"tipo_produto": tipo, "total": total}
+        for tipo, total in tipo_counter.most_common()
+    ]
+
+    escala_counter = Counter(row["escala"] for row in rows)
+    por_escala = [
+        {"escala": escala, "total": escala_counter[escala]}
+        for escala in sorted(escala_counter)
+    ]
+
+    matriz_counter = Counter((row["tipo_produto"], row["escala"]) for row in rows)
+    por_tipo_escala = [
+        {
+            "tipo_produto": tipo,
+            "escala": escala,
+            "total": total,
+        }
+        for (tipo, escala), total in sorted(matriz_counter.items())
+    ]
+
+    produto_counter = Counter(
+        (row["inom"], row["mi"], row["tipo_produto"], row["escala"])
+        for row in rows
+    )
+    produtos_mais_pedidos = [
+        {
+            "inom": inom,
+            "mi": mi,
+            "tipo_produto": tipo,
+            "escala": escala,
+            "total": total,
+        }
+        for (inom, mi, tipo, escala), total in produto_counter.most_common(20)
+    ]
+
+    return {
+        "filtro": {
+            "cgeo_id": efetivo_cgeo_id,
+            "cgeo_label": _cgeo_label(efetivo_cgeo_id) if efetivo_cgeo_id is not None else "Todas as ASC",
+            "escopo": escopo,
+            "escopo_label": escopo_label,
+            "status": [status.value for status in status_permitidos],
+        },
+        "totais": {
+            "pedidos": len(pedido_ids_filtrados),
+            "itens": len(rows),
+        },
+        "por_asc": por_asc,
+        "por_status": por_status,
+        "por_tipo": por_tipo,
+        "por_escala": por_escala,
+        "por_tipo_escala": por_tipo_escala,
+        "produtos_mais_pedidos": produtos_mais_pedidos,
+    }
+
+
+@router.get("/relatorio-analitico/features")
+async def relatorio_analitico_features(
+    cgeo_id: int | None = Query(default=None, ge=1, le=5),
+    sem_asc: bool = Query(default=False),
+    escopo: str = Query(default="todos", pattern="^(todos|dsg)$"),
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(require_profiles(
+        PerfilEnum.GESTOR_CARTOGRAFICO,
+        PerfilEnum.ANALISTA_CGEO,
+    )),
+):
+    """GeoJSON das folhas do relatorio, filtradas pela ASC prevista."""
+    from app.models.enums import EscalaEnum
+    from app.services.asc_service import asc_cgeo_id_for_item
+    from app.services.bdgex_service import get_inom_geometries
+    import asyncio as _asyncio
+
+    if sem_asc and cgeo_id is not None:
+        raise HTTPException(status_code=400, detail="Use cgeo_id ou sem_asc, nao ambos")
+
+    efetivo_cgeo_id = current_user.cgeo_id if current_user.perfil == PerfilEnum.ANALISTA_CGEO else cgeo_id
+    if current_user.perfil == PerfilEnum.ANALISTA_CGEO and sem_asc:
+        raise HTTPException(status_code=403, detail="Analista CGEO nao pode consultar Sem ASC")
+
+    status_permitidos, _ = _relatorio_status_por_escopo(escopo)
+    pedidos = list(await db.scalars(
+        select(Pedido)
+        .where(Pedido.status.in_(status_permitidos))
+        .order_by(Pedido.criado_em.desc())
+    ))
+    enriched = await _enrich(db, pedidos)
+
+    scale_geoms: dict[str, dict] = {}
+    features = []
+    for pedido in enriched:
+        for item in _itens_ativos(pedido):
+            asc_id = asc_cgeo_id_for_item(item.inom, item.mi)
+            if sem_asc:
+                if asc_id is not None:
+                    continue
+            elif efetivo_cgeo_id is not None and asc_id != efetivo_cgeo_id:
+                continue
+
+            scale = item.escala.value
+            if scale not in scale_geoms:
+                scale_geoms[scale] = await _asyncio.to_thread(get_inom_geometries, EscalaEnum(scale))
+
+            geom = scale_geoms.get(scale, {}).get(item.inom)
+            if not geom:
+                continue
+
+            features.append({
+                "type": "Feature",
+                "geometry": geom,
+                "properties": {
+                    "pedido_id": pedido.id,
+                    "status": pedido.status.value,
+                    "asc_id": asc_id,
+                    "asc_label": _cgeo_label(asc_id),
+                    "inom": item.inom,
+                    "mi": item.mi,
+                    "tipo_produto": item.tipo_produto.value,
+                    "escala": item.escala.value,
+                    "data_entrega": pedido.data_entrega.isoformat() if pedido.data_entrega else None,
+                    "usuario_nome": pedido.usuario_nome,
+                    "usuario_om": pedido.usuario_om,
+                    "operacao_nome": pedido.operacao_nome,
+                    "disponivel_bdgex": item.disponivel_bdgex,
+                    "idade_anos": (date.today() - item.data_producao_bdgex).days // 365 if item.data_producao_bdgex else None,
+                },
+            })
+
+    return {"type": "FeatureCollection", "features": features}
+
+
+@router.get("/relatorio-analitico/asc-features")
+async def relatorio_analitico_asc_features(
+    current_user: Usuario = Depends(require_profiles(
+        PerfilEnum.GESTOR_CARTOGRAFICO,
+        PerfilEnum.ANALISTA_CGEO,
+    )),
+):
+    """GeoJSON da ASC agrupada em uma feature MultiPolygon por CGEO."""
+    del current_user
+    from app.services.asc_service import asc_merged_feature_collection
+
+    return asc_merged_feature_collection()
+
+
 @router.get("/export")
 async def exportar_pedidos(
     db: AsyncSession = Depends(get_db),
@@ -1171,7 +1588,7 @@ async def exportar_pedidos(
     result = await db.scalars(
         select(Pedido)
         .where(Pedido.status.notin_([StatusPedidoEnum.CANCELADO, StatusPedidoEnum.RASCUNHO]))
-        .order_by(Pedido.prioridade.asc(), Pedido.criado_em.asc())
+        .order_by(*ordem_prioridade())
     )
     pedidos = list(result)
     enriched = await _enrich(db, pedidos)
@@ -1250,8 +1667,8 @@ async def delete_item(
     """Remove um item (célula) de um pedido.
 
     - Dono do pedido: pode remover se status RASCUNHO.
-    - Supervisor: pode remover itens de pedidos AGUARDANDO_SUPERVISOR na sua regiao_militar.
-    - Consolidador: pode remover itens de pedidos AGUARDANDO_CONSOLIDADOR no seu orgao_vinculante.
+    - Supervisor: pode remover itens de pedidos no seu escopo ate a atribuicao CGEO.
+    - Consolidador: pode remover itens de pedidos no seu orgao ate a atribuicao CGEO.
     O pedido deve ter ao menos 1 item restante.
     """
     pedido = await db.get(Pedido, pedido_id)
@@ -1259,15 +1676,22 @@ async def delete_item(
         raise HTTPException(status_code=404, detail="Pedido não encontrado")
 
     is_owner = pedido.usuario_id == current_user.id
+    supervisor_editable_statuses = {
+        StatusPedidoEnum.AGUARDANDO_SUPERVISOR,
+    }
+    consolidador_editable_statuses = {
+        StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR,
+    }
+
     is_supervisor = (
         current_user.perfil in SUPERVISOR_PROFILES
-        and pedido.status == StatusPedidoEnum.AGUARDANDO_SUPERVISOR
-        and pedido.regiao_militar == _rm_do_supervisor(current_user)
+        and pedido.status in supervisor_editable_statuses
+        and _supervisor_owns(current_user, pedido)
     )
     is_consolidador = (
         current_user.perfil in CONSOLIDADOR_PROFILES
-        and pedido.status == StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR
-        and pedido.orgao_vinculante == current_user.orgao_vinculante
+        and pedido.status in consolidador_editable_statuses
+        and _consolidador_owns(current_user, pedido)
     )
 
     if not (is_owner or is_supervisor or is_consolidador):
@@ -1284,12 +1708,29 @@ async def delete_item(
         raise HTTPException(status_code=404, detail="Item não encontrado")
 
     # Conta itens restantes após a remoção
+    if item.removido:
+        raise HTTPException(status_code=400, detail="Item ja removido")
+
     count_res = await db.execute(
         select(ItemPedido).where(ItemPedido.pedido_id == pedido_id)
     )
-    if len(count_res.all()) <= 1:
+    if len(count_res.all()) <= 0:
         raise HTTPException(status_code=400, detail="Não é possível remover o único item do pedido")
-    await db.delete(item)
+    item.removido = True
+    pedido.atualizado_em = datetime.now(timezone.utc)
+
+    from app.services.historico_service import registrar_historico
+    tipo = item.tipo_produto.value
+    escala = item.escala.value
+    label = item.mi or item.inom
+    await registrar_historico(
+        db,
+        pedido=pedido,
+        usuario=current_user,
+        acao="editar",
+        status_anterior=pedido.status,
+        motivo=f"Produto removido do pedido: {label} ({item.inom}) - {tipo} - {escala}",
+    )
     await db.commit()
 
 
@@ -1316,7 +1757,7 @@ async def list_homologados(
             select(Pedido)
             .where(
                 Pedido.status.in_(forwarded),
-                Pedido.regiao_militar == _rm_do_supervisor(current_user),
+                _supervisor_scope(current_user),
             )
             .order_by(Pedido.atualizado_em.desc())
         )
@@ -1332,7 +1773,7 @@ async def list_homologados(
             select(Pedido)
             .where(
                 Pedido.status.in_(forwarded),
-                Pedido.orgao_vinculante == current_user.orgao_vinculante,
+                _consolidador_scope(current_user),
             )
             .order_by(Pedido.atualizado_em.desc())
         )
@@ -1350,6 +1791,7 @@ async def get_pedido(
     pedido = await db.get(Pedido, pedido_id)
     if not pedido:
         raise HTTPException(status_code=404, detail="Pedido não encontrado")
+    _assert_pedido_in_user_scope(current_user, pedido)
     enriched = await _enrich(db, [pedido])
     return enriched[0]
 
@@ -1379,7 +1821,7 @@ async def enviar_lote(
         select(Pedido)
         .where(Pedido.usuario_id == current_user.id)
         .where(Pedido.status == StatusPedidoEnum.RASCUNHO)
-        .order_by(Pedido.prioridade)
+        .order_by(*ordem_prioridade())
     )
     if body.pedido_ids:
         stmt = stmt.where(Pedido.id.in_(body.pedido_ids))
@@ -1412,6 +1854,7 @@ async def submit(
     db: AsyncSession = Depends(get_db),
     current_user: Usuario = Depends(get_current_user),
 ):
+    await _check_janela_open(db, current_user)
     pedido = await db.get(Pedido, pedido_id)
     if not pedido:
         raise HTTPException(status_code=404, detail="Pedido não encontrado")
@@ -1430,6 +1873,7 @@ async def review(
     pedido = await db.get(Pedido, pedido_id)
     if not pedido:
         raise HTTPException(status_code=404, detail="Pedido não encontrado")
+    _assert_pedido_in_user_scope(current_user, pedido)
     return await pedido_service.review_pedido(db, pedido, current_user, body.acao, body.motivo, body.observacoes)
 
 
@@ -1470,6 +1914,8 @@ async def cgeo_review(
     pedido = await db.get(Pedido, pedido_id)
     if not pedido:
         raise HTTPException(status_code=404, detail="Pedido não encontrado")
+    if pedido.cgeo_id != current_user.cgeo_id:
+        raise HTTPException(status_code=403, detail="Acesso negado")
     return await pedido_service.cgeo_review(db, pedido, current_user, body.acao, body.motivo, body.link_bdgex)
 
 
@@ -1520,7 +1966,7 @@ async def admin_produtos_recentes_bdgex(
     pedidos_por_grupo: dict[tuple, list] = defaultdict(list)
 
     for p in enriched:
-        for item in p.itens:
+        for item in _itens_ativos(p):
             if item.data_producao_bdgex is None:
                 continue
             idade_dias = (hoje - item.data_producao_bdgex).days
@@ -1562,7 +2008,13 @@ async def admin_list_all(
     _: Usuario = Depends(require_profiles(PerfilEnum.GESTOR_CARTOGRAFICO)),
     status: str | None = Query(default=None),
     orgao_vinculante: str | None = Query(default=None),
-    q: str | None = Query(default=None),
+    regiao_militar: str | None = Query(
+        default=None, description="Filtra por Comando Militar de Área (ex.: CMP, CML)"
+    ),
+    q: str | None = Query(
+        default=None,
+        description='Busca livre; termo entre aspas exige correspondência exata ("DEC" não traz DECEx)',
+    ),
 ):
     """Gestor Cartográfico (DSG): lista TODOS os pedidos do sistema independente de status."""
     stmt = select(Pedido)
@@ -1576,18 +2028,28 @@ async def admin_list_all(
             stmt = stmt.where(Pedido.orgao_vinculante == OrgaoVinculanteEnum(orgao_vinculante))
         except ValueError:
             pass
+    if regiao_militar:
+        stmt = stmt.where(Pedido.regiao_militar == regiao_militar)
     stmt = stmt.order_by(Pedido.criado_em.desc())
     result = await db.scalars(stmt)
     pedidos = list(result)
     enriched = await _enrich(db, pedidos)
 
-    # Free-text filter (nome do solicitante ou INOM) — aplicado após enrich
+    # Busca livre — aplicada após o enrich porque alcança campos derivados.
+    # Termo entre aspas exige correspondência exata do campo: "DEC" não traz DECEx.
     if q:
-        q_lower = q.lower()
         enriched = [
             p for p in enriched
-            if (p.usuario_nome and q_lower in p.usuario_nome.lower())
-            or any(q_lower in (item.inom or '').lower() for item in p.itens)
+            if casa_busca(q, [
+                str(p.id),
+                p.usuario_nome,
+                p.usuario_om,
+                p.status.value,
+                p.orgao_vinculante.value if p.orgao_vinculante else None,
+                p.regiao_militar,
+                *(item.inom for item in p.itens),
+                *(item.mi for item in p.itens),
+            ])
         ]
 
     return enriched
@@ -1676,7 +2138,7 @@ async def admin_export_geojson(
                 pass
         if valid_statuses:
             stmt = stmt.where(Pedido.status.in_(valid_statuses))
-    stmt = stmt.order_by(Pedido.prioridade.asc(), Pedido.criado_em.asc())
+    stmt = stmt.order_by(*ordem_prioridade())
 
     result = await db.scalars(stmt)
     pedidos = list(result)
@@ -1704,12 +2166,16 @@ async def reorder_pedidos(
         raise HTTPException(status_code=403, detail="Perfil não autorizado")
     # Busca todos de uma vez (1 query) ao invés de N db.get() individuais
     from sqlalchemy import update as sa_update
+    scope_clause = _pedido_scope_clause(current_user)
+    reordenados = 0
     for rank, pid in enumerate(body.ordered_ids, start=1):
-        await db.execute(
-            sa_update(Pedido).where(Pedido.id == pid).values(prioridade=rank)
-        )
+        stmt = sa_update(Pedido).where(Pedido.id == pid).values(prioridade=rank)
+        if scope_clause is not None:
+            stmt = stmt.where(scope_clause)
+        result = await db.execute(stmt)
+        reordenados += result.rowcount or 0
     await db.commit()
-    return {"reordenados": len(body.ordered_ids)}
+    return {"reordenados": reordenados}
 
 
 @router.put("/{pedido_id}/items/reorder")
@@ -1723,6 +2189,7 @@ async def reorder_items(
     pedido = await db.get(Pedido, pedido_id)
     if not pedido:
         raise HTTPException(status_code=404, detail="Pedido não encontrado")
+    _assert_pedido_in_user_scope(current_user, pedido)
     from sqlalchemy import update as sa_update
     for rank, item_id in enumerate(body.ordered_ids, start=1):
         await db.execute(
@@ -1834,21 +2301,17 @@ async def get_pedido_features(
     if not pedido:
         raise HTTPException(status_code=404, detail="Pedido não encontrado")
 
-    # Owner ou qualquer gestor pode ver
-    is_owner = pedido.usuario_id == current_user.id
-    is_gestor = current_user.perfil in {PerfilEnum.GESTOR_CARTOGRAFICO, PerfilEnum.ANALISTA_CGEO, *GESTOR_PROFILES}
-    if not is_owner and not is_gestor:
-        raise HTTPException(status_code=403, detail="Acesso negado")
+    _assert_pedido_in_user_scope(current_user, pedido)
 
     from app.models.enums import EscalaEnum
     import asyncio as _asyncio
     _scale_geoms: dict[str, dict] = {}
-    for _it in pedido.itens:
+    for _it in _itens_ativos(pedido):
         _sv = _it.escala.value
         if _sv not in _scale_geoms:
             _scale_geoms[_sv] = await _asyncio.to_thread(get_inom_geometries, EscalaEnum(_sv))
     features = []
-    for item in pedido.itens:
+    for item in _itens_ativos(pedido):
         geom = _scale_geoms.get(item.escala.value, {}).get(item.inom)
         if geom:
             features.append({

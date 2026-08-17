@@ -22,8 +22,9 @@ export const POSTOS: PostoGraduacao[] = [
 /** Mapa nome completo → abreviatura (cobre todos os valores do enum Python + legado) */
 export const POSTO_ABREV: Record<string, string> = {
   ...Object.fromEntries(POSTOS.map((p) => [p.nome, p.abrev])),
-  // Legado: registros criados antes da padronização para "Aspirante"
-  "Aspirante a Oficial": "Asp Of",
+  // Aliases para registros no banco criados antes da padronização
+  "Aspirante": "Asp Of",
+  "Tenente Coronel": "Ten Cel",
 };
 
 /**

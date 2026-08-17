@@ -1,5 +1,5 @@
 import { CheckCircle2, Eye, EyeOff, Mail, XCircle } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import toast from "react-hot-toast";
 import { Link, useNavigate } from "react-router-dom";
 import { authApi } from "../api/auth";
@@ -77,7 +77,7 @@ export function Register() {
 
   const set =
     (field: string) =>
-    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
       const value = e.target.value;
       setForm((f) => {
         const next = { ...f, [field]: value };
@@ -91,7 +91,7 @@ export function Register() {
 
   const numOnly =
     (field: string, maxLen: number) =>
-    (e: React.ChangeEvent<HTMLInputElement>) => {
+    (e: ChangeEvent<HTMLInputElement>) => {
       const value = e.target.value.replace(/\D/g, "").slice(0, maxLen);
       setForm((f) => ({ ...f, [field]: value }));
     };
@@ -106,7 +106,7 @@ export function Register() {
     return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
   };
 
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhoneChange = (e: ChangeEvent<HTMLInputElement>) => {
     setForm((f) => ({ ...f, telefone: applyPhoneMask(e.target.value) }));
   };
 
@@ -138,7 +138,7 @@ export function Register() {
     a.localeCompare(b, "pt-BR", { sensitivity: "base" }),
   );
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     // Validações na ordem visual dos campos do formulário
     if (!form.posto_graduacao) {
@@ -727,7 +727,7 @@ function Field({
   label: string;
   type: string;
   value: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onChange: (e: ChangeEvent<HTMLInputElement>) => void;
   placeholder?: string;
   required?: boolean;
 }) {

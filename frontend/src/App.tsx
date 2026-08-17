@@ -3,7 +3,7 @@
 // Regras de negócio e contratos: Cap Perrut <perrut.raphael@eb.mil.br>  ·  Cartographic Engineer
 // Revisão técnica do projeto: Cel Azeredo <azeredo.marcio@eb.mil.br>  ·  Cartographic Engineer
 
-import { useEffect } from "react";
+import { useEffect, type ReactNode } from "react";
 import { Toaster } from "react-hot-toast";
 import {
     BrowserRouter,
@@ -33,6 +33,7 @@ import { MeusDados } from "./pages/MeusDados";
 import { MeusPedidos } from "./pages/MeusPedidos";
 import { RedefinirSenha } from "./pages/RedefinirSenha";
 import { Register } from "./pages/Register";
+import { ReenviarAtivacao } from "./pages/ReenviarAtivacao";
 import { SolicitarProdutos } from "./pages/SolicitarProdutos";
 import { useAuthStore } from "./store/authStore";
 import { CONSOLIDADOR_PROFILES, SUPERVISOR_PROFILES } from "./types/user";
@@ -42,7 +43,7 @@ const GESTOR_PROFILES = new Set([
   ...CONSOLIDADOR_PROFILES,
 ]);
 
-function RequireAuth({ children }: { children: React.ReactNode }) {
+function RequireAuth({ children }: { children: ReactNode }) {
   const { token, user, setUser } = useAuthStore();
   const location = useLocation();
 
@@ -65,7 +66,7 @@ function RequireProfile({
   children,
 }: {
   profiles: Set<string>;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   const { user } = useAuthStore();
   if (user && !profiles.has(user.perfil)) return <Navigate to="/" replace />;
@@ -87,6 +88,7 @@ export default function App() {
         <Route path="/ativar/:token" element={<AtivarConta />} />
         <Route path="/esqueci-senha" element={<EsqueciSenha />} />
         <Route path="/redefinir-senha/:token" element={<RedefinirSenha />} />
+        <Route path="/reenviar-ativacao" element={<ReenviarAtivacao />} />
 
         {/* Protected */}
         <Route

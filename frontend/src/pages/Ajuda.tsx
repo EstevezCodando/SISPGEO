@@ -37,6 +37,19 @@ const PRODUTOS: Produto[] = [
     prazo: "180 dias",
   },
   {
+    sigla: "CDGV",
+    nome: "Conjunto de Dados Geoespaciais Vetoriais",
+    imagem: "/cdgv.png",
+    definicao:
+      "Representação de elementos do terreno, naturais e artificiais, por meio de objetos geométricos do tipo ponto, linha e polígono, contendo seus respectivos atributos descritivos associados. O produto é disponibilizado em formato digital.",
+    usos: [
+      "Utilização como base de dados para Sistemas de Informação e Simulação",
+      "Análises espaciais fundamentadas na localização e na geometria das feições",
+      "Consulta e exploração dos atributos descritivos associados às feições",
+    ],
+    prazo: "180 dias",
+  },
+  {
     sigla: "COI",
     nome: "Carta Ortoimagem",
     imagem: "/cartaortoimagem.png",
@@ -87,19 +100,6 @@ const PRODUTOS: Produto[] = [
     prazo: "40 dias",
   },
   {
-    sigla: "CDGV",
-    nome: "Conjunto de Dados Geoespaciais Vetoriais",
-    imagem: "/cdgv.png",
-    definicao:
-      "Representação de elementos do terreno, naturais e artificiais, por meio de objetos geométricos do tipo ponto, linha e polígono, contendo seus respectivos atributos descritivos associados. O produto é disponibilizado em formato digital.",
-    usos: [
-      "Utilização como base de dados para Sistemas de Informação e Simulação",
-      "Análises espaciais fundamentadas na localização e na geometria das feições",
-      "Consulta e exploração dos atributos descritivos associados às feições",
-    ],
-    prazo: "180 dias",
-  },
-  {
     sigla: "IMP-CT",
     nome: "Impressão de Carta Topográfica",
     imagem: "/cartatopografica.png",
@@ -136,7 +136,6 @@ function ProdutoModal({
   produto: Produto;
   onClose: () => void;
 }) {
-  // Fecha com Escape
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -154,7 +153,6 @@ function ProdutoModal({
         className="relative w-full max-w-4xl bg-zinc-900 border border-white/10 rounded-2xl shadow-2xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Botão fechar */}
         <button
           onClick={onClose}
           className="absolute top-3 right-3 z-10 p-1.5 rounded-lg bg-zinc-800 border border-white/10 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-700 transition-colors"
@@ -163,7 +161,6 @@ function ProdutoModal({
         </button>
 
         <div className="flex flex-col md:flex-row">
-          {/* Imagem grande */}
           <div className="md:w-[55%] bg-zinc-950 flex items-center justify-center min-h-[240px] md:min-h-[400px]">
             <img
               src={produto.imagem}
@@ -175,7 +172,6 @@ function ProdutoModal({
             />
           </div>
 
-          {/* Conteúdo */}
           <div className="md:w-[45%] p-6 flex flex-col justify-between border-t md:border-t-0 md:border-l border-white/10">
             <div>
               <h3 className="text-base font-semibold text-zinc-100 mb-3">
@@ -231,7 +227,6 @@ function ProdutoCard({ produto }: { produto: Produto }) {
         onClick={() => setOpen(true)}
         className="group text-left w-full bg-zinc-800/50 border border-white/5 rounded-xl overflow-hidden hover:border-emerald-500/30 hover:bg-zinc-800/80 transition-all duration-200 focus:outline-none focus:ring-1 focus:ring-emerald-500/50"
       >
-        {/* Imagem de preview — maior que antes */}
         <div className="relative w-full h-48 bg-zinc-900 overflow-hidden border-b border-white/5">
           <img
             src={produto.imagem}
@@ -241,7 +236,6 @@ function ProdutoCard({ produto }: { produto: Produto }) {
               (e.target as HTMLImageElement).style.display = "none";
             }}
           />
-          {/* Overlay com hint de zoom */}
           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors duration-200 flex items-center justify-center">
             <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-zinc-900/80 border border-white/20 rounded-lg px-3 py-1.5 flex items-center gap-1.5">
               <ZoomIn className="h-3.5 w-3.5 text-emerald-400" />
@@ -250,7 +244,6 @@ function ProdutoCard({ produto }: { produto: Produto }) {
           </div>
         </div>
 
-        {/* Info compacta */}
         <div className="p-4">
           <p className="text-sm font-semibold text-zinc-100 mb-1.5">
             {produto.nome}
@@ -278,40 +271,55 @@ interface Escala {
   valor: string;
   imagem: string;
   area: string;
-  uso: string;
-  detalhe: string;
 }
 
 const ESCALAS: Escala[] = [
   {
     valor: "1:25.000",
     imagem: "/25k.png",
-    area: "≈ 12 × 8 km por folha",
-    uso: "Operações táticas de pequena unidade, engenharia de campanha",
-    detalhe: "Máximo detalhe — menor área coberta por folha",
+    area: "7'30\" × 7'30\" (≈ 14 × 14 km por folha)",
   },
   {
     valor: "1:50.000",
     imagem: "/50k.png",
-    area: "≈ 24 × 16 km por folha",
-    uso: "Padrão operacional — batalha, reconhecimento, planejamento tático",
-    detalhe: "Equilíbrio entre detalhe e cobertura — escala mais solicitada",
+    area: "15' × 15' (≈ 28 × 28 km por folha)",
   },
   {
     valor: "1:100.000",
     imagem: "/100k.png",
-    area: "≈ 48 × 32 km por folha",
-    uso: "Planejamento de brigada e divisão, logística",
-    detalhe: "Cobertura regional com detalhe médio",
+    area: "30' × 30' (≈ 55 × 55 km por folha)",
   },
   {
     valor: "1:250.000",
     imagem: "/250k.png",
-    area: "≈ 120 × 80 km por folha",
-    uso: "Visão estratégica, planejamento de campanha, itinerários",
-    detalhe: "Menor detalhe — maior área coberta por folha",
+    area: "1° × 1°30' (≈ 111 × 165 km por folha)",
   },
 ];
+
+// ─── Card de escala (estático — figura + escala + dimensões) ─────────────────
+
+function EscalaCard({ escala }: { escala: Escala }) {
+  return (
+    <div className="bg-zinc-800/50 border border-white/5 rounded-xl overflow-hidden">
+      <div className="relative w-full h-32 bg-zinc-900 border-b border-white/5">
+        <img
+          src={escala.imagem}
+          alt={`Escala ${escala.valor}`}
+          className="w-full h-full object-cover"
+          onError={(e) => {
+            (e.target as HTMLImageElement).style.display = "none";
+          }}
+        />
+      </div>
+      <div className="p-3">
+        <p className="text-sm font-bold text-emerald-400 font-mono">
+          {escala.valor}
+        </p>
+        <p className="text-[11px] text-zinc-400 mt-0.5">{escala.area}</p>
+      </div>
+    </div>
+  );
+}
 
 // ─── Complexidade × Tempo de produção ────────────────────────────────────────
 
@@ -391,7 +399,6 @@ function ComplexidadeChart() {
         className="w-full"
         style={{ fontFamily: "inherit" }}
       >
-        {/* Grid dashed */}
         {gridLines.map((v) => (
           <g key={v}>
             <line
@@ -415,7 +422,6 @@ function ComplexidadeChart() {
           </g>
         ))}
 
-        {/* Eixos */}
         <line
           x1={PAD.left}
           y1={PAD.top}
@@ -433,7 +439,6 @@ function ComplexidadeChart() {
           strokeWidth="1.5"
         />
 
-        {/* Setas dos eixos */}
         <polygon
           points={`${PAD.left - 4},${PAD.top + 8} ${PAD.left + 4},${PAD.top + 8} ${PAD.left},${PAD.top}`}
           fill="#52525b"
@@ -443,7 +448,6 @@ function ComplexidadeChart() {
           fill="#52525b"
         />
 
-        {/* Label eixo Y */}
         <text
           x={13}
           y={H / 2}
@@ -455,7 +459,6 @@ function ComplexidadeChart() {
           Complexidade
         </text>
 
-        {/* Label eixo X */}
         <text
           x={PAD.left + innerW / 2}
           y={H - 6}
@@ -466,7 +469,6 @@ function ComplexidadeChart() {
           Tempo de produção
         </text>
 
-        {/* Rótulos extremos Y */}
         <text
           x={PAD.left - 7}
           y={toY(8) + 3}
@@ -486,7 +488,6 @@ function ComplexidadeChart() {
           Alta
         </text>
 
-        {/* Rótulos extremos X */}
         <text
           x={toX(4)}
           y={H - PAD.bottom + 13}
@@ -506,14 +507,12 @@ function ComplexidadeChart() {
           Demorado
         </text>
 
-        {/* Bolhas */}
         {COMPLEXIDADE_DATA.map((p) => {
           const cx = toX(p.x);
           const cy = toY(p.y);
           const isHov = hovered === p.nome;
           const r = isHov ? 13 : 9;
 
-          // calcular posição do label para evitar sobreposição com borda
           const labelY = cy + r + 13;
           const clampedLabelX = Math.max(
             PAD.left + 20,
@@ -527,7 +526,6 @@ function ComplexidadeChart() {
               onMouseLeave={() => setHovered(null)}
               style={{ cursor: "pointer" }}
             >
-              {/* Aura */}
               <circle
                 cx={cx}
                 cy={cy}
@@ -536,7 +534,6 @@ function ComplexidadeChart() {
                 fillOpacity="0.10"
                 style={{ transition: "r 0.2s ease, fill-opacity 0.2s ease" }}
               />
-              {/* Bolha */}
               <circle
                 cx={cx}
                 cy={cy}
@@ -547,7 +544,6 @@ function ComplexidadeChart() {
                 strokeWidth={isHov ? 2 : 1.5}
                 style={{ transition: "all 0.2s ease" }}
               />
-              {/* Nome (multi-linha via tspan) */}
               {p.nome.split(" ").length <= 2 ? (
                 <text
                   x={clampedLabelX}
@@ -585,7 +581,6 @@ function ComplexidadeChart() {
           );
         })}
 
-        {/* Tooltip */}
         {hov &&
           (() => {
             const cx = toX(hov.x);
@@ -628,7 +623,6 @@ function ComplexidadeChart() {
           })()}
       </svg>
 
-      {/* Legenda */}
       <div className="flex flex-wrap gap-x-5 gap-y-1.5 mt-1 px-1">
         {COMPLEXIDADE_DATA.map((p) => (
           <button
@@ -665,36 +659,48 @@ const FAQS: FAQ[] = [
     q: "Como sei se o produto já existe no BDGEx?",
     a: (
       <>
-        Ao selecionar a escala no formulário, o mapa exibe em verde as folhas
-        que já constam no Banco de Dados Geoespaciais do Exército (BDGEx). Esses
-        produtos podem ser obtidos diretamente sem solicitação de nova produção
-        — mas você pode marcar "Solicitar mesmo disponível" se precisar de
-        versão atualizada. Acesse o BDGEx em:{" "}
+        Após a seleção das informações iniciais de solicitação do pedido (Tipo
+        de Produto/Serviço, Escala de Representação, Finalidade da Geoinformação
+        e Data Sugerida de Entrega), o sistema exibe, no mapa central, as folhas
+        disponíveis no Banco de Dados Geográficos do Exército (BDGEx), conforme
+        legenda de cores. Caso algum dos produtos disponíveis atenda à
+        necessidade do solicitante, ele poderá ser obtido diretamente por meio
+        dos portais{" "}
         <a
           href="https://bdgex.eb.mil.br"
           target="_blank"
           rel="noopener noreferrer"
           className="text-emerald-400 hover:text-emerald-300 underline underline-offset-2 transition-colors"
         >
-          bdgex.eb.mil.br
+          BDGEx
+        </a>{" "}
+        e{" "}
+        <a
+          href="http://bdgexop.eb.mil.br"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-emerald-400 hover:text-emerald-300 underline underline-offset-2 transition-colors"
+        >
+          BDGEx Operacional
         </a>
+        , dispensando a abertura de uma nova solicitação de produção.
       </>
     ),
   },
   {
-    q: "Por que a data mínima de entrega está tão no futuro?",
-    a: "Cada produto tem um prazo mínimo de produção técnica a partir de uma data base global configurada pela DSG: Carta Topográfica e CDGV = 180 dias; Carta Ortoimagem = 60 dias; Ortoimagem / MDT / MDS = 40 dias; Impressão = 30 dias. O sistema bloqueia automaticamente datas anteriores ao mínimo calculado.",
+    q: "Por que a Data Sugerida de Entrega está tão longe?",
+    a: "Com base no histórico de produção da DSG, foram estabelecidos os seguintes prazos mínimos médios para entrega dos produtos: Carta Topográfica e CDGV (180 dias), Carta Ortoimagem (60 dias), Ortoimagem, MDT e MDS (40 dias) e Impressão (30 dias). Em razão desses prazos, o sistema bloqueia automaticamente a seleção de datas anteriores. Em situações específicas, conforme as características do produto solicitado, o prazo de produção poderá ser reduzido.",
   },
   {
-    q: "O que é INOM e MI?",
+    q: "O que é Índice de Nomenclatura (Ind Nom) e Número de Mapa Índice (MI)?",
     a: (
       <>
-        <strong className="text-zinc-300">INOM</strong> (Índice de Nomenclatura)
-        é o código oficial que identifica cada folha cartográfica em padrão
-        internacional. <strong className="text-zinc-300">MI</strong> (Mapa
-        Índice) é o código numérico simplificado utilizado no Sistema
-        Cartográfico Nacional. No mapa de seleção, cada célula representa uma
-        folha cartográfica identificada pelo seu código INOM/MI.
+        O <strong className="text-zinc-300">Ind Nom</strong> é um código
+        alfanumérico padronizado que funciona como um "CEP" para localizar
+        espacialmente uma Carta Topográfica no globo terrestre. O{" "}
+        <strong className="text-zinc-300">MI</strong>, por sua vez, é um
+        identificador numérico simplificado criado para substituir a complexa
+        sequência alfanumérica do Índice de Nomenclatura.
       </>
     ),
   },
@@ -702,18 +708,22 @@ const FAQS: FAQ[] = [
     q: "Posso cancelar um pedido após submetê-lo?",
     a: (
       <>
-        Sim — enquanto o pedido não for recebido pela DSG é possível cancelá-lo.
-        Entre em contato com seu supervisor imediato:{" "}
+        Sim. O pedido pode ser cancelado desde que ainda não tenha sido recebido
+        pela DSG. Para isso, entre em contato com o seu escalão superior
+        intermediário:{" "}
         <span className="text-zinc-300">
-          C Mil. A (para OM subordinadas ao COTER)
+          C Mil A (para OM ligada ao COTER)
         </span>{" "}
-        ou diretamente com o responsável do órgão ao qual sua OM está vinculada
-        (DEC, COLOG, DECEx etc.).
+        ou com a respectiva{" "}
+        <span className="text-zinc-300">
+          Diretoria subordinada (para OM no sistema DEC, COLOG ou DECEx)
+        </span>
+        .
       </>
     ),
   },
   {
-    q: "Meu pedido foi enviado. O que acontece agora?",
+    q: "Meu pedido foi enviado. O Que acontece agora?",
     a: (
       <div className="space-y-3">
         <p>
@@ -726,7 +736,7 @@ const FAQS: FAQ[] = [
               Subordinados ao COTER
             </p>
             <p className="text-xs text-zinc-500">
-              OM → C Mil. A → COTER → DSG → CGEO
+              OM → C Mil A → COTER → DSG → CGEO
             </p>
           </div>
           <div>
@@ -734,13 +744,14 @@ const FAQS: FAQ[] = [
               Subordinados a outros órgãos (DEC, COLOG, DECEx)
             </p>
             <p className="text-xs text-zinc-500">
-              OM → [Órgão Consolidador] → DSG → CGEO
+              OM → Diretoria → ODS → DSG → CGEO
             </p>
           </div>
         </div>
         <p>
-          Você será notificado por e-mail em cada movimentação. Acompanhe o
-          status em <span className="text-emerald-400">"Ver Pedidos"</span>.
+          Cada movimentação do pedido será notificada por e-mail. O status
+          atualizado pode ser acompanhado na aba{" "}
+          <span className="text-emerald-400">"Ver Pedidos"</span>.
         </p>
       </div>
     ),
@@ -751,29 +762,18 @@ const FAQS: FAQ[] = [
 
 const FLUXO_COTER = [
   { perfil: "OMDS", acao: "Cria e submete o pedido", cor: "emerald" },
-  { perfil: "C Mil. A", acao: "Supervisor revisa e encaminha", cor: "amber" },
-  { perfil: "COTER", acao: "Consolida e envia à DSG", cor: "yellow" },
-  { perfil: "DSG", acao: "Valida e atribui ao CGEO", cor: "blue" },
-  {
-    perfil: "CGEO",
-    acao: "Analisa, produz e disponibiliza no BDGEx",
-    cor: "purple",
-  },
+  { perfil: "C Mil A", acao: "Revisa, prioriza e encaminha o pedido ao COTER", cor: "amber" },
+  { perfil: "COTER", acao: "Consolida, prioriza e encaminha o pedido à DSG", cor: "yellow" },
+  { perfil: "DSG", acao: "Valida e atribui o pedido ao CGEO", cor: "blue" },
+  { perfil: "CGEO", acao: "Produz e disponibiliza o pedido no BDGEx", cor: "purple" },
 ];
 
 const FLUXO_OUTROS = [
   { perfil: "OMDS", acao: "Cria e submete o pedido", cor: "emerald" },
-  {
-    perfil: "DEC / COLOG / DECEx",
-    acao: "Consolida e envia à DSG",
-    cor: "orange",
-  },
-  { perfil: "DSG", acao: "Valida e atribui ao CGEO", cor: "blue" },
-  {
-    perfil: "CGEO",
-    acao: "Analisa, produz e disponibiliza no BDGEx",
-    cor: "purple",
-  },
+  { perfil: "Diretorias Subordinadas", acao: "Revisa, prioriza e encaminha o pedido ao ODS", cor: "amber" },
+  { perfil: "DEC, COLOG e DECEX", acao: "Consolida, prioriza e encaminha o pedido à DSG", cor: "orange" },
+  { perfil: "DSG", acao: "Valida e atribui o pedido ao CGEO", cor: "blue" },
+  { perfil: "CGEO", acao: "Produz e disponibiliza o pedido no BDGEx", cor: "purple" },
 ];
 
 const COR: Record<string, string> = {
@@ -785,24 +785,24 @@ const COR: Record<string, string> = {
   purple: "bg-purple-500/10  border-purple-500/30  text-purple-400",
 };
 
-// ─── Tutoriais ───────────────────────────────────────────────────────────────
+// ─── Tutoriais (passo a passo por jornada) ───────────────────────────────────
 
 const TUTORIAIS = {
   solicitar: [
     {
       n: "1",
       title: "Acesse o Formulário de Solicitação de Produtos",
-      desc: 'No menu lateral, clique em "Solicitar Produtos" para carregar a página com o Formulário de Solicitação de Produtos.',
+      desc: 'Clique em "Solicitar Produtos" no menu lateral para carregar a página com o Formulário de Solicitação de Produtos.',
     },
     {
       n: "2",
-      title: "Defina a Finalidade da Geoinformação",
-      desc: "Considere as opções apresentadas. Esta informação deverá ser complementada posteriormente por ocasião da revisão do pedido.",
+      title: "Escolha o Tipo de Produto/Serviço e a Escala de Representação",
+      desc: "Selecione o tipo de produto (ex. Carta Topográfica) e a escala de representação (ex. 1:50.000) que melhor atendam aos objetivos de utilização da Geoinformação (ver detalhes).",
     },
     {
       n: "3",
-      title: "Escolha o Produto e a Escala de Representação",
-      desc: "Selecione o tipo de produto (ex. Carta Topográfica) e a escala de representação (ex. 1:50.000) que melhor atendam aos objetivos de utilização da Geoinformação (ver detalhes).",
+      title: "Defina a Finalidade da Geoinformação",
+      desc: "Selecione a finalidade da Geoinformação, considerando as opções apresentadas. Esta informação deverá ser complementada posteriormente por ocasião da revisão do pedido.",
     },
     {
       n: "4",
@@ -811,8 +811,7 @@ const TUTORIAIS = {
     },
     {
       n: "5",
-      title:
-        "Selecione o Enquadramento dos Produtos no Mapa e Adicione ao Carrinho",
+      title: "Selecione o Enquadramento dos Produtos no Mapa e Adicione ao Carrinho de Solicitações",
       desc: "Clique nas células sobre o mapa correspondentes às áreas de interesse, de modo a adicionar os produtos desejados ao carrinho. Cabe ressaltar que os mesmos podem ser removidos a qualquer tempo, antes da confirmação do pedido.",
     },
     {
@@ -823,7 +822,7 @@ const TUTORIAIS = {
     {
       n: "7",
       title: "Revise o Pedido",
-      desc: "Verifique se os pedidos solicitados estão listados no carrinho. Caso tenha interesse na impressão dos produtos adicionados, marcar a opção e informar a quantidade e tipo de material desejável. Tyvek esta condicionados à disponibilidade e podem ser eventualmente fornecidos em Sulfite.",
+      desc: "Verifique se os pedidos solicitados estão listados no carrinho. Caso tenha interesse na impressão dos produtos adicionados, marcar a opção e informar a quantidade e tipo de material desejável. Tyvek está condicionado à disponibilidade e pode ser eventualmente fornecido em Sulfite.",
     },
   ],
   editar: [
@@ -881,6 +880,8 @@ interface JornadaGuia {
   perfil: string;
   cor: string;
   passos: { n: string; title: string; desc: string }[];
+  nota?: string;
+  notaUrl?: string;
 }
 
 const JORNADAS: JornadaGuia[] = [
@@ -888,46 +889,50 @@ const JORNADAS: JornadaGuia[] = [
     perfil: "OMDS – Solicitante",
     cor: "emerald",
     passos: TUTORIAIS.solicitar,
+    nota: "Recomenda-se a visualização deste vídeo tutorial para a correta realização do cadastro dos pedidos de Geoinformação.",
+    notaUrl: "/TutorialSolicitarProdutos.mp4",
   },
   {
-    perfil: "C Mil A – Supervisor",
+    perfil: "C Mil A e Diretorias - Supervisores",
     cor: "amber",
     passos: [
       {
         n: "1",
         title: "Acesse a relação de 'Pedidos Pendentes'",
-        desc: "No menu lateral, clique em 'Pedidos Pendentes' para visualizar a relação dos pedidos submetidos pelas suas OMDS e que se encontram pendentes de aprovação.",
+        desc: "Clique em 'Pedidos Pendentes' no menu lateral para visualizar a relação dos pedidos submetidos pelas suas OMDS e que se encontram pendentes de aprovação.",
       },
       {
         n: "2",
-        title: "Expanda os Pedidos e Verifique os Produtos",
-        desc: "Clique no pedido para visualizar os detalhes relativos aos pedidos submetidos (dados do responsável, finalidade do pedido e lista de produtos). É possível cancelar os pedidos.",
+        title: "Verifique os Produtos Contidos nos Pedidos",
+        desc: "Clique no pacote de pedido para visualizar os detalhes relativos aos pedidos submetidos (dados do responsável, finalidade do pedido e lista de produtos).",
       },
       {
         n: "3",
         title: "Cancele os Pedidos Não Aprovados",
-        desc: "Pedidos não aprovados podem ser eventualmente cancelados mediante justificativa prévia.",
+        desc: "Cancele os pedidos não aprovados anotando o respectivo motivo.",
       },
       {
         n: "4",
         title: "Reorganize a Prioridade dos Pedidos",
-        desc: "Arraste as linhas de pacotes de pedidos para reorganizar a prioridade. Os pedidos na parte superior têm prioridade mais alta.",
+        desc: "Arraste as linhas de pacotes de pedidos para reorganizar a prioridade. Os pedidos localizados na parte superior têm prioridade mais alta.",
       },
       {
         n: "5",
         title: "Encaminhe os Pedidos ao Consolidador (ODOp/ODS)",
-        desc: "Marque os pedidos que serão encaminhados ao Consolidador (ODOp/ODS) e clique no botão de encaminhar. Se for o caso, é possível encaminhar todos de uma só vez.",
+        desc: "Marque os pacotes de pedidos que serão encaminhados ao Consolidador (ODOp/ODS) e clique no botão de encaminhar. Se for o caso, é possível encaminhar todos de uma única vez.",
       },
     ],
+    nota: "Recomenda-se a visualização deste vídeo tutorial para a correta realização do cadastro dos pedidos de Geoinformação.",
+    notaUrl: "/TutorialSolicitarProdutos.mp4",
   },
   {
-    perfil: "COTER – Consolidador",
+    perfil: "COTER, DEC, COLOG e DECEX - Consolidadores",
     cor: "yellow",
     passos: [
       {
         n: "1",
         title: "Acesse a relação de 'Pedidos Pendentes'",
-        desc: "No menu lateral, clique em 'Pedidos Pendentes' para visualizar a relação dos pedidos submetidos pelos seus C Mil A subordinados e que se encontram pendentes de aprovação.",
+        desc: "Clique em 'Pedidos Pendentes' no menu lateral para visualizar a relação dos pedidos submetidos pelos C Mil A e Diretorias subordinadas e que se encontram pendentes de aprovação.",
       },
       {
         n: "2",
@@ -937,39 +942,20 @@ const JORNADAS: JornadaGuia[] = [
       {
         n: "3",
         title: "Encaminhe os Pedidos à DSG",
-        desc: "Marque os pedidos que serão encaminhados à DSG e clique no botão de encaminhar. Se for o caso, é possível encaminhar todos de uma só vez.",
+        desc: "Marque os pedidos que serão encaminhados à DSG e clique no botão de encaminhar. Se for o caso, é possível encaminhar todos de uma única vez.",
       },
     ],
+    nota: "Recomenda-se a visualização deste vídeo tutorial para a correta realização do cadastro dos pedidos de Geoinformação.",
+    notaUrl: "/TutorialSolicitarProdutos.mp4",
   },
   {
-    perfil: "DEC / COLOG / DECEx – Consolidador",
-    cor: "orange",
-    passos: [
-      {
-        n: "1",
-        title: "Acesse a relação de 'Pedidos Pendentes'",
-        desc: "No menu lateral, clique em 'Pedidos Pendentes' para visualizar a relação dos pedidos submetidos pelas suas OMDS e que se encontram pendentes de aprovação.",
-      },
-      {
-        n: "2",
-        title: "Revise os Pedidos Duplicados",
-        desc: "Clique no pedido para visualizar os detalhes relativos aos pedidos submetidos (dados do responsável, finalidade do pedido e lista de produtos). O sistema alertará automaticamente sobre pedidos duplicados (mesmo Tipo de Produto e MI/MIR).",
-      },
-      {
-        n: "3",
-        title: "Encaminhe os Pedidos à DSG",
-        desc: "Marque os pedidos que serão encaminhados à DSG e clique no botão de encaminhar. Se for o caso, é possível encaminhar todos de uma só vez.",
-      },
-    ],
-  },
-  {
-    perfil: "DSG – Produtor",
+    perfil: "DSG - Produtor",
     cor: "blue",
     passos: [
       {
         n: "1",
         title: "Acesse a relação de 'Pedidos Pendentes'",
-        desc: "No menu lateral, clique em 'Pedidos Pendentes' para visualizar a relação dos pedidos submetidos para produção pelo ODOp e ODS, ainda com a produção pendente de aprovação.",
+        desc: "Clique em 'Pedidos Pendentes' no menu lateral para visualizar a relação dos pedidos submetidos para produção pelo ODOp e ODS, ainda com a produção pendente de aprovação.",
       },
       {
         n: "2",
@@ -979,94 +965,15 @@ const JORNADAS: JornadaGuia[] = [
       {
         n: "3",
         title: "Disponibilize no BDGEx",
-        desc: "Após produção, informe o link BDGEx. O solicitante e toda a cadeia receberão notificação.",
+        desc: "Após finalizar a produção, carregar os produtos no BDGEx e informar aos ODOp e ODS.",
       },
     ],
+    nota: "Recomenda-se a visualização deste vídeo tutorial para a correta realização do cadastro dos pedidos de Geoinformação.",
+    notaUrl: "/TutorialSolicitarProdutos.mp4",
   },
 ];
 
-// ─── Card de escala (expande inline com imagem + descrição) ──────────────────
-
-function EscalaCard({ escala }: { escala: Escala }) {
-  const [expanded, setExpanded] = useState(false);
-
-  return (
-    <div
-      className={`bg-zinc-800/50 border rounded-xl overflow-hidden transition-all duration-200 ${
-        expanded
-          ? "border-emerald-500/40 md:col-span-2"
-          : "border-white/5 hover:border-emerald-500/20"
-      }`}
-    >
-      <button
-        onClick={() => setExpanded((v) => !v)}
-        className="w-full text-left group focus:outline-none"
-      >
-        {/* Imagem */}
-        <div
-          className="relative bg-zinc-900 border-b border-white/5 overflow-hidden"
-          style={{
-            height: expanded ? "200px" : "120px",
-            transition: "height 0.25s ease",
-          }}
-        >
-          <img
-            src={escala.imagem}
-            alt={`Escala ${escala.valor}`}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-            onError={(e) => {
-              (e.target as HTMLImageElement).style.display = "none";
-            }}
-          />
-          {!expanded && (
-            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-200 flex items-end justify-end p-2">
-              <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-zinc-900/80 border border-white/20 rounded px-2 py-1 flex items-center gap-1">
-                <ZoomIn className="h-3 w-3 text-emerald-400" />
-                <span className="text-[10px] text-zinc-300">Expandir</span>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Info */}
-        <div className="p-3 flex items-start justify-between gap-2">
-          <div>
-            <p className="text-sm font-bold text-emerald-400 font-mono">
-              {escala.valor}
-            </p>
-            <p className="text-[11px] text-zinc-400 mt-0.5">{escala.area}</p>
-          </div>
-          {expanded ? (
-            <ChevronUp className="h-3.5 w-3.5 text-zinc-500 shrink-0 mt-0.5" />
-          ) : (
-            <ChevronDown className="h-3.5 w-3.5 text-zinc-500 shrink-0 mt-0.5" />
-          )}
-        </div>
-      </button>
-
-      {/* Detalhe expandido */}
-      {expanded && (
-        <div className="px-3 pb-3 border-t border-white/5 pt-2.5 space-y-1.5">
-          <p className="text-xs text-zinc-400 leading-relaxed">{escala.uso}</p>
-          <p className="text-[11px] text-emerald-500/80 italic">
-            {escala.detalhe}
-          </p>
-        </div>
-      )}
-    </div>
-  );
-}
-
 // ─── Componentes utilitários ─────────────────────────────────────────────────
-
-function SectionTitle({ icon, title }: { icon: ReactNode; title: string }) {
-  return (
-    <div className="flex items-center gap-2 mb-4">
-      <span className="text-emerald-400">{icon}</span>
-      <h2 className="font-semibold text-zinc-100 text-base">{title}</h2>
-    </div>
-  );
-}
 
 function FAQItem({ q, a }: { q: string; a: ReactNode }) {
   const [open, setOpen] = useState(false);
@@ -1092,128 +999,6 @@ function FAQItem({ q, a }: { q: string; a: ReactNode }) {
   );
 }
 
-// ─── Video Tutorial Accordion ────────────────────────────────────────────────
-function VideoTutorialAccordion({
-  title,
-  icon,
-  videoSrc,
-  descricao,
-  passos,
-}: {
-  title: string;
-  icon: ReactNode;
-  videoSrc: string;
-  descricao: string;
-  passos: { n: string; title: string; desc: string }[];
-}) {
-  const [open, setOpen] = useState(false);
-  return (
-    <div className="border border-white/10 rounded-xl overflow-hidden">
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-white/5 transition-colors gap-4"
-      >
-        <div className="flex items-center gap-2.5">
-          <span className="text-emerald-400">{icon}</span>
-          <span className="text-sm font-semibold text-zinc-200">{title}</span>
-        </div>
-        {open ? (
-          <ChevronUp className="h-4 w-4 text-zinc-500 shrink-0" />
-        ) : (
-          <ChevronDown className="h-4 w-4 text-zinc-500 shrink-0" />
-        )}
-      </button>
-      {open && (
-        <div className="border-t border-white/5">
-          {/* Vídeo */}
-          <div className="bg-zinc-950 px-5 pt-5">
-            <video
-              src={videoSrc}
-              controls
-              className="w-full rounded-xl border border-white/10 max-h-[480px] bg-zinc-950"
-              preload="metadata"
-            />
-          </div>
-          {/* Descrição + passos */}
-          <div className="px-5 py-5 space-y-4">
-            <p className="text-sm text-zinc-400 leading-relaxed">{descricao}</p>
-            {passos.length > 0 && (
-              <ol className="space-y-3.5 border-t border-white/5 pt-4">
-                {passos.map((s) => (
-                  <li key={s.n} className="flex gap-3">
-                    <span className="w-6 h-6 shrink-0 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-bold flex items-center justify-center">
-                      {s.n}
-                    </span>
-                    <div>
-                      <p className="text-sm font-medium text-zinc-200">
-                        {s.title}
-                      </p>
-                      <p className="text-xs text-zinc-500 mt-0.5 leading-relaxed">
-                        {s.desc}
-                      </p>
-                    </div>
-                  </li>
-                ))}
-              </ol>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── Tutorial Accordion ───────────────────────────────────────────────────────
-function TutorialAccordion({
-  title,
-  icon,
-  passos,
-}: {
-  title: string;
-  icon: ReactNode;
-  passos: { n: string; title: string; desc: string }[];
-}) {
-  const [open, setOpen] = useState(false);
-  return (
-    <div className="border border-white/10 rounded-xl overflow-hidden">
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-white/5 transition-colors gap-4"
-      >
-        <div className="flex items-center gap-2.5">
-          <span className="text-emerald-400">{icon}</span>
-          <span className="text-sm font-semibold text-zinc-200">{title}</span>
-        </div>
-        {open ? (
-          <ChevronUp className="h-4 w-4 text-zinc-500 shrink-0" />
-        ) : (
-          <ChevronDown className="h-4 w-4 text-zinc-500 shrink-0" />
-        )}
-      </button>
-      {open && (
-        <div className="px-5 pb-5 border-t border-white/5 pt-4">
-          <ol className="space-y-3.5">
-            {passos.map((s) => (
-              <li key={s.n} className="flex gap-3">
-                <span className="w-6 h-6 shrink-0 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[11px] font-bold flex items-center justify-center">
-                  {s.n}
-                </span>
-                <div>
-                  <p className="text-sm font-medium text-zinc-200">{s.title}</p>
-                  <p className="text-xs text-zinc-500 mt-0.5 leading-relaxed">
-                    {s.desc}
-                  </p>
-                </div>
-              </li>
-            ))}
-          </ol>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── Jornada Card ─────────────────────────────────────────────────────────────
 const COR_JORNADA: Record<string, string> = {
   emerald: "bg-emerald-500/10 border-emerald-500/30 text-emerald-400",
   amber: "bg-amber-500/10   border-amber-500/30   text-amber-400",
@@ -1255,13 +1040,63 @@ function JornadaCard({ jornada }: { jornada: JornadaGuia }) {
               </li>
             ))}
           </ol>
+          {jornada.nota && (
+            <p className="mt-3 text-xs text-zinc-400 leading-relaxed border-t border-white/5 pt-3">
+              {jornada.notaUrl ? (
+                <>
+                  {jornada.nota.split("vídeo tutorial").map((part, i) =>
+                    i === 0 ? (
+                      <span key={i}>
+                        {part}
+                        <a
+                          href={jornada.notaUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-emerald-400 hover:text-emerald-300 underline"
+                        >
+                          vídeo tutorial
+                        </a>
+                      </span>
+                    ) : (
+                      <span key={i}>{part}</span>
+                    )
+                  )}
+                </>
+              ) : (
+                jornada.nota
+              )}
+            </p>
+          )}
         </div>
       )}
     </div>
   );
 }
 
+function SubCard({
+  title,
+  icon,
+  children,
+}: {
+  title: string;
+  icon: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <div className="bg-zinc-800/40 border border-white/5 rounded-xl p-4 space-y-3">
+      <div className="flex items-center gap-2">
+        <span className="text-emerald-400">{icon}</span>
+        <h3 className="text-sm font-semibold text-zinc-200">{title}</h3>
+      </div>
+      {children}
+    </div>
+  );
+}
+
 // ─── Página principal ────────────────────────────────────────────────────────
+
+const PRODUTOS_GEO = PRODUTOS.filter((p) => !p.sigla.startsWith("IMP"));
+const PRODUTOS_IMP = PRODUTOS.filter((p) => p.sigla.startsWith("IMP"));
 
 export function Ajuda() {
   return (
@@ -1281,60 +1116,100 @@ export function Ajuda() {
         </div>
       </div>
 
-      {/* ── 1. CATÁLOGO DE PRODUTOS ─────────────────────────────────── */}
-      <section className="bg-zinc-900 border border-white/10 rounded-2xl p-6">
-        <SectionTitle
-          icon={<BookOpen className="h-4 w-4" />}
-          title="Produtos Disponíveis"
-        />
-        <p className="text-xs text-zinc-500 mb-4">
-          Clique no produto para visualizar a imagem ampliada e os respectivos
-          detalhes.
-        </p>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-          {PRODUTOS.map((p) => (
-            <ProdutoCard key={p.sigla} produto={p} />
-          ))}
+      {/* ── CARD 1: PRODUÇÃO DE GEOINFORMAÇÃO ───────────────────────── */}
+      <section className="bg-zinc-900 border border-white/10 rounded-2xl p-6 space-y-5">
+        <div className="flex items-center gap-2 pb-4 border-b border-white/10">
+          <BookOpen className="h-4 w-4 text-emerald-400" />
+          <h2 className="font-semibold text-zinc-100 text-base">
+            Produção de Geoinformação
+          </h2>
         </div>
+
+        {/* Sub-card: Tipos de Produtos */}
+        <SubCard
+          title="Tipos de Produtos"
+          icon={<FileText className="h-3.5 w-3.5" />}
+        >
+          <p className="text-xs text-zinc-500">
+            Clique no produto para visualizar a imagem ampliada e os respectivos
+            detalhes.
+          </p>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {PRODUTOS_GEO.map((p) => (
+              <ProdutoCard key={p.sigla} produto={p} />
+            ))}
+          </div>
+        </SubCard>
+
+        {/* Sub-card: Escalas de Representação */}
+        <SubCard
+          title="Escalas de Representação"
+          icon={<ZoomIn className="h-3.5 w-3.5" />}
+        >
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {ESCALAS.map((esc) => (
+              <EscalaCard key={esc.valor} escala={esc} />
+            ))}
+          </div>
+        </SubCard>
       </section>
 
-      {/* ── 1b. MATERIAIS DE IMPRESSÃO ──────────────────────────────── */}
-      <section className="bg-zinc-900 border border-white/10 rounded-2xl p-6">
-        <SectionTitle
-          icon={<FileText className="h-4 w-4" />}
+      {/* ── CARD 2: IMPRESSÃO DE GEOINFORMAÇÃO ──────────────────────── */}
+      <section className="bg-zinc-900 border border-white/10 rounded-2xl p-6 space-y-5">
+        <div className="flex items-center gap-2 pb-4 border-b border-white/10">
+          <FileText className="h-4 w-4 text-emerald-400" />
+          <h2 className="font-semibold text-zinc-100 text-base">
+            Impressão de Geoinformação
+          </h2>
+        </div>
+
+        {/* Sub-card: Tipos de Impressão */}
+        <SubCard
+          title="Tipos de Impressão"
+          icon={<FileText className="h-3.5 w-3.5" />}
+        >
+          <p className="text-xs text-zinc-500">
+            Clique no produto para visualizar a imagem ampliada e os respectivos
+            detalhes.
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            {PRODUTOS_IMP.map((p) => (
+              <ProdutoCard key={p.sigla} produto={p} />
+            ))}
+          </div>
+        </SubCard>
+
+        {/* Sub-card: Materiais de Impressão */}
+        <SubCard
           title="Materiais de Impressão"
-        />
-        <p className="text-xs text-zinc-500 mb-4">
-          Ao solicitar impressão de Carta Topográfica ou Carta Ortoimagem,
-          escolha o tipo de material conforme a finalidade operacional.
-        </p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {[
-            {
-              nome: "Papel Sulfite",
-              icon: "📄",
-              desc: "Material de baixo custo de aquisição, adequado para anotações e escrita. Apresenta menor resistência mecânica, estando mais sujeito a rasgos e amassamentos. Indicado para: planejamento, instrução, reuniões de coordenação, estudos de situação, reconhecimento preliminar de áreas e atividades acadêmicas.",
-              destaque: "Econômico · Uso interno",
-            },
-            {
-              nome: "Papel Glossy",
-              icon: "✨",
-              desc: "Material de custo intermediário, com acabamento de alta qualidade visual. Apresenta baixa resistência a amassamentos e pode sofrer desbotamento quando exposto prolongadamente à luz solar. Não é recomendado para escrita. Indicado para: exposição de produtos cartográficos.",
-              destaque: "Alta qualidade visual · Exposição",
-            },
-            {
-              nome: "Tyvek",
-              icon: "🏕",
-              desc: "Material de elevado custo de aquisição, que apresenta alta resistência a rasgos e à umidade. Não é recomendado para escrita. Indicado para: atividades de campo, operações militares, exercícios de adestramento, missões de reconhecimento e navegação terrestre.",
-              destaque: "Alta resistência · Operações de campo",
-            },
-          ].map((m) => (
-            <div
-              key={m.nome}
-              className="bg-zinc-800/50 border border-white/5 rounded-xl p-4 flex gap-3"
-            >
-              <span className="text-2xl shrink-0">{m.icon}</span>
-              <div>
+          icon={<BookOpen className="h-3.5 w-3.5" />}
+        >
+          <p className="text-xs text-zinc-500">
+            Tipos de material para impressão, conforme a finalidade de
+            utilização da Geoinformação.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {[
+              {
+                nome: "Papel Sulfite",
+                desc: "Material de baixo custo de aquisição, adequado para anotações e escrita. Apresenta menor resistência mecânica, estando mais sujeito a rasgos e amassamentos. Indicado para: planejamento, instrução, reuniões de coordenação, estudos de situação, reconhecimento preliminar de áreas e atividades acadêmicas.",
+                destaque: "Econômico · Uso interno",
+              },
+              {
+                nome: "Papel Glossy",
+                desc: "Material de custo intermediário, com acabamento de alta qualidade visual. Apresenta baixa resistência a amassamentos e pode sofrer desbotamento quando exposto prolongadamente à luz solar. Não é recomendado para escrita. Indicado para: exposição de produtos cartográficos.",
+                destaque: "Alta qualidade visual · Exposição",
+              },
+              {
+                nome: "Tyvek",
+                desc: "Material de elevado custo de aquisição, que apresenta alta resistência a rasgos e à umidade. Não é recomendado para escrita. Indicado para: atividades de campo, operações militares, exercícios de adestramento, missões de reconhecimento e navegação terrestre.",
+                destaque: "Alta resistência · Operações de campo",
+              },
+            ].map((m) => (
+              <div
+                key={m.nome}
+                className="bg-zinc-800/50 border border-white/5 rounded-xl p-4"
+              >
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-sm font-bold text-zinc-100">
                     {m.nome}
@@ -1347,224 +1222,178 @@ export function Ajuda() {
                   {m.desc}
                 </p>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        </SubCard>
       </section>
 
-      {/* ── 2. ESCALAS ──────────────────────────────────────────────── */}
-      <section className="bg-zinc-900 border border-white/10 rounded-2xl p-6">
-        <SectionTitle
-          icon={<ZoomIn className="h-4 w-4" />}
-          title="Escalas de Representação"
-        />
-
-        <p className="text-sm text-zinc-400 leading-relaxed mb-5">
-          A escala indica a relação entre a distância medida no produto e a
-          distância real medida no terreno. Escolha a escala de representação
-          conforme o nível de planejamento e área de interesse, lembrando que:{" "}
-          <span className="text-zinc-200">
-            menor denominador = menor área representada = maior detalhamento das
-            informações.
-          </span>
-        </p>
-
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {ESCALAS.map((esc) => (
-            <EscalaCard key={esc.valor} escala={esc} />
-          ))}
+      {/* ── CARD 3: SOLICITAÇÃO DE GEOINFORMAÇÃO ────────────────────── */}
+      <section className="bg-zinc-900 border border-white/10 rounded-2xl p-6 space-y-5">
+        <div className="flex items-center gap-2 pb-4 border-b border-white/10">
+          <Send className="h-4 w-4 text-emerald-400" />
+          <h2 className="font-semibold text-zinc-100 text-base">
+            Solicitação de Geoinformação
+          </h2>
         </div>
 
-        {/* Card: Complexidade × Tempo de produção */}
-        <div className="mt-4 bg-zinc-800/30 border border-white/5 rounded-xl p-4">
-          <p className="text-xs font-semibold text-zinc-300 mb-3 tracking-wide uppercase">
-            Complexidade × Tempo de produção
-          </p>
+        {/* Sub-card: Complexidade x Tempo de Entrega */}
+        <SubCard
+          title="Complexidade x Tempo de Entrega"
+          icon={<BookOpen className="h-3.5 w-3.5" />}
+        >
           <ComplexidadeChart />
-        </div>
-      </section>
+        </SubCard>
 
-      {/* ── 4. FLUXO DE APROVAÇÃO ───────────────────────────────────── */}
-      <section className="bg-zinc-900 border border-white/10 rounded-2xl p-6">
-        <SectionTitle
-          icon={<FileText className="h-4 w-4" />}
-          title="Fluxo Hierárquico do Pedido"
-        />
-        <p className="text-xs text-zinc-500 mb-5">
-          O caminho do pedido depende da subordinação da OM do solicitante.
-        </p>
-
-        {/* Fluxo COTER */}
-        <div className="mb-5">
-          <p className="text-xs font-semibold text-yellow-400 uppercase tracking-wide mb-2">
-            Solicitante subordinado ao Órgão de Direção Operacional (COTER)
+        {/* Sub-card: Fluxo do Pedido */}
+        <SubCard
+          title="Fluxo do Pedido"
+          icon={<Send className="h-3.5 w-3.5" />}
+        >
+          <p className="text-xs text-zinc-500">
+            O caminho do pedido depende da subordinação da OM do solicitante.
           </p>
-          <div className="flex flex-wrap gap-2 items-center">
-            {FLUXO_COTER.map((s, i) => (
-              <div key={s.perfil} className="flex items-center gap-2">
-                <div
-                  className={`px-3 py-1.5 rounded-lg border text-xs font-medium ${COR[s.cor]}`}
-                >
-                  <span className="block font-semibold">{s.perfil}</span>
-                  <span className="font-normal opacity-70">{s.acao}</span>
-                </div>
-                {i < FLUXO_COTER.length - 1 && (
-                  <span className="text-zinc-700 text-lg">→</span>
-                )}
+
+          <div className="space-y-4">
+            <div>
+              <p className="text-xs font-semibold text-yellow-400 uppercase tracking-wide mb-2">
+                Solicitante subordinado ao Órgão de Direção Operacional (COTER)
+              </p>
+              <div className="flex flex-wrap gap-2 items-center">
+                {FLUXO_COTER.map((s, i) => (
+                  <div key={s.perfil} className="flex items-center gap-2">
+                    <div
+                      className={`px-3 py-1.5 rounded-lg border text-xs font-medium ${COR[s.cor]}`}
+                    >
+                      <span className="block font-semibold">{s.perfil}</span>
+                      <span className="font-normal opacity-70">{s.acao}</span>
+                    </div>
+                    {i < FLUXO_COTER.length - 1 && (
+                      <span className="text-zinc-700 text-lg">→</span>
+                    )}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Fluxo outros órgãos */}
-        <div>
-          <p className="text-xs font-semibold text-orange-400 uppercase tracking-wide mb-2">
-            Solicitante subordinado a Órgão de Direção Setorial (DECEX, DEC e
-            COLOG)
-          </p>
-          <div className="flex flex-wrap gap-2 items-center">
-            {FLUXO_OUTROS.map((s, i) => (
-              <div key={s.perfil} className="flex items-center gap-2">
-                <div
-                  className={`px-3 py-1.5 rounded-lg border text-xs font-medium ${COR[s.cor]}`}
-                >
-                  <span className="block font-semibold">{s.perfil}</span>
-                  <span className="font-normal opacity-70">{s.acao}</span>
-                </div>
-                {i < FLUXO_OUTROS.length - 1 && (
-                  <span className="text-zinc-700 text-lg">→</span>
-                )}
-              </div>
-            ))}
-          </div>
-          <p className="mt-2 text-[11px] text-zinc-600 leading-relaxed">
-            Neste fluxo o pedido não passa pelo C Mil. A — vai diretamente ao
-            Consolidador do órgão.
-          </p>
-        </div>
-
-        <p className="mt-5 text-xs text-zinc-600 leading-relaxed border-t border-white/5 pt-4">
-          Gestores podem consolidar múltiplos pedidos e encaminhá-los em lote ao
-          escalão seguinte. Notificações por e-mail são enviadas em cada
-          movimentação.
-        </p>
-      </section>
-
-      {/* ── 5. STATUS DOS PEDIDOS ───────────────────────────────────── */}
-      <section className="bg-zinc-900 border border-white/10 rounded-2xl p-6">
-        <SectionTitle
-          icon={<CheckCircle className="h-4 w-4" />}
-          title="Status dos pedidos"
-        />
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
-          {[
-            {
-              label: "Rascunho",
-              desc: "Criado, ainda não enviado — pode ser editado",
-            },
-            {
-              label: "Enviado / Em revisão",
-              desc: "Em análise na cadeia de aprovação",
-            },
-            { label: "Aguardando DSG", desc: "Recebido pela DSG" },
-            {
-              label: "Em Atendimento",
-              desc: "Atribuído ao CGEO para produção",
-            },
-            { label: "Produzido", desc: "Disponível no BDGEx ✓" },
-            { label: "Cancelado/Reprovado", desc: "Encerrado sem produção" },
-          ].map((s) => (
-            <div
-              key={s.label}
-              className="bg-zinc-800/60 border border-white/5 rounded-lg px-3 py-2"
-            >
-              <p className="font-medium text-zinc-300">{s.label}</p>
-              <p className="text-zinc-600 mt-0.5">{s.desc}</p>
             </div>
-          ))}
-        </div>
+
+            <div>
+              <p className="text-xs font-semibold text-orange-400 uppercase tracking-wide mb-2">
+                Solicitante subordinado a Órgão de Direção Setorial (ODS)
+              </p>
+              <div className="flex flex-wrap gap-2 items-center">
+                {FLUXO_OUTROS.map((s, i) => (
+                  <div key={s.perfil} className="flex items-center gap-2">
+                    <div
+                      className={`px-3 py-1.5 rounded-lg border text-xs font-medium ${COR[s.cor]}`}
+                    >
+                      <span className="block font-semibold">{s.perfil}</span>
+                      <span className="font-normal opacity-70">{s.acao}</span>
+                    </div>
+                    {i < FLUXO_OUTROS.length - 1 && (
+                      <span className="text-zinc-700 text-lg">→</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <p className="text-xs text-zinc-600 leading-relaxed border-t border-white/5 pt-3">
+            Os pedidos podem ser encaminhados em lote, sendo enviadas as
+            notificações por e-mail a cada movimentação.
+          </p>
+        </SubCard>
+
+        {/* Sub-card: Status do Pedido */}
+        <SubCard
+          title="Status do Pedido"
+          icon={<CheckCircle className="h-3.5 w-3.5" />}
+        >
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
+            {[
+              {
+                label: "Em Rascunho",
+                desc: "Criado, mas ainda não enviado - pode ser editado",
+              },
+              {
+                label: "Enviado / Em revisão",
+                desc: "Em análise na cadeia de aprovação",
+              },
+              { label: "Aguardando DSG", desc: "Recebido pela DSG" },
+              {
+                label: "Em Atendimento",
+                desc: "Atribuído ao CGEO para produção",
+              },
+              { label: "Produzido", desc: "Disponível no BDGEx" },
+              { label: "Cancelado/Reprovado", desc: "Encerrado sem produção" },
+            ].map((s) => (
+              <div
+                key={s.label}
+                className="bg-zinc-800/60 border border-white/5 rounded-lg px-3 py-2"
+              >
+                <p className="font-medium text-zinc-300">{s.label}</p>
+                <p className="text-zinc-600 mt-0.5">{s.desc}</p>
+              </div>
+            ))}
+          </div>
+        </SubCard>
       </section>
 
-      {/* ── 6. TUTORIAIS ────────────────────────────────────────────── */}
-      <section className="bg-zinc-900 border border-white/10 rounded-2xl p-6">
-        <SectionTitle
-          icon={<BookOpen className="h-4 w-4" />}
-          title="Tutoriais"
-        />
-        <p className="text-xs text-zinc-500 mb-4">
-          Clique em cada guia para expandir o passo a passo e assistir ao vídeo.
-        </p>
-        <div className="space-y-2">
-          {/* Como solicitar produtos */}
-          <VideoTutorialAccordion
-            title="Como solicitar produtos?"
-            icon={<Send className="h-4 w-4" />}
-            videoSrc="/TutorialSolicitarProdutos.mp4"
-            descricao="Aprenda a navegar no mapa INOM, selecionar as folhas de interesse, definir escala e data de entrega, e submeter seu pedido ao C Mil. A — tudo em poucos cliques."
-            passos={TUTORIAIS.solicitar}
-          />
-
-          {/* O que é MI? */}
-          <VideoTutorialAccordion
-            title="O que é MI?"
-            icon={<FileText className="h-4 w-4" />}
-            videoSrc="/TutorialMI.mp4"
-            descricao="O MI (Mapa Índice) é o código numérico simplificado que identifica cada folha cartográfica no Sistema Cartográfico Nacional. Entenda como o MI se relaciona com o INOM e como localizá-lo no mapa de seleção."
-            passos={[]}
-          />
-
-          {/* Janela de Solicitações */}
-          <TutorialAccordion
-            title="O que é a Janela de Solicitações?"
-            icon={<CheckCircle className="h-4 w-4" />}
-            passos={TUTORIAIS.janela}
-          />
-        </div>
-      </section>
-
-      {/* ── 7. GUIAS POR JORNADA ────────────────────────────────────── */}
-      <section className="bg-zinc-900 border border-white/10 rounded-2xl p-6">
-        <SectionTitle
-          icon={<Send className="h-4 w-4" />}
-          title="Guias por perfil"
-        />
-        <p className="text-xs text-zinc-500 mb-4">
-          Selecione seu perfil para ver o guia específico de cada jornada.
-        </p>
-        <div className="space-y-2">
-          {JORNADAS.map((j) => (
-            <JornadaCard key={j.perfil} jornada={j} />
-          ))}
-        </div>
-      </section>
-
-      {/* ── 8. FAQ ──────────────────────────────────────────────────── */}
-      <section className="space-y-3">
-        <div className="flex items-center gap-2 mb-2">
+      {/* ── CARD 4: INFORMAÇÕES DE SUPORTE ──────────────────────────── */}
+      <section className="bg-zinc-900 border border-white/10 rounded-2xl p-6 space-y-5">
+        <div className="flex items-center gap-2 pb-4 border-b border-white/10">
           <HelpCircle className="h-4 w-4 text-emerald-400" />
-          <h2 className="font-semibold text-zinc-100">Perguntas frequentes</h2>
+          <h2 className="font-semibold text-zinc-100 text-base">
+            Informações de Suporte
+          </h2>
         </div>
-        {FAQS.map((faq) => (
-          <FAQItem key={faq.q} {...faq} />
-        ))}
-      </section>
 
-      {/* Contato */}
-      <div className="bg-zinc-900/50 border border-white/5 rounded-2xl p-5 flex items-start gap-4">
-        <CheckCircle className="h-5 w-5 text-emerald-400 shrink-0 mt-0.5" />
-        <div>
-          <p className="text-sm font-medium text-zinc-200">
-            Precisa de suporte?
+        {/* Sub-card: Orientações por Perfil */}
+        <SubCard
+          title="Orientações por Perfil"
+          icon={<Send className="h-3.5 w-3.5" />}
+        >
+          <p className="text-xs text-zinc-500">
+            Selecione seu perfil para ver o guia específico de cada jornada.
           </p>
-          <p className="text-xs text-zinc-500 mt-1 leading-relaxed">
-            Entre em contato com a equipe técnica da DSG pelo e-mail
-            institucional ou no telefone (61) 3415-5237 ou 860-5237(RITEX)
-            Mantenha seus dados atualizados em{" "}
-            <span className="text-emerald-400">"Meus Dados"</span> para receber
-            notificações corretamente.
+          <div className="space-y-2">
+            {JORNADAS.map((j) => (
+              <JornadaCard key={j.perfil} jornada={j} />
+            ))}
+          </div>
+        </SubCard>
+
+        {/* Sub-card: Perguntas Frequentes */}
+        <SubCard
+          title="Perguntas Frequentes"
+          icon={<HelpCircle className="h-3.5 w-3.5" />}
+        >
+          <div className="space-y-2">
+            {FAQS.map((faq) => (
+              <FAQItem key={faq.q} {...faq} />
+            ))}
+          </div>
+        </SubCard>
+
+        {/* Sub-card: Contato */}
+        <SubCard title="Contato" icon={<CheckCircle className="h-3.5 w-3.5" />}>
+          <p className="text-sm text-zinc-400 leading-relaxed">
+            Em caso de dúvidas ou sugestões, entre em contato com a equipe
+            técnica da DSG, preferencialmente pelos telefones{" "}
+            <span className="text-zinc-200">(61) 3415-5237</span> e{" "}
+            <span className="text-zinc-200">860-5237 (RITEx)</span> ou pelo
+            e-mail institucional{" "}
+            <a
+              href="mailto:suporte.sispgeo@dsg.eb.mil.br"
+              className="text-emerald-400 hover:text-emerald-300 transition-colors"
+            >
+              suporte.sispgeo@dsg.eb.mil.br
+            </a>
+            . Lembre-se de manter as informações atualizadas na aba{" "}
+            <span className="text-emerald-400">Meus Dados</span> para garantir o
+            recebimento das notificações.
           </p>
-        </div>
-      </div>
+        </SubCard>
+      </section>
     </div>
   );
 }

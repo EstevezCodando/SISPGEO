@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -6,13 +6,16 @@ import {
   Map, CheckCircle, ChevronDown, ChevronUp,
   Phone, Mail, Building2, Briefcase, Info,
   Download, Loader2, CalendarClock, Printer, ExternalLink, FileText,
+  MapPin, Copy,
 } from 'lucide-react'
-import { pedidosApi } from '../../api/pedidos'
+import { pedidosApi, type DuplicateItem } from '../../api/pedidos'
 import { LoadingSpinner } from '../../components/shared/LoadingSpinner'
 import { StatusBadge } from '../../components/shared/StatusBadge'
 import { PedidosMap } from '../../components/map/PedidosMap'
+import { PedidoSpatializeModal } from '../../components/map/PedidoSpatializeModal'
+import { DuplicateItemsModal } from '../../components/shared/DuplicateItemsModal'
 import type { Pedido } from '../../types/pedido'
-import { TIPO_PRODUTO_LABELS } from '../../types/pedido'
+import { TIPO_PRODUTO_LABELS, porPrioridade } from '../../types/pedido'
 import { useExportRelatorio } from '../../hooks/useExportRelatorio'
 import { formatNomeComPosto } from '../../data/postos'
 
@@ -25,17 +28,24 @@ const ORG_CLS: Record<string, string> = {
   DSG:   'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
 }
 
+const itemAtivo = (item: { removido?: boolean }) => !item.removido
+const itensAtivos = (pedido: Pedido) => pedido.itens.filter(itemAtivo)
+const itensRemovidos = (pedido: Pedido) => pedido.itens.filter(i => i.removido)
+
 // ─── Pedido Card ──────────────────────────────────────────────────────────────
 interface PedidoCardProps {
   pedido: Pedido
   rank: number
   isExpanded: boolean
   onToggleExpand: (id: number) => void
+  onSpatialize: (pedido: Pedido) => void
 }
 
-function PedidoCard({ pedido: p, rank, isExpanded, onToggleExpand }: PedidoCardProps) {
-  const tipos = [...new Set(p.itens.map(i => TIPO_PRODUTO_LABELS[i.tipo_produto]))].join(' · ') || '—'
-  const temImpressao = p.impressao_solicitada || p.itens.some(i => i.impressao_quantidade)
+function PedidoCard({ pedido: p, rank, isExpanded, onToggleExpand, onSpatialize }: PedidoCardProps) {
+  const ativos = itensAtivos(p)
+  const removidos = itensRemovidos(p)
+  const tipos = [...new Set(ativos.map(i => TIPO_PRODUTO_LABELS[i.tipo_produto]))].join(' · ') || '—'
+  const temImpressao = p.impressao_solicitada || ativos.some(i => i.impressao_quantidade)
 
   const descricao = p.finalidade_geo
     ? p.finalidade_geo
@@ -94,7 +104,10 @@ function PedidoCard({ pedido: p, rank, isExpanded, onToggleExpand }: PedidoCardP
           <div className="flex items-center gap-1.5 mt-1 flex-wrap">
             <span className="text-[11px] text-zinc-500">{tipos}</span>
             <span className="text-zinc-700">·</span>
-            <span className="text-[11px] text-zinc-600">{p.itens.length} item(ns)</span>
+            <span className="text-[11px] text-zinc-600">{ativos.length} ativo(s)</span>
+            {removidos.length > 0 && (
+              <span className="text-[11px] text-red-400/70">{removidos.length} removido(s)</span>
+            )}
             {temImpressao && (
               <span className="inline-flex items-center gap-0.5 text-[10px] text-violet-400 shrink-0">
                 <Printer className="h-3 w-3" /> Impressão
@@ -215,22 +228,27 @@ function PedidoCard({ pedido: p, rank, isExpanded, onToggleExpand }: PedidoCardP
               Itens por prioridade
             </p>
             <div className="space-y-1.5">
-              {[...p.itens].sort((a, b) => a.prioridade - b.prioridade).map((item, idx) => {
+              {[...p.itens].sort(porPrioridade).map((item, idx) => {
                 const age = item.data_producao_bdgex
                   ? Math.floor((Date.now() - new Date(item.data_producao_bdgex).getTime()) / (365.25 * 24 * 3600 * 1000))
                   : null
                 const ageColor = age === null ? '' : age < 5 ? 'text-emerald-400' : age < 10 ? 'text-lime-400' : age < 20 ? 'text-yellow-400' : age < 30 ? 'text-orange-400' : 'text-red-400'
                 return (
-                  <div key={item.id} className="flex items-center flex-wrap gap-x-2 gap-y-1 text-xs text-zinc-400 bg-zinc-800/40 border border-zinc-700/30 rounded-lg px-3 py-2">
+                  <div key={item.id} className={`flex items-center flex-wrap gap-x-2 gap-y-1 text-xs border rounded-lg px-3 py-2 ${item.removido ? 'bg-red-950/20 border-red-500/20 text-zinc-500' : 'bg-zinc-800/40 border-zinc-700/30 text-zinc-400'}`}>
                     <span className="text-zinc-600 w-4 text-center shrink-0">{idx + 1}</span>
                     {item.mi
-                      ? <span className="text-emerald-400 font-mono shrink-0 font-medium">{item.mi}</span>
-                      : <span className="text-emerald-400 font-mono shrink-0 font-medium">{item.inom}</span>
+                      ? <span className={`text-emerald-400 font-mono shrink-0 font-medium ${item.removido ? 'line-through decoration-red-400 decoration-2' : ''}`}>{item.mi}</span>
+                      : <span className={`text-emerald-400 font-mono shrink-0 font-medium ${item.removido ? 'line-through decoration-red-400 decoration-2' : ''}`}>{item.inom}</span>
                     }
-                    {item.mi && <span className="text-zinc-500 font-mono shrink-0 text-[10px]">({item.inom})</span>}
-                    <span className="shrink-0 text-zinc-300">{TIPO_PRODUTO_LABELS[item.tipo_produto]}</span>
+                    {item.mi && <span className={`text-zinc-500 font-mono shrink-0 text-[10px] ${item.removido ? 'line-through decoration-red-400 decoration-2' : ''}`}>({item.inom})</span>}
+                    <span className={`shrink-0 text-zinc-300 ${item.removido ? 'line-through decoration-red-400 decoration-2 text-zinc-500' : ''}`}>{TIPO_PRODUTO_LABELS[item.tipo_produto]}</span>
                     <span className="text-zinc-600 shrink-0">·</span>
-                    <span className="shrink-0">{item.escala}</span>
+                    <span className={`shrink-0 ${item.removido ? 'line-through decoration-red-400 decoration-2' : ''}`}>{item.escala}</span>
+                    {item.removido && (
+                      <span className="shrink-0 rounded border border-red-500/25 bg-red-500/10 px-1.5 py-0.5 text-[10px] font-medium text-red-300">
+                        Removido
+                      </span>
+                    )}
                     {item.disponivel_bdgex && (
                       <span className="text-emerald-500 shrink-0 font-medium">✓ BDGEx</span>
                     )}
@@ -289,6 +307,15 @@ function PedidoCard({ pedido: p, rank, isExpanded, onToggleExpand }: PedidoCardP
               <span className="font-medium text-zinc-300">Observações:</span> {p.observacoes}
             </p>
           )}
+          <div className="pt-1 flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => onSpatialize(p)}
+              className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 transition-colors"
+            >
+              <MapPin className="h-3.5 w-3.5" />
+              Ver no mapa
+            </button>
+          </div>
         </div>
       )}
     </div>
@@ -301,14 +328,35 @@ export function PedidosHomologados() {
   const [loading, setLoading] = useState(true)
   const [showMap, setShowMap] = useState(false)
   const [expandedId, setExpandedId] = useState<number | null>(null)
+  const [spatializePedido, setSpatializePedido] = useState<Pedido | null>(null)
+  const [duplicates, setDuplicates] = useState<DuplicateItem[] | null>(null)
+  const [checkingDuplicates, setCheckingDuplicates] = useState(false)
   const { exportando, baixarRelatorio } = useExportRelatorio()
 
-  useEffect(() => {
+  const load = useCallback(() => {
+    setLoading(true)
     pedidosApi.listHomologados()
       .then(r => setPedidos(r.data))
       .catch(() => toast.error('Erro ao carregar pedidos homologados'))
       .finally(() => setLoading(false))
   }, [])
+
+  useEffect(() => {
+    load()
+  }, [load])
+
+  const handleVerificarDuplicatas = async () => {
+    setCheckingDuplicates(true)
+    try {
+      const res = await pedidosApi.getDuplicatas({ todos: true })
+      setDuplicates(res.data)
+      if (res.data.length === 0) toast.success('Nenhuma duplicata encontrada')
+    } catch {
+      toast.error('Erro ao verificar duplicatas')
+    } finally {
+      setCheckingDuplicates(false)
+    }
+  }
 
   if (loading) return <LoadingSpinner />
 
@@ -348,6 +396,17 @@ export function PedidosHomologados() {
               Baixar pedidos
             </button>
           )}
+
+          {pedidos.length > 0 && (
+            <button
+              onClick={handleVerificarDuplicatas}
+              disabled={checkingDuplicates}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium border bg-zinc-800 text-zinc-400 border-zinc-700 hover:text-zinc-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {checkingDuplicates ? <Loader2 className="h-4 w-4 animate-spin" /> : <Copy className="h-4 w-4" />}
+              Duplicatas
+            </button>
+          )}
         </div>
       </div>
 
@@ -376,9 +435,18 @@ export function PedidosHomologados() {
               rank={idx + 1}
               isExpanded={expandedId === p.id}
               onToggleExpand={(id) => setExpandedId(expandedId === id ? null : id)}
+              onSpatialize={setSpatializePedido}
             />
           ))}
         </div>
+      )}
+
+      {spatializePedido && (
+        <PedidoSpatializeModal pedido={spatializePedido} onClose={() => setSpatializePedido(null)} />
+      )}
+
+      {duplicates && (
+        <DuplicateItemsModal duplicates={duplicates} onClose={() => setDuplicates(null)} />
       )}
     </div>
   )
