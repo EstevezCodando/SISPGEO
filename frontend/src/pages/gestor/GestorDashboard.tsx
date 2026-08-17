@@ -24,7 +24,7 @@ import { PedidosMap } from '../../components/map/PedidosMap'
 import { PedidoSpatializeModal } from '../../components/map/PedidoSpatializeModal'
 import { DuplicateItemsModal } from '../../components/shared/DuplicateItemsModal'
 import type { Pedido } from '../../types/pedido'
-import { TIPO_PRODUTO_LABELS } from '../../types/pedido'
+import { TIPO_PRODUTO_LABELS, porPrioridade } from '../../types/pedido'
 import { useAuthStore } from '../../store/authStore'
 import { useExportRelatorio } from '../../hooks/useExportRelatorio'
 
@@ -519,7 +519,7 @@ function PedidoCard({
               )}
             </p>
             <div className="space-y-1.5">
-              {[...p.itens].sort((a, b) => a.prioridade - b.prioridade).map((item, idx) => {
+              {[...p.itens].sort(porPrioridade).map((item, idx) => {
                 const age = item.data_producao_bdgex
                   ? Math.floor((Date.now() - new Date(item.data_producao_bdgex).getTime()) / (365.25 * 24 * 3600 * 1000))
                   : null
@@ -718,7 +718,7 @@ function EncaminharLoteModal({ pedidos: ps, label, onConfirm, onCancel }: Encami
                 {/* Expanded items */}
                 {isExp && (
                   <div className="border-t border-zinc-700/40 px-3 py-2.5 space-y-1.5">
-                    {[...p.itens].sort((a, b) => a.prioridade - b.prioridade).map((item, i) => (
+                    {[...p.itens].sort(porPrioridade).map((item, i) => (
                       <div
                         key={item.id}
                         className="flex items-center flex-wrap gap-x-2 gap-y-0.5 text-xs text-zinc-400 bg-zinc-800/60 border border-zinc-700/30 rounded-lg px-3 py-1.5"
@@ -801,7 +801,7 @@ export function GestorDashboard() {
       janelasApi.minhaJanela(),
     ])
       .then(([pr, jr]) => {
-        const sorted = [...pr.data].sort((a, b) => a.prioridade - b.prioridade)
+        const sorted = [...pr.data].sort(porPrioridade)
         setPedidos(sorted)
         setJanela(jr.data)
         setSelectedIds(new Set())

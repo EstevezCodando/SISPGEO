@@ -30,6 +30,7 @@ def _make_user(
     ativo: bool = True,
     nome_de_guerra: str | None = "Teste",
     regiao_militar: str | None = None,
+    cgeo_id: int | None = None,
 ) -> MagicMock:
     """Cria um mock de :class:`Usuario` sem persistência no banco."""
     u = MagicMock(spec=Usuario)
@@ -46,6 +47,8 @@ def _make_user(
     u.bloqueado_ate = None
     u.ultima_senha_alterada = datetime.now(timezone.utc)
     u.regiao_militar = regiao_militar
+    # Explícito para não virar MagicMock truthy nas comparações de escopo do CGEO.
+    u.cgeo_id = cgeo_id
     return u
 
 
@@ -59,6 +62,10 @@ def _make_item() -> MagicMock:
     item.disponivel_bdgex = False
     item.data_producao_bdgex = None
     item.solicitar_mesmo_disponivel = False
+    # Sem estes, o MagicMock(spec=...) devolve um mock truthy e o pedido é tratado
+    # como "sem itens ativos" pelas validações de submit/consolidação.
+    item.removido = False
+    item.prioridade = 0
     return item
 
 
@@ -185,8 +192,10 @@ def gestor_dsg() -> MagicMock:
 
 @pytest.fixture
 def gestor_cgeo() -> MagicMock:
-    """Mock de usuário com perfil ANALISTA_CGEO."""
-    return _make_user(user_id=11, email="cgeo@eb.mil.br", perfil=PerfilEnum.ANALISTA_CGEO)
+    """Mock de usuário com perfil ANALISTA_CGEO (1º CGEO)."""
+    return _make_user(
+        user_id=11, email="cgeo@eb.mil.br", perfil=PerfilEnum.ANALISTA_CGEO, cgeo_id=1,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -213,5 +222,7 @@ def pedido_submetido_dsg(usuario_omds) -> MagicMock:
 
 @pytest.fixture
 def pedido_atribuido_cgeo(usuario_omds) -> MagicMock:
-    """Mock de pedido com status ATRIBUIDO_CGEO."""
-    return _make_pedido(usuario_id=usuario_omds.id, status=StatusPedidoEnum.ATRIBUIDO_CGEO)
+    """Mock de pedido com status ATRIBUIDO_CGEO, atribuído ao 1º CGEO (ver gestor_cgeo)."""
+    p = _make_pedido(usuario_id=usuario_omds.id, status=StatusPedidoEnum.ATRIBUIDO_CGEO)
+    p.cgeo_id = 1
+    return p

@@ -224,6 +224,32 @@ def _itens_ativos(pedido: Pedido | PedidoOut):
     return [item for item in pedido.itens if not getattr(item, "removido", False)]
 
 
+# ── Ordenação por prioridade ──────────────────────────────────────────────────
+# `prioridade` é 0 por padrão na coluna e só recebe um valor >= 1 quando alguém
+# reordena a lista (arrastar no dashboard do supervisor/consolidador). Portanto
+# 0 significa "ainda não priorizado" — e NÃO "primeira prioridade". Ordenar por
+# `prioridade ASC` puro colocaria um pedido nunca arrastado à frente daquele que
+# o escalão marcou explicitamente como nº 1, invertendo a decisão do escalão nos
+# relatórios e exportações (onde o rank é a posição na lista). As duas funções
+# abaixo mantêm SQL e Python com o mesmo critério: não priorizados por último.
+
+def chave_prioridade(obj) -> tuple[int, int]:
+    """Chave de ordenação para ``sorted()`` sobre pedidos ou itens de pedido."""
+    prio = getattr(obj, "prioridade", 0) or 0
+    return (1, 0) if prio == 0 else (0, prio)
+
+
+def ordem_prioridade():
+    """Critérios ``ORDER BY`` equivalentes a :func:`chave_prioridade`."""
+    from sqlalchemy import case
+
+    return (
+        case((Pedido.prioridade == 0, 1), else_=0),
+        Pedido.prioridade.asc(),
+        Pedido.criado_em.asc(),
+    )
+
+
 def _rm_do_supervisor(user: Usuario) -> str | None:
     """Retorna o código da Região Militar de um supervisor derivado do seu **perfil**.
 
@@ -644,19 +670,19 @@ async def exportar_relatorio(
         q = select(Pedido).where(
             (Pedido.usuario_id == current_user.id) | (Pedido.criador_id == current_user.id),
             Pedido.status.notin_([StatusPedidoEnum.CANCELADO, StatusPedidoEnum.REPROVADO]),
-        ).order_by(Pedido.prioridade.asc(), Pedido.criado_em.asc())
+        ).order_by(*ordem_prioridade())
 
     elif current_user.perfil in SUPERVISOR_PROFILES:
         q = select(Pedido).where(
             _supervisor_scope(current_user),
             Pedido.status.notin_([StatusPedidoEnum.RASCUNHO, StatusPedidoEnum.CANCELADO]),
-        ).order_by(Pedido.prioridade.asc(), Pedido.criado_em.asc())
+        ).order_by(*ordem_prioridade())
 
     else:  # CONSOLIDADOR_*
         q = select(Pedido).where(
             _consolidador_scope(current_user),
             Pedido.status.notin_([StatusPedidoEnum.RASCUNHO, StatusPedidoEnum.CANCELADO]),
-        ).order_by(Pedido.prioridade.asc(), Pedido.criado_em.asc())
+        ).order_by(*ordem_prioridade())
 
     pedidos = list(await db.scalars(q))
     enriched = await _enrich(db, pedidos)
@@ -694,7 +720,7 @@ async def exportar_relatorio(
         "Impressao_Solicitada", "Impressao_Quantidade", "Impressao_Material",
     ])
     for pedido_rank, p in enumerate(enriched, 1):
-        for item_rank, item in enumerate(sorted(_itens_ativos(p), key=lambda x: x.prioridade), 1):
+        for item_rank, item in enumerate(sorted(_itens_ativos(p), key=chave_prioridade), 1):
             _disp, _dprod = _bdgex_info(item)
             idade_anos = (date.today() - _dprod).days // 365 if _dprod else ""
             _sol = (
@@ -735,7 +761,7 @@ async def exportar_relatorio(
     geojsons: dict[str, list[dict]] = {}  # sufixo → lista de features
     _suffix_map = {"1:25.000": "25k", "1:50.000": "50k", "1:100.000": "100k", "1:250.000": "250k"}
     for pedido_rank, p in enumerate(enriched, 1):
-        for item_rank, item in enumerate(sorted(_itens_ativos(p), key=lambda x: x.prioridade), 1):
+        for item_rank, item in enumerate(sorted(_itens_ativos(p), key=chave_prioridade), 1):
             sv = item.escala.value
             suffix = _suffix_map.get(sv, sv.replace(":", "").replace(".", "").replace(" ", ""))
             geom = _scale_geoms.get(sv, {}).get(item.inom)
@@ -1072,7 +1098,7 @@ async def _build_admin_zip(
     geojsons: dict[str, list[dict]] = {}
     for p in enriched:
         _p_rank = _pedido_rank[p.id]
-        for item_rank, item in enumerate(sorted(_itens_ativos(p), key=lambda x: x.prioridade), 1):
+        for item_rank, item in enumerate(sorted(_itens_ativos(p), key=chave_prioridade), 1):
             sv = item.escala.value
             suffix = suffix_map.get(sv, sv.replace(":", "").replace(".", "").replace(" ", ""))
             geom = _scale_geoms.get(sv, {}).get(item.inom)
@@ -1145,7 +1171,7 @@ async def _build_admin_zip(
     ])
     for p in enriched:
         _p_rank = _pedido_rank[p.id]
-        for item_rank, item in enumerate(sorted(_itens_ativos(p), key=lambda x: x.prioridade), 1):
+        for item_rank, item in enumerate(sorted(_itens_ativos(p), key=chave_prioridade), 1):
             _disp, _dprod = _bdgex_info_adm(item)
             idade_anos = (date.today() - _dprod).days // 365 if _dprod else ""
             is_dup = "Sim" if (item.mi, item.tipo_produto.value) in dup_keys else "Não"
@@ -1282,7 +1308,7 @@ async def _build_admin_zip(
             f"  Link BDGEx          : {p.link_bdgex or '—'}",
             f"  Itens ({len(_itens_ativos(p))}):",
         ]
-        for i, item in enumerate(sorted(_itens_ativos(p), key=lambda x: x.prioridade), 1):
+        for i, item in enumerate(sorted(_itens_ativos(p), key=chave_prioridade), 1):
             _disp, _dprod = _bdgex_info_adm(item)
             bdgex = "✓" if _disp else "✗"
             if _dprod:
@@ -1561,7 +1587,7 @@ async def exportar_pedidos(
     result = await db.scalars(
         select(Pedido)
         .where(Pedido.status.notin_([StatusPedidoEnum.CANCELADO, StatusPedidoEnum.RASCUNHO]))
-        .order_by(Pedido.prioridade.asc(), Pedido.criado_em.asc())
+        .order_by(*ordem_prioridade())
     )
     pedidos = list(result)
     enriched = await _enrich(db, pedidos)
@@ -1794,7 +1820,7 @@ async def enviar_lote(
         select(Pedido)
         .where(Pedido.usuario_id == current_user.id)
         .where(Pedido.status == StatusPedidoEnum.RASCUNHO)
-        .order_by(Pedido.prioridade)
+        .order_by(*ordem_prioridade())
     )
     if body.pedido_ids:
         stmt = stmt.where(Pedido.id.in_(body.pedido_ids))
@@ -2095,7 +2121,7 @@ async def admin_export_geojson(
                 pass
         if valid_statuses:
             stmt = stmt.where(Pedido.status.in_(valid_statuses))
-    stmt = stmt.order_by(Pedido.prioridade.asc(), Pedido.criado_em.asc())
+    stmt = stmt.order_by(*ordem_prioridade())
 
     result = await db.scalars(stmt)
     pedidos = list(result)

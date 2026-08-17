@@ -14,7 +14,7 @@ import {
 import { StatusBadge } from '../../components/shared/StatusBadge'
 import { LoadingSpinner } from '../../components/shared/LoadingSpinner'
 import type { Pedido } from '../../types/pedido'
-import { TIPO_PRODUTO_LABELS, STATUS_LABELS, ALL_STATUSES } from '../../types/pedido'
+import { TIPO_PRODUTO_LABELS, STATUS_LABELS, ALL_STATUSES, porPrioridade } from '../../types/pedido'
 import { formatNomeComPosto } from '../../data/postos'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -786,7 +786,7 @@ function PedidoDSGCard({
               </span>
             </p>
             <div className="space-y-1.5">
-              {[...p.itens].sort((a, b) => a.prioridade - b.prioridade).map((item, idx) => {
+              {[...p.itens].sort(porPrioridade).map((item, idx) => {
                 const age = calcAge(item.data_producao_bdgex)
                 return (
                   <div key={item.id} className={`flex items-center flex-wrap gap-x-2 gap-y-1 text-xs text-zinc-400 border rounded-lg px-3 py-2 ${ageBgColor(age)}`}>

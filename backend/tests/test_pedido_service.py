@@ -176,6 +176,8 @@ class TestAssignCgeo:
 
 class TestCgeoReview:
     async def test_status_invalido_levanta_400(self, mock_db, pedido_rascunho, gestor_cgeo):
+        # Pedido atribuído a este CGEO — isola a validação de status da de escopo (403).
+        pedido_rascunho.cgeo_id = gestor_cgeo.cgeo_id
         with pytest.raises(HTTPException) as exc:
             await pedido_service.cgeo_review(mock_db, pedido_rascunho, gestor_cgeo, "aprovar", None)
         assert exc.value.status_code == 400

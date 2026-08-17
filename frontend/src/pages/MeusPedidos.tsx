@@ -53,7 +53,7 @@ import { useExportRelatorio } from "../hooks/useExportRelatorio";
 import { useAuthStore } from "../store/authStore";
 import { cartKey, useCartStore } from "../store/cartStore";
 import type { ItemPedido, MaterialImpressao, Pedido } from "../types/pedido";
-import { TIPO_PRODUTO_LABELS, getStatusSolicitante } from "../types/pedido";
+import { TIPO_PRODUTO_LABELS, getStatusSolicitante, porPrioridade } from "../types/pedido";
 
 // ─── Map layer helper ─────────────────────────────────────────────────────────
 function GeoJSONLayer({ geojson }: { geojson: FeatureCollection }) {
@@ -159,11 +159,11 @@ function SortablePedidoRow_Base({
 
   const itemSensors = useSensors(useSensor(PointerSensor));
   const [localItems, setLocalItems] = useState<ItemPedido[]>(
-    [...p.itens].sort((a, b) => a.prioridade - b.prioridade),
+    [...p.itens].sort(porPrioridade),
   );
 
   useEffect(() => {
-    setLocalItems([...p.itens].sort((a, b) => a.prioridade - b.prioridade));
+    setLocalItems([...p.itens].sort(porPrioridade));
   }, [p.itens]);
 
   const handleItemDragEnd = async (event: DragEndEvent) => {
@@ -179,7 +179,7 @@ function SortablePedidoRow_Base({
         reordered.map((i) => i.id),
       );
     } catch {
-      setLocalItems([...p.itens].sort((a, b) => a.prioridade - b.prioridade));
+      setLocalItems([...p.itens].sort(porPrioridade));
     }
   };
 
@@ -1275,7 +1275,7 @@ export function MeusPedidos() {
       .list()
       .then((res) => {
         const sorted = [...res.data].sort(
-          (a, b) => a.prioridade - b.prioridade,
+          porPrioridade,
         );
         setPedidos(sorted);
       })
@@ -1352,7 +1352,7 @@ export function MeusPedidos() {
 
       // Adiciona todos os itens ao carrinho (ordem de prioridade)
       const itensSorted = [...p.itens].sort(
-        (a, b) => a.prioridade - b.prioridade,
+        porPrioridade,
       );
       for (const item of itensSorted) {
         cart.addItem({

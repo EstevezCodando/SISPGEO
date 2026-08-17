@@ -15,7 +15,7 @@ import { PedidosMap } from '../../components/map/PedidosMap'
 import { PedidoSpatializeModal } from '../../components/map/PedidoSpatializeModal'
 import { DuplicateItemsModal } from '../../components/shared/DuplicateItemsModal'
 import type { Pedido } from '../../types/pedido'
-import { TIPO_PRODUTO_LABELS } from '../../types/pedido'
+import { TIPO_PRODUTO_LABELS, porPrioridade } from '../../types/pedido'
 import { useExportRelatorio } from '../../hooks/useExportRelatorio'
 import { formatNomeComPosto } from '../../data/postos'
 
@@ -228,7 +228,7 @@ function PedidoCard({ pedido: p, rank, isExpanded, onToggleExpand, onSpatialize 
               Itens por prioridade
             </p>
             <div className="space-y-1.5">
-              {[...p.itens].sort((a, b) => a.prioridade - b.prioridade).map((item, idx) => {
+              {[...p.itens].sort(porPrioridade).map((item, idx) => {
                 const age = item.data_producao_bdgex
                   ? Math.floor((Date.now() - new Date(item.data_producao_bdgex).getTime()) / (365.25 * 24 * 3600 * 1000))
                   : null

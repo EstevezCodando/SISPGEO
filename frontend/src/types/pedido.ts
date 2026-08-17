@@ -236,3 +236,21 @@ export interface CartItem {
   /** FK → ItemImpressao.id; null enquanto !impressao */
   impressaoId: string | null;
 }
+
+// ─── Ordenação por prioridade ─────────────────────────────────────────────────
+// `prioridade` vale 0 por padrão e só recebe um valor >= 1 quando alguém
+// reordena a lista (arrastar no dashboard). Logo 0 significa "ainda não
+// priorizado" — e NÃO "primeira prioridade". Um `a.prioridade - b.prioridade`
+// cru colocaria um pedido nunca arrastado à frente daquele que o supervisor
+// marcou explicitamente como nº 1. Espelha `chave_prioridade` do backend
+// (backend/app/routers/pedidos.py).
+
+/** Comparador para `Array.prototype.sort`: não priorizados (0) vão para o fim. */
+export function porPrioridade<T extends { prioridade: number }>(a: T, b: T): number {
+  const pa = a.prioridade || 0;
+  const pb = b.prioridade || 0;
+  if (pa === 0 && pb === 0) return 0;
+  if (pa === 0) return 1;
+  if (pb === 0) return -1;
+  return pa - pb;
+}
