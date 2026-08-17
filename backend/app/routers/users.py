@@ -1,5 +1,8 @@
+import csv
+import io
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from app.database import get_db
@@ -157,6 +160,111 @@ async def list_users(
 ):
     result = await db.scalars(select(Usuario).order_by(Usuario.nome))
     return list(result)
+
+
+# ── Exportação do cadastro de usuários ────────────────────────────────────────
+
+# Rótulo legível de cada Comando Militar de Área (código gravado em
+# usuario.regiao_militar). Espelha CMILA_LABELS em frontend/src/types/user.ts.
+CMILA_LABELS: dict[str, str] = {
+    "CMP":  "Comando Militar do Planalto (Brasília)",
+    "CML":  "C Mil Leste (Rio de Janeiro)",
+    "CMS":  "C Mil Sul (Porto Alegre)",
+    "CMO":  "C Mil Oeste (Campo Grande)",
+    "CMAO": "C Mil Amazônia Oriental (Belém)",
+    "CMA":  "C Mil Amazônia (Manaus)",
+    "CMNE": "C Mil Nordeste (Recife)",
+    "CMSE": "C Mil Sudeste (São Paulo)",
+}
+
+
+def _situacao_cadastro(u: Usuario, agora: datetime) -> str:
+    """Resume em uma palavra a situação do cadastro, na ordem de precedência
+    usada pela tela Gerenciar Usuários."""
+    if u.bloqueado_ate and u.bloqueado_ate > agora:
+        return "BLOQUEADO"
+    if not u.email_confirmado:
+        return "E-MAIL NAO CONFIRMADO"
+    if not u.ativo:
+        return "INATIVO"
+    return "ATIVO"
+
+
+def _fmt_dt(valor: datetime | None) -> str:
+    return valor.strftime("%d/%m/%Y %H:%M") if valor else ""
+
+
+@router.get("/export")
+async def exportar_usuarios(
+    db: AsyncSession = Depends(get_db),
+    _: Usuario = Depends(require_profiles(PerfilEnum.GESTOR_CARTOGRAFICO)),
+    regiao_militar: str | None = Query(
+        None, description="Filtra por Comando Militar de Área (ex.: CMP, CML)"
+    ),
+    perfil: PerfilEnum | None = Query(None, description="Filtra por perfil"),
+    apenas_ativos: bool = Query(False, description="Exporta somente cadastros ativos"),
+):
+    """Exporta o cadastro de usuários e a situação de cada um como CSV.
+
+    Filtros são opcionais e combináveis; sem nenhum, exporta todos os usuários.
+    """
+    stmt = select(Usuario)
+    if regiao_militar:
+        stmt = stmt.where(Usuario.regiao_militar == regiao_militar)
+    if perfil:
+        stmt = stmt.where(Usuario.perfil == perfil)
+    if apenas_ativos:
+        stmt = stmt.where(Usuario.ativo.is_(True))
+    stmt = stmt.order_by(Usuario.nome)
+
+    usuarios = list(await db.scalars(stmt))
+    agora = datetime.now(timezone.utc)
+
+    buf = io.StringIO()
+    writer = csv.writer(buf, dialect="excel", delimiter=";")
+    writer.writerow([
+        "ID", "Nome", "Nome_de_Guerra", "Posto_Graduacao", "Email",
+        "Telefone", "Telefone_Ritex", "OM", "Secao_OM",
+        "C_Mil_A", "C_Mil_A_Nome", "Orgao_Vinculante", "Perfil", "CGEO",
+        "Situacao", "Ativo", "Email_Confirmado", "Bloqueado_Ate",
+        "Tentativas_Login", "Ultima_Senha_Alterada", "Ultima_Confirmacao_Dados",
+        "Criado_Em", "Atualizado_Em",
+    ])
+    for u in usuarios:
+        writer.writerow([
+            u.id,
+            u.nome,
+            u.nome_de_guerra or "",
+            u.posto_graduacao or "",
+            u.email,
+            u.telefone or "",
+            u.telefone_ritex or "",
+            u.om,
+            u.secao_om or "",
+            u.regiao_militar or "",
+            CMILA_LABELS.get(u.regiao_militar or "", ""),
+            u.orgao_vinculante.value if u.orgao_vinculante else "",
+            u.perfil.value,
+            f"{u.cgeo_id}º CGEO" if u.cgeo_id else "",
+            _situacao_cadastro(u, agora),
+            "Sim" if u.ativo else "Nao",
+            "Sim" if u.email_confirmado else "Nao",
+            _fmt_dt(u.bloqueado_ate),
+            u.tentativas_login,
+            _fmt_dt(u.ultima_senha_alterada),
+            _fmt_dt(u.ultima_confirmacao_dados),
+            _fmt_dt(u.criado_em),
+            _fmt_dt(u.atualizado_em),
+        ])
+
+    # BOM para o Excel abrir acentuação corretamente.
+    conteudo = "\ufeff" + buf.getvalue()
+    nome_arquivo = f"usuarios_sispgeo_{agora.strftime('%Y%m%d_%H%M')}.csv"
+    return StreamingResponse(
+        iter([conteudo]),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f"attachment; filename={nome_arquivo}"},
+    )
 
 
 @router.put("/{user_id}/profile")

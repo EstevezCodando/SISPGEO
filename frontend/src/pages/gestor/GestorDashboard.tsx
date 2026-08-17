@@ -6,7 +6,7 @@ import {
   Send, Map, ChevronDown, ChevronUp, GripVertical, AlertTriangle,
   X, Copy, Trash2, Ban, Phone, Mail, Building2, Briefcase,
   Clock, CalendarX, CheckCircle, Info, Download, Loader2,
-  CalendarClock, User, Printer, ExternalLink, FileText, MapPin,
+  CalendarClock, User, Printer, ExternalLink, FileText, MapPin, Search,
 } from 'lucide-react'
 import {
   DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent,
@@ -25,6 +25,8 @@ import { PedidoSpatializeModal } from '../../components/map/PedidoSpatializeModa
 import { DuplicateItemsModal } from '../../components/shared/DuplicateItemsModal'
 import type { Pedido } from '../../types/pedido'
 import { TIPO_PRODUTO_LABELS, porPrioridade } from '../../types/pedido'
+import { CMILA_CODES, cmilaLabel } from '../../types/user'
+import { casaBusca } from '../../utils/busca'
 import { useAuthStore } from '../../store/authStore'
 import { useExportRelatorio } from '../../hooks/useExportRelatorio'
 
@@ -789,6 +791,8 @@ export function GestorDashboard() {
   const [spatializePedido, setSpatializePedido] = useState<Pedido | null>(null)
   const [processing, setProcessing] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
+  const [search, setSearch] = useState('')
+  const [cmila, setCmila] = useState('')   // filtro por Comando Militar de Área
   const { exportando, baixarRelatorio } = useExportRelatorio()
 
   const sensors = useSensors(useSensor(PointerSensor))
@@ -828,8 +832,8 @@ export function GestorDashboard() {
   }
 
   const toggleSelectAll = () => {
-    if (selectedIds.size === pedidos.length) setSelectedIds(new Set())
-    else setSelectedIds(new Set(pedidos.map(p => p.id)))
+    if (selectedIds.size === visiveis.length) setSelectedIds(new Set())
+    else setSelectedIds(new Set(visiveis.map(p => p.id)))
   }
 
   // ── Encaminhar ───────────────────────────────────────────────────────────────
@@ -873,7 +877,7 @@ export function GestorDashboard() {
   }
 
   const handleEncaminharLote = async () => {
-    const ids = selectedIds.size > 0 ? [...selectedIds] : pedidos.map(p => p.id)
+    const ids = selectedIds.size > 0 ? [...selectedIds] : visiveis.map(p => p.id)
     if (ids.length === 0) { toast.error('Nenhum pedido na fila'); return }
     setPendingAction({ type: 'encaminhar-lote', ids })
   }
@@ -919,6 +923,25 @@ export function GestorDashboard() {
     load()
   }
 
+  // ── Filtros de exibição ──────────────────────────────────────────────────────
+  // Atenção: reordenar envia a lista inteira ao backend, que grava a prioridade
+  // pela posição. Reordenar com filtro ativo reatribuiria as prioridades 1..N
+  // apenas ao subconjunto visível, corrompendo a ordem dos demais pedidos — por
+  // isso o arrasto fica desabilitado enquanto houver filtro.
+  const filtrosAtivos = Boolean(search.trim() || cmila)
+  const visiveis = pedidos
+    .filter(p => !cmila || p.regiao_militar === cmila)
+    .filter(p => casaBusca(search, [
+      String(p.id),
+      p.usuario_nome,
+      p.usuario_om,
+      p.status,
+      p.orgao_vinculante,
+      p.regiao_militar,
+      ...p.itens.map(i => i.inom),
+      ...p.itens.map(i => i.mi),
+    ]))
+
   // ── Drag reorder ─────────────────────────────────────────────────────────────
   const handleDragEnd = useCallback(async (event: DragEndEvent) => {
     const { active, over } = event
@@ -937,8 +960,8 @@ export function GestorDashboard() {
 
   if (loading) return <LoadingSpinner />
 
-  const allSelected = pedidos.length > 0 && selectedIds.size === pedidos.length
-  const someSelected = selectedIds.size > 0 && selectedIds.size < pedidos.length
+  const allSelected = visiveis.length > 0 && selectedIds.size === visiveis.length
+  const someSelected = selectedIds.size > 0 && selectedIds.size < visiveis.length
   const selCount = selectedIds.size
 
   return (
@@ -1043,21 +1066,68 @@ export function GestorDashboard() {
         </div>
       )}
 
+      {/* ── Busca + filtro por C Mil A ── */}
+      {pedidos.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative flex-1 min-w-[16rem]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-500 pointer-events-none" />
+            <input
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder={'Buscar por ID, solicitante, OM, INOM…  ("aspas" = exato)'}
+              className="w-full bg-zinc-900 border border-white/10 rounded-xl pl-9 pr-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+            />
+          </div>
+          <select
+            value={cmila}
+            onChange={e => setCmila(e.target.value)}
+            title="Filtrar por Comando Militar de Área"
+            className="bg-zinc-900 border border-white/10 rounded-xl px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+          >
+            <option value="">Todos os C Mil A</option>
+            {CMILA_CODES.map(c => <option key={c} value={c}>{cmilaLabel(c)}</option>)}
+          </select>
+          {filtrosAtivos && (
+            <button
+              onClick={() => { setSearch(''); setCmila('') }}
+              className="px-3 py-2 rounded-xl text-sm text-zinc-400 border border-white/10 hover:bg-white/5 transition-colors"
+            >
+              Limpar filtros
+            </button>
+          )}
+        </div>
+      )}
+
+      {filtrosAtivos && pedidos.length > 0 && (
+        <p className="text-xs text-amber-400/80">
+          Exibindo {visiveis.length} de {pedidos.length} pedidos. Para reordenar
+          por prioridade, limpe os filtros — o arrasto reordena a fila inteira.
+        </p>
+      )}
+
       {/* ── Lista de pedidos ── */}
-      {pedidos.length === 0 ? (
+      {visiveis.length === 0 ? (
         <div className="bg-zinc-900 border border-white/10 rounded-xl p-12 text-center">
           <CheckCircle className="h-10 w-10 text-emerald-500/40 mx-auto mb-3" />
-          <p className="text-zinc-500 text-sm">Nenhum pedido aguardando revisão.</p>
+          <p className="text-zinc-500 text-sm">
+            {pedidos.length === 0
+              ? 'Nenhum pedido aguardando revisão.'
+              : 'Nenhum pedido encontrado para este filtro.'}
+          </p>
         </div>
       ) : (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <SortableContext items={pedidos.map(p => p.id)} strategy={verticalListSortingStrategy}>
+          <SortableContext
+            items={filtrosAtivos ? [] : visiveis.map(p => p.id)}
+            strategy={verticalListSortingStrategy}
+          >
             <div className="space-y-2">
-              {pedidos.map((p, idx) => (
+              {visiveis.map((p) => (
                 <PedidoCard
                   key={p.id}
                   pedido={p}
-                  rank={idx + 1}
+                  rank={pedidos.findIndex(x => x.id === p.id) + 1}
                   isExpanded={expandedId === p.id}
                   janelaAberta={janelaAberta}
                   selected={selectedIds.has(p.id)}

@@ -11,6 +11,8 @@ import { StatusBadge } from '../../components/shared/StatusBadge'
 import { LoadingSpinner } from '../../components/shared/LoadingSpinner'
 import type { Pedido } from '../../types/pedido'
 import { TIPO_PRODUTO_LABELS, STATUS_LABELS, STATUS_RESPONSAVEL } from '../../types/pedido'
+import { CMILA_CODES, CMILA_LABELS, cmilaLabel } from '../../types/user'
+import { casaBusca } from '../../utils/busca'
 import { formatNomeComPosto } from '../../data/postos'
 
 const ORG_CLS: Record<string, string> = {
@@ -138,6 +140,7 @@ export function AdminPedidos() {
   const [deleting, setDeleting] = useState<number | null>(null)
   const [confirmDelete, setConfirmDelete] = useState<number | null>(null)
   const [search, setSearch] = useState('')
+  const [cmila, setCmila] = useState('')   // filtro por Comando Militar de Área
 
   // Selection for export
   const [selected, setSelected] = useState<Set<number>>(new Set())
@@ -207,17 +210,21 @@ export function AdminPedidos() {
     }
   }
 
-  const filtered = pedidos.filter((p) => {
-    if (!search.trim()) return true
-    const q = search.toLowerCase()
-    return (
-      String(p.id).includes(q) ||
-      (p.usuario_nome ?? '').toLowerCase().includes(q) ||
-      (p.operacao_nome ?? '').toLowerCase().includes(q) ||
-      p.status.toLowerCase().includes(q) ||
-      p.orgao_vinculante.toLowerCase().includes(q)
-    )
-  })
+  // Termo entre aspas exige correspondencia exata — "DEC" nao traz DECEx.
+  const filtered = pedidos
+    .filter((p) => !cmila || p.regiao_militar === cmila)
+    .filter((p) =>
+    casaBusca(search, [
+      String(p.id),
+      p.usuario_nome,
+      p.usuario_om,
+      p.operacao_nome,
+      p.status,
+      p.orgao_vinculante,
+      p.regiao_militar,
+      CMILA_LABELS[p.regiao_militar ?? ''] ?? null,
+    ]),
+  )
 
   const allSelected = filtered.length > 0 && filtered.every((p) => selected.has(p.id))
   const toggleSelectAll = () => {
@@ -277,16 +284,29 @@ export function AdminPedidos() {
         </div>
       </div>
 
-      {/* Busca */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
-        <input
-          type="text"
-          placeholder="Buscar por ID, solicitante, operação, status..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full bg-zinc-900 border border-white/10 rounded-xl pl-9 pr-4 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-colors"
-        />
+      {/* Busca + filtro por C Mil A */}
+      <div className="flex gap-2 flex-wrap">
+        <div className="relative flex-1 min-w-[16rem]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+          <input
+            type="text"
+            placeholder={'Buscar por ID, solicitante, OM, operação, status, órgão…  (use "aspas" para termo exato)'}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full bg-zinc-900 border border-white/10 rounded-xl pl-9 pr-4 py-2.5 text-sm text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-colors"
+          />
+        </div>
+        <select
+          value={cmila}
+          onChange={(e) => setCmila(e.target.value)}
+          title="Filtrar por Comando Militar de Área"
+          className="bg-zinc-900 border border-white/10 rounded-xl px-3 py-2.5 text-sm text-zinc-100 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-colors"
+        >
+          <option value="">Todos os C Mil A</option>
+          {CMILA_CODES.map((c) => (
+            <option key={c} value={c}>{cmilaLabel(c)}</option>
+          ))}
+        </select>
       </div>
 
       {filtered.length === 0 ? (

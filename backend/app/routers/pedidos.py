@@ -27,6 +27,7 @@ from app.models.enums import (
     DIRETORIA_TO_SUPERVISOR, SUPERVISOR_DECEX_TO_DIRETORIA,
 )
 from app.utils.diretorias_decex import diretoria_de_om
+from app.utils.busca import casa_busca
 from app.schemas.pedido import (
     PedidoCreate, PedidoUpdate, PedidoOut,
     ReviewPedidoRequest, AssignCGEORequest, CGEOReviewRequest,
@@ -2007,7 +2008,13 @@ async def admin_list_all(
     _: Usuario = Depends(require_profiles(PerfilEnum.GESTOR_CARTOGRAFICO)),
     status: str | None = Query(default=None),
     orgao_vinculante: str | None = Query(default=None),
-    q: str | None = Query(default=None),
+    regiao_militar: str | None = Query(
+        default=None, description="Filtra por Comando Militar de Área (ex.: CMP, CML)"
+    ),
+    q: str | None = Query(
+        default=None,
+        description='Busca livre; termo entre aspas exige correspondência exata ("DEC" não traz DECEx)',
+    ),
 ):
     """Gestor Cartográfico (DSG): lista TODOS os pedidos do sistema independente de status."""
     stmt = select(Pedido)
@@ -2021,18 +2028,28 @@ async def admin_list_all(
             stmt = stmt.where(Pedido.orgao_vinculante == OrgaoVinculanteEnum(orgao_vinculante))
         except ValueError:
             pass
+    if regiao_militar:
+        stmt = stmt.where(Pedido.regiao_militar == regiao_militar)
     stmt = stmt.order_by(Pedido.criado_em.desc())
     result = await db.scalars(stmt)
     pedidos = list(result)
     enriched = await _enrich(db, pedidos)
 
-    # Free-text filter (nome do solicitante ou INOM) — aplicado após enrich
+    # Busca livre — aplicada após o enrich porque alcança campos derivados.
+    # Termo entre aspas exige correspondência exata do campo: "DEC" não traz DECEx.
     if q:
-        q_lower = q.lower()
         enriched = [
             p for p in enriched
-            if (p.usuario_nome and q_lower in p.usuario_nome.lower())
-            or any(q_lower in (item.inom or '').lower() for item in p.itens)
+            if casa_busca(q, [
+                str(p.id),
+                p.usuario_nome,
+                p.usuario_om,
+                p.status.value,
+                p.orgao_vinculante.value if p.orgao_vinculante else None,
+                p.regiao_militar,
+                *(item.inom for item in p.itens),
+                *(item.mi for item in p.itens),
+            ])
         ]
 
     return enriched

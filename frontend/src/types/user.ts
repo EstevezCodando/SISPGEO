@@ -103,3 +103,30 @@ export interface Notificacao {
   pedido_id: number | null
   criado_em: string
 }
+
+// ─── Comandos Militares de Área ───────────────────────────────────────────────
+// Códigos gravados em `regiao_militar` (pedido e usuário). Espelham
+// RM_TO_SUPERVISOR em backend/app/services/pedido_service.py.
+
+export const CMILA_CODES = [
+  'CMP', 'CML', 'CMS', 'CMO', 'CMAO', 'CMA', 'CMNE', 'CMSE',
+] as const
+
+export type CMilA = (typeof CMILA_CODES)[number]
+
+export const CMILA_LABELS: Record<string, string> = {
+  CMP:  'Comando Militar do Planalto (Brasília)',
+  CML:  'C Mil Leste (Rio de Janeiro)',
+  CMS:  'C Mil Sul (Porto Alegre)',
+  CMO:  'C Mil Oeste (Campo Grande)',
+  CMAO: 'C Mil Amazônia Oriental (Belém)',
+  CMA:  'C Mil Amazônia (Manaus)',
+  CMNE: 'C Mil Nordeste (Recife)',
+  CMSE: 'C Mil Sudeste (São Paulo)',
+}
+
+/** Rótulo legível de um C Mil A; devolve o próprio código se desconhecido. */
+export function cmilaLabel(codigo: string | null | undefined): string {
+  if (!codigo) return '—'
+  return CMILA_LABELS[codigo] ?? codigo
+}

@@ -77,7 +77,7 @@ export const pedidosApi = {
   review: (id: number, acao: string, motivo?: string, observacoes?: string) =>
     api.put<Pedido>(`/pedidos/${id}/review`, { acao, motivo, observacoes }),
   mapFeatures: () => api.get('/pedidos/map-features'),
-  adminAll: (params?: { status?: string; orgao_vinculante?: string; q?: string }) =>
+  adminAll: (params?: { status?: string; orgao_vinculante?: string; regiao_militar?: string; q?: string }) =>
     api.get<Pedido[]>('/pedidos/admin/all', { params }),
   adminDelete: (id: number) => api.delete(`/pedidos/admin/${id}`),
   adminUpdate: (id: number, data: Partial<AdminUpdatePayload>) =>
