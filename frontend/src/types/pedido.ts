@@ -36,6 +36,56 @@ export const ESCALAO_LABELS: Record<string, string> = {
   GESTOR_CARTOGRAFICO: "Gestor Cartográfico",
 };
 
+// Grafia correta das siglas guardadas no `escopo` (que vem em caixa alta do
+// enum de perfis). Sem isto a cadeia exibiria "DETMIL"/"DECEX".
+const SIGLAS: Record<string, string> = {
+  DESMIL: "DESMil", DETMIL: "DETMil", DEPA: "DEPA",
+  DPHCEX: "DPHCEx", CCFEX: "CCFEx",
+  DECEX: "DECEx", COTER: "COTER", DSG: "DSG", DEC: "DEC", COLOG: "COLOG",
+  CMP: "CMP", CML: "CML", CMS: "CMS", CMO: "CMO",
+  CMAO: "CMAO", CMA: "CMA", CMNE: "CMNE", CMSE: "CMSE",
+};
+
+/**
+ * Unidade a que pertence quem atribuiu a prioridade.
+ *
+ * O `escopo` identifica a sequência: `SOLICITANTE:<id>`, `SUPERVISOR_CMP`,
+ * `CONSOLIDADOR_DECEX`. Para o solicitante o escopo só traz o id, então a OM
+ * vem do próprio pedido.
+ */
+export function unidadeDoEscopo(
+  escopo: string,
+  omSolicitante?: string | null,
+): string {
+  if (escopo.startsWith("SOLICITANTE")) return omSolicitante ?? "";
+  const sufixo = escopo.replace(/^(SUPERVISOR|CONSOLIDADOR)_/, "").split(":")[0];
+  return SIGLAS[sufixo] ?? sufixo;
+}
+
+/** Ex.: "Solicitante EsLog: Prioridade 1" */
+export function eloDaCadeia(
+  pr: PrioridadeEncaminhamento,
+  omSolicitante?: string | null,
+): string {
+  const nivel = ESCALAO_LABELS[pr.escalao] ?? pr.escalao;
+  const unidade = unidadeDoEscopo(pr.escopo, omSolicitante);
+  const quem = unidade ? `${nivel} ${unidade}` : nivel;
+  return `${quem}: Prioridade ${pr.prioridade}`;
+}
+
+/**
+ * Cadeia completa de priorização, do escalão mais antigo ao mais recente.
+ * Ex.: "Solicitante EsLog: Prioridade 1 → Supervisor DETMil: Prioridade 3
+ *       → Consolidador DECEx: Prioridade 1"
+ */
+export function cadeiaPrioridades(
+  prioridades: PrioridadeEncaminhamento[] | undefined,
+  omSolicitante?: string | null,
+): string {
+  if (!prioridades || prioridades.length === 0) return "";
+  return prioridades.map((pr) => eloDaCadeia(pr, omSolicitante)).join("  →  ");
+}
+
 export type Escala = "1:25.000" | "1:50.000" | "1:100.000" | "1:250.000";
 
 export const TIPO_PRODUTO_LABELS: Record<TipoProduto, string> = {

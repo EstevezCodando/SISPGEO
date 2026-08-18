@@ -14,7 +14,7 @@ import {
 import { StatusBadge } from '../../components/shared/StatusBadge'
 import { LoadingSpinner } from '../../components/shared/LoadingSpinner'
 import type { Pedido } from '../../types/pedido'
-import { TIPO_PRODUTO_LABELS, STATUS_LABELS, ALL_STATUSES, porPrioridade, ESCALAO_LABELS } from '../../types/pedido'
+import { TIPO_PRODUTO_LABELS, STATUS_LABELS, ALL_STATUSES, porPrioridade, eloDaCadeia, cadeiaPrioridades } from '../../types/pedido'
 import { CMILA_CODES, cmilaLabel } from '../../types/user'
 import { formatNomeComPosto } from '../../data/postos'
 
@@ -596,12 +596,13 @@ function PedidoDSGCard({
             em toda a cadeia. */}
         {p.prioridades && p.prioridades.length > 0 && (
           <span
-            className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-sky-500/10 text-sky-300 border border-sky-500/20"
-            title={p.prioridades
-              .map(pr => `${ESCALAO_LABELS[pr.escalao] ?? pr.escalao} encaminhou como prioridade ${pr.prioridade}`)
-              .join(' · ')}
+            className="shrink-0 px-2 py-0.5 rounded text-center leading-tight bg-sky-500/10 text-sky-300 border border-sky-500/20"
+            title={cadeiaPrioridades(p.prioridades, p.usuario_om)}
           >
-            recebido P{p.prioridades[p.prioridades.length - 1].prioridade}
+            <span className="block text-[9px] text-sky-400/70 uppercase tracking-wide">Recebido em</span>
+            <span className="block text-[11px] font-semibold">
+              Prioridade {p.prioridades[p.prioridades.length - 1].prioridade}
+            </span>
           </span>
         )}
 
@@ -759,12 +760,16 @@ function PedidoDSGCard({
             <div>
               <p className="text-[10px] text-zinc-600 uppercase tracking-wide mb-0.5">Prioridade</p>
               <p className="text-xs text-zinc-400">{p.prioridade ?? '—'}</p>
-              {/* Cadeia de priorizacao: com que numero cada escalao encaminhou */}
+              {/* Cadeia de priorizacao: quem, de qual OM/orgao, e com que numero
+                  encaminhou o pedido em cada etapa. */}
               {p.prioridades && p.prioridades.length > 0 && (
-                <p className="text-[10px] text-zinc-600 mt-0.5">
-                  {p.prioridades
-                    .map(pr => `${ESCALAO_LABELS[pr.escalao] ?? pr.escalao}: P${pr.prioridade}`)
-                    .join(' → ')}
+                <p className="text-[10px] text-zinc-500 mt-1 leading-relaxed">
+                  {p.prioridades.map((pr, i) => (
+                    <span key={`${pr.escopo}-${pr.ciclo}`}>
+                      {i > 0 && <span className="text-zinc-700 mx-1">→</span>}
+                      <span className="text-zinc-400">{eloDaCadeia(pr, p.usuario_om)}</span>
+                    </span>
+                  ))}
                 </p>
               )}
             </div>
