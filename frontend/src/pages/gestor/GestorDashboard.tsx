@@ -24,7 +24,7 @@ import { PedidosMap } from '../../components/map/PedidosMap'
 import { PedidoSpatializeModal } from '../../components/map/PedidoSpatializeModal'
 import { DuplicateItemsModal } from '../../components/shared/DuplicateItemsModal'
 import type { Pedido } from '../../types/pedido'
-import { TIPO_PRODUTO_LABELS, porPrioridade } from '../../types/pedido'
+import { TIPO_PRODUTO_LABELS, porPrioridade, ESCALAO_LABELS } from '../../types/pedido'
 import { CMILA_CODES, cmilaLabel } from '../../types/user'
 import { casaBusca } from '../../utils/busca'
 import { useAuthStore } from '../../store/authStore'
@@ -347,6 +347,18 @@ function PedidoCard({
 
         {/* ID */}
         <span className="font-mono font-semibold text-emerald-400 text-sm shrink-0">#{p.id}</span>
+
+        {/* Prioridade com que o escalao anterior encaminhou este pedido */}
+        {p.prioridades && p.prioridades.length > 0 && (
+          <span
+            className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-sky-500/10 text-sky-300 border border-sky-500/20"
+            title={p.prioridades
+              .map(pr => `${ESCALAO_LABELS[pr.escalao] ?? pr.escalao} encaminhou como prioridade ${pr.prioridade}`)
+              .join(' · ')}
+          >
+            recebido P{p.prioridades[p.prioridades.length - 1].prioridade}
+          </span>
+        )}
 
         {/* Main content — clicável para expandir */}
         <button

@@ -14,7 +14,7 @@ import {
 import { StatusBadge } from '../../components/shared/StatusBadge'
 import { LoadingSpinner } from '../../components/shared/LoadingSpinner'
 import type { Pedido } from '../../types/pedido'
-import { TIPO_PRODUTO_LABELS, STATUS_LABELS, ALL_STATUSES, porPrioridade } from '../../types/pedido'
+import { TIPO_PRODUTO_LABELS, STATUS_LABELS, ALL_STATUSES, porPrioridade, ESCALAO_LABELS } from '../../types/pedido'
 import { CMILA_CODES, cmilaLabel } from '../../types/user'
 import { formatNomeComPosto } from '../../data/postos'
 
@@ -745,6 +745,14 @@ function PedidoDSGCard({
             <div>
               <p className="text-[10px] text-zinc-600 uppercase tracking-wide mb-0.5">Prioridade</p>
               <p className="text-xs text-zinc-400">{p.prioridade ?? '—'}</p>
+              {/* Cadeia de priorizacao: com que numero cada escalao encaminhou */}
+              {p.prioridades && p.prioridades.length > 0 && (
+                <p className="text-[10px] text-zinc-600 mt-0.5">
+                  {p.prioridades
+                    .map(pr => `${ESCALAO_LABELS[pr.escalao] ?? pr.escalao}: P${pr.prioridade}`)
+                    .join(' → ')}
+                </p>
+              )}
             </div>
             {p.orgao_vinculante && (
               <div>

@@ -20,6 +20,22 @@ export type TipoProduto =
   | "IMPRESSAO_COI"
   | "IMPRESSAO"; // legado
 
+/** Prioridade que um escalão atribuiu ao encaminhar o pedido. */
+export interface PrioridadeEncaminhamento {
+  escalao: string;
+  escopo: string;
+  ciclo: number;
+  prioridade: number;
+  definida_em: string;
+}
+
+export const ESCALAO_LABELS: Record<string, string> = {
+  SOLICITANTE: "Solicitante",
+  SUPERVISOR: "Supervisor",
+  CONSOLIDADOR: "Consolidador",
+  GESTOR_CARTOGRAFICO: "Gestor Cartográfico",
+};
+
 export type Escala = "1:25.000" | "1:50.000" | "1:100.000" | "1:250.000";
 
 export const TIPO_PRODUTO_LABELS: Record<TipoProduto, string> = {
@@ -192,6 +208,12 @@ export interface Pedido {
   atualizado_em: string;
   itens: ItemPedido[];
   regiao_militar: string | null;
+  /** Ordem de trabalho do escalão que detém o pedido (o que o arrasto altera). */
+  ordem_fila?: number;
+  /** Quando o pedido chegou ao escalão atual (a "leva" do envio). */
+  encaminhado_em?: string | null;
+  /** Prioridade que cada escalão atribuiu ao encaminhar — do mais antigo ao mais recente. */
+  prioridades?: PrioridadeEncaminhamento[];
   diretoria: string | null;
   usuario_nome: string | null;
   operacao_nome: string | null;
