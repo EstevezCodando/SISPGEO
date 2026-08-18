@@ -146,3 +146,96 @@ class TestLeituraPlanilha:
     def test_erros_acumulam_em_vez_de_parar_na_primeira(self):
         _, erros = P._ler_planilha(self.CABECALHO + "10;abc;1\n20;0;1\nxx;1;1\n")
         assert len(erros) == 3
+
+
+class TestRegraDeReconstrucao:
+    """A regra muda conforme as prioridades do escalão sobreviveram ou não.
+
+    Descoberto ao auditar o dump: só o consolidador DSG tinha numeração
+    corrompida. Nos demais escalões as prioridades estavam íntegras, e ordenar
+    por leva as invertia — inclusive porque ``submit_pedido`` grava um horário
+    por pedido, então uma leva única aparece com horários diferentes.
+    """
+
+    def test_detecta_prioridades_integras(self):
+        ps = [_pedido(i, status=StatusPedidoEnum.AGUARDANDO_CARTOGRAFICO, prioridade=n)
+              for i, n in [(1, 1), (2, 2), (3, 3)]]
+        assert P.prioridades_integras(ps) is True
+
+    def test_detecta_prioridades_repetidas(self):
+        ps = [_pedido(i, status=StatusPedidoEnum.AGUARDANDO_CARTOGRAFICO, prioridade=n)
+              for i, n in [(1, 8), (2, 8)]]
+        assert P.prioridades_integras(ps) is False
+
+    def test_prioridade_zero_nao_conta_como_integra(self):
+        ps = [_pedido(1, status=StatusPedidoEnum.AGUARDANDO_CARTOGRAFICO, prioridade=0)]
+        assert P.prioridades_integras(ps) is False
+
+    def test_escalao_integro_preserva_a_ordem_da_prioridade(self):
+        """Caso real do SUPERVISOR_CMP: prioridades 1..7 fora da ordem de envio.
+
+        Os horários crescem de 1030 a 1040, mas a prioridade escolhida foi
+        outra — é a prioridade que vale.
+        """
+        st = StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR
+        pedidos = [
+            _pedido(1030, status=st, prioridade=1, leva_min=0),
+            _pedido(1036, status=st, prioridade=5, leva_min=10),
+            _pedido(1008, status=st, prioridade=7, leva_min=20),
+            _pedido(1022, status=st, prioridade=6, leva_min=21),
+            _pedido(1024, status=st, prioridade=4, leva_min=22),
+            _pedido(1025, status=st, prioridade=3, leva_min=23),
+            _pedido(1040, status=st, prioridade=2, leva_min=24),
+        ]
+        novas = P.sequencias_corrigidas(pedidos)
+        ordem = sorted(novas, key=novas.get)
+        assert ordem == [1030, 1040, 1025, 1024, 1036, 1022, 1008]
+        # Renumeração é idempotente quando já estava íntegra.
+        assert novas == {1030: 1, 1040: 2, 1025: 3, 1024: 4, 1036: 5, 1022: 6, 1008: 7}
+
+    def test_solicitante_integro_nao_e_invertido_pela_ordem_de_envio(self):
+        """Caso real do SOLICITANTE:4 — enviou em ordem inversa à prioridade."""
+        st = StatusPedidoEnum.AGUARDANDO_SUPERVISOR
+        pedidos = [
+            _pedido(1044, status=st, prioridade=3, leva_min=0, usuario_id=4),
+            _pedido(1046, status=st, prioridade=2, leva_min=8, usuario_id=4),
+            _pedido(1047, status=st, prioridade=1, leva_min=12, usuario_id=4),
+        ]
+        novas = P.sequencias_corrigidas(pedidos)
+        assert sorted(novas, key=novas.get) == [1047, 1046, 1044]
+
+    def test_escalao_corrompido_usa_a_leva(self):
+        """Caso real do CONSOLIDADOR_DSG: 1006/1020 em 8 e 1023/1032 em 9."""
+        st = StatusPedidoEnum.AGUARDANDO_CARTOGRAFICO
+        pedidos = [
+            _pedido(1031, status=st, prioridade=1, leva_min=0),
+            _pedido(1041, status=st, prioridade=2, leva_min=0),
+            _pedido(1034, status=st, prioridade=3, leva_min=0),
+            _pedido(1006, status=st, prioridade=8, leva_min=1),
+            _pedido(1023, status=st, prioridade=9, leva_min=2),
+            _pedido(1020, status=st, prioridade=8, leva_min=3),
+            _pedido(1032, status=st, prioridade=9, leva_min=3),
+            _pedido(1019, status=st, prioridade=10, leva_min=3),
+        ]
+        novas = P.sequencias_corrigidas(pedidos)
+        assert sorted(novas, key=novas.get) == [
+            1031, 1041, 1034, 1006, 1023, 1020, 1032, 1019,
+        ]
+
+    def test_cada_escalao_aplica_a_sua_propria_regra(self):
+        """Um escalão íntegro e outro corrompido, no mesmo lote."""
+        integro = [
+            _pedido(1, status=StatusPedidoEnum.AGUARDANDO_CARTOGRAFICO,
+                    prioridade=2, leva_min=0, orgao=OrgaoVinculanteEnum.COTER),
+            _pedido(2, status=StatusPedidoEnum.AGUARDANDO_CARTOGRAFICO,
+                    prioridade=1, leva_min=5, orgao=OrgaoVinculanteEnum.COTER),
+        ]
+        corrompido = [
+            _pedido(3, status=StatusPedidoEnum.AGUARDANDO_CARTOGRAFICO,
+                    prioridade=1, leva_min=0, orgao=OrgaoVinculanteEnum.DSG),
+            _pedido(4, status=StatusPedidoEnum.AGUARDANDO_CARTOGRAFICO,
+                    prioridade=1, leva_min=5, orgao=OrgaoVinculanteEnum.DSG),
+        ]
+        novas = P.sequencias_corrigidas(integro + corrompido)
+        assert novas[2] == 1 and novas[1] == 2      # COTER: pela prioridade
+        assert novas[3] == 1 and novas[4] == 2      # DSG: pela leva

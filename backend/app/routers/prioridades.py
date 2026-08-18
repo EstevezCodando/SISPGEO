@@ -115,12 +115,34 @@ def _chave_ordenacao(p: Pedido):
     )
 
 
-def sequencias_corrigidas(pedidos: list[Pedido]) -> dict[int, int]:
-    """Renumera cada escalão em ``1..N``, sem duplicatas, preservando a ordem atual.
+def prioridades_integras(pedidos: list[Pedido]) -> bool:
+    """Diz se as prioridades deste escalão sobreviveram intactas.
 
-    A ordem de referência é a mesma que a interface já exibe (leva mais antiga
-    primeiro, prioridade dentro dela) — então a planilha nasce refletindo o que
-    o operador vê na tela, e ele só precisa mexer no que quiser mudar.
+    Íntegras = todas preenchidas e sem repetição. Nesse caso elas são a decisão
+    original de quem priorizou e devem ser respeitadas. Havendo repetição, a
+    numeração foi corrompida pelo defeito do arrasto e o único sinal confiável
+    que resta é a ordem das levas.
+    """
+    prios = [p.prioridade or 0 for p in pedidos]
+    return 0 not in prios and len(set(prios)) == len(prios)
+
+
+def sequencias_corrigidas(pedidos: list[Pedido]) -> dict[int, int]:
+    """Renumera cada escalão em ``1..N``, sem duplicatas, preservando a intenção.
+
+    O critério muda conforme o estado dos dados daquele escalão:
+
+    * **prioridades íntegras** → ordena por prioridade. Foi a decisão explícita
+      de quem priorizou, e a data de envio não a contradiz: ``submit_pedido``
+      grava um horário por pedido, então uma leva enviada de uma vez aparece
+      com horários ligeiramente diferentes e não serve para agrupar nada.
+    * **prioridades repetidas** → ordena por leva e, dentro dela, por
+      prioridade. É o caso em que o arrasto reaproveitou números; a leva é o
+      que separa um envio do outro.
+
+    Aplicar a regra da leva a um escalão íntegro inverteria a ordem — no
+    supervisor CMP, por exemplo, a intenção 1030,1040,1025,1024,1036,1022,1008
+    viraria 1030,1008,1022,1024,1025,1040,1036.
     """
     por_escopo: dict[str, list[Pedido]] = {}
     for p in pedidos:
@@ -128,7 +150,11 @@ def sequencias_corrigidas(pedidos: list[Pedido]) -> dict[int, int]:
 
     novas: dict[int, int] = {}
     for lista in por_escopo.values():
-        for posicao, p in enumerate(sorted(lista, key=_chave_ordenacao), start=1):
+        if prioridades_integras(lista):
+            ordenados = sorted(lista, key=lambda p: (p.prioridade, p.criado_em))
+        else:
+            ordenados = sorted(lista, key=_chave_ordenacao)
+        for posicao, p in enumerate(ordenados, start=1):
             novas[p.id] = posicao
     return novas
 

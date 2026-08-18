@@ -32,7 +32,11 @@ def _sql(clause) -> str:
 def _db_capturando_updates(rowcount: int = 1):
     """AsyncSession mockada que registra cada statement passado a ``execute``."""
     db = AsyncMock()
+    db.add = MagicMock()          # síncrono no SQLAlchemy
     db.commit = AsyncMock()
+    db.scalars = AsyncMock(return_value=MagicMock(
+        __iter__=MagicMock(return_value=iter([]))
+    ))
     executados: list = []
 
     async def _execute(stmt, *args, **kwargs):
@@ -458,7 +462,11 @@ class TestSequenciaPrioridade:
 
         db = self._db_com_sequencia()
         await carimbar_encaminhamento(db, [_make_pedido(pedido_id=5)], _supervisor())
-        registro = db.add.call_args[0][0]
+        from app.models.prioridade import PrioridadeEncaminhamento
+        registro = next(
+            c[0][0] for c in db.add.call_args_list
+            if isinstance(c[0][0], PrioridadeEncaminhamento)
+        )
         assert registro.escalao == "SUPERVISOR"
         assert registro.escopo == "SUPERVISOR_CMP"
         assert registro.prioridade == 1

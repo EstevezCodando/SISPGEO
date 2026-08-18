@@ -122,6 +122,24 @@ async def carimbar_encaminhamento(
         atribuidas[pedido.id] = proximo
         proximo += 1
 
+    # Auditoria do carimbo: registra a leva inteira e a faixa consumida, para
+    # que a sequência de um escalão possa ser reconstruída sem depender das
+    # colunas do pedido (que escalões seguintes sobrescrevem).
+    from app.models.audit_log import AuditLog
+
+    db.add(AuditLog(
+        usuario_id=remetente.id,
+        acao="carimbar_prioridade",
+        entidade="pedido",
+        entidade_id=pedidos[0].id,
+        dados_extras={
+            "escopo": escopo,
+            "escalao": escalao,
+            "ciclo": ciclo,
+            "atribuidas": {str(k): v for k, v in atribuidas.items()},
+        },
+    ))
+
     logger.info(
         "carimbar_encaminhamento → escopo=%s ciclo=%d pedidos=%d faixa=%d..%d",
         escopo, ciclo, len(pedidos),

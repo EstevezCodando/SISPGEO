@@ -2224,7 +2224,19 @@ async def reorder_pedidos(
         raise HTTPException(status_code=403, detail="Perfil não autorizado")
     # Busca todos de uma vez (1 query) ao invés de N db.get() individuais
     from sqlalchemy import update as sa_update
+    from app.models.audit_log import AuditLog
+
     scope_clause = _pedido_scope_clause(current_user)
+
+    # Estado anterior, capturado antes do UPDATE: sem ele o log registraria
+    # apenas o resultado, e não daria para reconstruir uma ordem perdida.
+    anterior = {
+        p.id: p.ordem_fila
+        for p in await db.scalars(
+            select(Pedido).where(Pedido.id.in_(body.ordered_ids))
+        )
+    }
+
     reordenados = 0
     for rank, pid in enumerate(body.ordered_ids, start=1):
         stmt = sa_update(Pedido).where(Pedido.id == pid).values(ordem_fila=rank)
@@ -2232,6 +2244,26 @@ async def reorder_pedidos(
             stmt = stmt.where(scope_clause)
         result = await db.execute(stmt)
         reordenados += result.rowcount or 0
+
+    # Auditoria da reordenação. A ausência deste registro foi o que impediu
+    # reconstruir a ordem pretendida quando as prioridades se corromperam:
+    # audit_logs só guardava login/register, e pedido_historico só status.
+    db.add(AuditLog(
+        usuario_id=current_user.id,
+        acao="reorder_pedidos",
+        entidade="pedido",
+        entidade_id=body.ordered_ids[0] if body.ordered_ids else None,
+        dados_extras={
+            "perfil": current_user.perfil.value,
+            "ordem_nova": body.ordered_ids,
+            "ordem_anterior": [
+                pid for pid, _ in sorted(
+                    anterior.items(), key=lambda kv: (kv[1] == 0, kv[1], kv[0])
+                )
+            ],
+            "reordenados": reordenados,
+        },
+    ))
     await db.commit()
     return {"reordenados": reordenados}
 
