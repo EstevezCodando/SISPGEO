@@ -591,6 +591,20 @@ function PedidoDSGCard({
         {/* ID */}
         <span className="font-mono font-semibold text-emerald-400 text-sm shrink-0">#{p.id}</span>
 
+        {/* Prioridade com que o consolidador encaminhou este pedido à DSG.
+            Mesmo selo do supervisor/consolidador, para a leitura ser a mesma
+            em toda a cadeia. */}
+        {p.prioridades && p.prioridades.length > 0 && (
+          <span
+            className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-sky-500/10 text-sky-300 border border-sky-500/20"
+            title={p.prioridades
+              .map(pr => `${ESCALAO_LABELS[pr.escalao] ?? pr.escalao} encaminhou como prioridade ${pr.prioridade}`)
+              .join(' · ')}
+          >
+            recebido P{p.prioridades[p.prioridades.length - 1].prioridade}
+          </span>
+        )}
+
         {/* Main — clicável */}
         <button type="button" onClick={() => onToggleExpand(p.id)} className="flex-1 min-w-0 text-left">
           {/* Solicitante — posto + NG + OM + subordinação */}
