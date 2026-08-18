@@ -58,6 +58,18 @@ class PedidoUpdate(BaseModel):
     finalidade: str | None = None
 
 
+class PrioridadeEncaminhamentoOut(BaseModel):
+    """Prioridade que um escalão atribuiu ao encaminhar o pedido."""
+
+    escalao: str
+    escopo: str
+    ciclo: int
+    prioridade: int
+    definida_em: datetime
+
+    model_config = {"from_attributes": True}
+
+
 class PedidoOut(BaseModel):
     id: int
     usuario_id: int
@@ -76,6 +88,11 @@ class PedidoOut(BaseModel):
     itens: list[ItemPedidoOut] = []
     regiao_militar: str | None = None
     diretoria: str | None = None
+    ordem_fila: int = 0
+    encaminhado_em: datetime | None = None
+    # Histórico de prioridades por escalão — permite ao supervisor/consolidador/DSG
+    # ver com que prioridade cada nível anterior encaminhou o pedido.
+    prioridades: list["PrioridadeEncaminhamentoOut"] = []
     # Campos enriquecidos (populados nos endpoints, não estão no modelo ORM)
     usuario_nome: str | None = None
     operacao_nome: str | None = None

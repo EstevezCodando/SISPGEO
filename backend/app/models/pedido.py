@@ -22,7 +22,16 @@ class Pedido(Base):
         default=StatusPedidoEnum.RASCUNHO,
         index=True,
     )
+    # Prioridade DEFINITIVA atribuida pelo escalao que encaminhou o pedido.
+    # Carimbada no envio por prioridade_service.carimbar_encaminhamento e nunca
+    # reescrita por arrasto — e o que o escalao seguinte le para ordenar.
     prioridade: Mapped[int] = mapped_column(SmallInteger, default=0)
+    # Ordem de trabalho do escalao que detem o pedido agora: e isto que o
+    # arrastar-e-soltar altera. Provisoria ate o envio.
+    ordem_fila: Mapped[int] = mapped_column(SmallInteger, default=0)
+    # Momento em que o pedido chegou ao escalao atual. Junto com `prioridade`,
+    # define a ordem de exibicao: leva mais antiga primeiro, prioridade dentro dela.
+    encaminhado_em: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     finalidade: Mapped[str | None] = mapped_column(Text)
     finalidade_geo: Mapped[str | None] = mapped_column(String(100))
     orgao_vinculante: Mapped[OrgaoVinculanteEnum] = mapped_column(

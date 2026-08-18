@@ -123,6 +123,11 @@ async def _enrich(db: AsyncSession, pedidos: list[Pedido]) -> list[PedidoOut]:
         for r in user_rows
     }
 
+    # Histórico de prioridades por escalão (1 query para toda a lista).
+    from app.services.prioridade_service import historico_de
+    from app.schemas.pedido import PrioridadeEncaminhamentoOut
+    historico = await historico_de(db, [p.id for p in pedidos])
+
     ops: dict[int, str] = {}
     if op_ids:
         op_rows = await db.execute(
@@ -148,6 +153,9 @@ async def _enrich(db: AsyncSession, pedidos: list[Pedido]) -> list[PedidoOut]:
         out.criador_nome = users.get(p.criador_id, {}).get("nome") if p.criador_id else None
         ov = p.orgao_vinculante.value if p.orgao_vinculante else ""
         out.cadeia_aprovacao = pedido_service.cadeia_aprovacao(ov, p.regiao_militar, p.diretoria)
+        out.prioridades = [
+            PrioridadeEncaminhamentoOut.model_validate(r) for r in historico.get(p.id, [])
+        ]
         result.append(out)
     return result
 
@@ -248,6 +256,48 @@ def ordem_prioridade():
         case((Pedido.prioridade == 0, 1), else_=0),
         Pedido.prioridade.asc(),
         Pedido.criado_em.asc(),
+    )
+
+
+def ordem_recebimento():
+    """Ordem em que o escalão atual recebeu os pedidos.
+
+    Primeiro a leva mais antiga, depois a prioridade que o remetente atribuiu
+    dentro dela. É esta a ordem que o escalão anterior decidiu — e a única que
+    respeita tanto "quem chegou antes vem antes" quanto a priorização do envio.
+
+    Ordenar por ``criado_em`` (como se fazia) ignorava a prioridade por
+    completo: a DSG via os pedidos por data de cadastro, e não na ordem em que
+    o consolidador os encaminhou.
+
+    A leva entra antes da prioridade porque cada escalão tem a sua própria
+    sequência — dois órgãos distintos podem ambos ter enviado uma prioridade 1,
+    e o desempate correto entre elas é quem chegou primeiro.
+    """
+    from sqlalchemy import case
+
+    return (
+        # NULLs (pedidos anteriores à migração, sem leva) vão ao fim no ASC.
+        Pedido.encaminhado_em.asc(),
+        case((Pedido.prioridade == 0, 1), else_=0),
+        Pedido.prioridade.asc(),
+        Pedido.criado_em.asc(),
+    )
+
+
+def ordem_fila():
+    """Ordem de trabalho do escalão que detém os pedidos agora.
+
+    É o que o arrastar-e-soltar define. Enquanto ninguém arrastou, ``ordem_fila``
+    reflete a prioridade com que o remetente encaminhou.
+    """
+    from sqlalchemy import case
+
+    return (
+        case((Pedido.ordem_fila == 0, 1), else_=0),
+        Pedido.ordem_fila.asc(),
+        Pedido.encaminhado_em.asc(),
+        Pedido.id.asc(),
     )
 
 
@@ -416,33 +466,33 @@ async def list_pedidos(
         result = await db.scalars(
             select(Pedido)
             .where(Pedido.status.in_([StatusPedidoEnum.AGUARDANDO_CARTOGRAFICO, StatusPedidoEnum.ATRIBUIDO_CGEO]))
-            .order_by(Pedido.criado_em.desc())
+            .order_by(*ordem_recebimento())
         )
     elif current_user.perfil == PerfilEnum.ANALISTA_CGEO:
         result = await db.scalars(
             select(Pedido)
             .where(Pedido.cgeo_id == current_user.cgeo_id)
-            .order_by(Pedido.criado_em.desc())
+            .order_by(*ordem_recebimento())
         )
     elif current_user.perfil in _GESTORES_SUPERVISOR:
         # Supervisor (C. Mil. A) — roteado pela RM derivada do perfil
         result = await db.scalars(
             select(Pedido)
             .where(_supervisor_scope(current_user))
-            .order_by(Pedido.criado_em.desc())
+            .order_by(*ordem_recebimento())
         )
     elif current_user.perfil in CONSOLIDADOR_PROFILES:
         # Consolidador — roteado por orgao_vinculante
         result = await db.scalars(
             select(Pedido)
             .where(_consolidador_scope(current_user))
-            .order_by(Pedido.criado_em.desc())
+            .order_by(*ordem_recebimento())
         )
     else:
         result = await db.scalars(
             select(Pedido)
             .where(Pedido.usuario_id == current_user.id)
-            .order_by(Pedido.criado_em.desc())
+            .order_by(*ordem_recebimento())
         )
     return await _enrich(db, list(result))
 
@@ -466,7 +516,7 @@ async def list_pending(
                 Pedido.status == StatusPedidoEnum.AGUARDANDO_SUPERVISOR,
                 _supervisor_scope(current_user),
             )
-            .order_by(Pedido.submetido_gestor_em.asc())
+            .order_by(*ordem_fila())
         )
     elif current_user.perfil in CONSOLIDADOR_PROFILES:
         # Consolidador — filtro por orgao_vinculante
@@ -476,13 +526,13 @@ async def list_pending(
                 Pedido.status == StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR,
                 _consolidador_scope(current_user),
             )
-            .order_by(Pedido.submetido_gestor_em.asc())
+            .order_by(*ordem_fila())
         )
     elif current_user.perfil == PerfilEnum.GESTOR_CARTOGRAFICO:
         result = await db.scalars(
             select(Pedido)
             .where(Pedido.status == StatusPedidoEnum.AGUARDANDO_CARTOGRAFICO)
-            .order_by(Pedido.submetido_dsg_em.asc())
+            .order_by(*ordem_fila())
         )
     elif current_user.perfil == PerfilEnum.ANALISTA_CGEO:
         result = await db.scalars(
@@ -1379,7 +1429,7 @@ async def relatorio_analitico(
     pedidos = list(await db.scalars(
         select(Pedido)
         .where(Pedido.status.in_(status_permitidos))
-        .order_by(Pedido.criado_em.desc())
+        .order_by(*ordem_recebimento())
     ))
 
     rows: list[dict] = []
@@ -1513,7 +1563,7 @@ async def relatorio_analitico_features(
     pedidos = list(await db.scalars(
         select(Pedido)
         .where(Pedido.status.in_(status_permitidos))
-        .order_by(Pedido.criado_em.desc())
+        .order_by(*ordem_recebimento())
     ))
     enriched = await _enrich(db, pedidos)
 
@@ -1821,7 +1871,8 @@ async def enviar_lote(
         select(Pedido)
         .where(Pedido.usuario_id == current_user.id)
         .where(Pedido.status == StatusPedidoEnum.RASCUNHO)
-        .order_by(*ordem_prioridade())
+        # A leva sai na ordem em que o solicitante organizou os rascunhos.
+        .order_by(*ordem_fila())
     )
     if body.pedido_ids:
         stmt = stmt.where(Pedido.id.in_(body.pedido_ids))
@@ -2030,7 +2081,7 @@ async def admin_list_all(
             pass
     if regiao_militar:
         stmt = stmt.where(Pedido.regiao_militar == regiao_militar)
-    stmt = stmt.order_by(Pedido.criado_em.desc())
+    stmt = stmt.order_by(*ordem_recebimento())
     result = await db.scalars(stmt)
     pedidos = list(result)
     enriched = await _enrich(db, pedidos)
@@ -2160,7 +2211,14 @@ async def reorder_pedidos(
     db: AsyncSession = Depends(get_db),
     current_user: Usuario = Depends(get_current_user),
 ):
-    """Reordena pedidos por prioridade. ordered_ids[0] = maior prioridade."""
+    """Reordena a fila de trabalho do escalão. ordered_ids[0] = primeiro da fila.
+
+    Grava apenas ``ordem_fila`` — a prioridade definitiva do pedido é carimbada
+    no envio (ver prioridade_service). Antes, o arrasto reescrevia ``prioridade``
+    sobre a fila pendente visível; como cada leva enviada saía da fila, a leva
+    seguinte reaproveitava os mesmos números e dois pedidos acabavam com a
+    mesma prioridade.
+    """
     allowed = {PerfilEnum.SOLICITANTE} | SUPERVISOR_PROFILES | CONSOLIDADOR_PROFILES
     if current_user.perfil not in allowed:
         raise HTTPException(status_code=403, detail="Perfil não autorizado")
@@ -2169,7 +2227,7 @@ async def reorder_pedidos(
     scope_clause = _pedido_scope_clause(current_user)
     reordenados = 0
     for rank, pid in enumerate(body.ordered_ids, start=1):
-        stmt = sa_update(Pedido).where(Pedido.id == pid).values(prioridade=rank)
+        stmt = sa_update(Pedido).where(Pedido.id == pid).values(ordem_fila=rank)
         if scope_clause is not None:
             stmt = stmt.where(scope_clause)
         result = await db.execute(stmt)

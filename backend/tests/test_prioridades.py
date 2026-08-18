@@ -131,10 +131,12 @@ class TestReorderRanks:
         )
         sqls = [_sql(s) for s in db.executados]
         assert len(sqls) == 3
-        # ordered_ids[0] recebe prioridade 1 (maior prioridade)
-        assert "prioridade=1" in sqls[0].replace(" ", "") and "id = 30" in sqls[0]
-        assert "prioridade=2" in sqls[1].replace(" ", "") and "id = 10" in sqls[1]
-        assert "prioridade=3" in sqls[2].replace(" ", "") and "id = 20" in sqls[2]
+        # O arrasto grava ordem_fila (ordem de trabalho), nunca a prioridade
+        # definitiva — esta é carimbada no envio.
+        assert "ordem_fila=1" in sqls[0].replace(" ", "") and "id = 30" in sqls[0]
+        assert "ordem_fila=2" in sqls[1].replace(" ", "") and "id = 10" in sqls[1]
+        assert "ordem_fila=3" in sqls[2].replace(" ", "") and "id = 20" in sqls[2]
+        assert not any("prioridade" in q for q in sqls)
 
     async def test_commit_e_executado(self):
         db = _db_capturando_updates()
@@ -284,9 +286,9 @@ class TestReorderItens:
 # ---------------------------------------------------------------------------
 
 class TestPrioridadeNoFluxo:
-    async def test_consolidate_preserva_prioridade_do_supervisor(self):
-        """Ao encaminhar do supervisor ao consolidador, a ordem definida pelo
-        supervisor deve permanecer gravada no pedido (não é zerada)."""
+    async def test_consolidate_carimba_prioridade_definitiva(self):
+        """Ao encaminhar, o pedido recebe a prioridade definitiva do remetente,
+        continuando a sequência daquele escalão."""
         from unittest.mock import patch
         from app.services import pedido_service
 
@@ -295,8 +297,10 @@ class TestPrioridadeNoFluxo:
         p.prioridade = 3
 
         db = AsyncMock()
+        db.add = MagicMock()          # síncrono no SQLAlchemy
         db.commit = AsyncMock()
         db.get = AsyncMock(return_value=p)
+        db.scalar = AsyncMock(return_value=None)
         db.scalars = AsyncMock(return_value=MagicMock(
             __iter__=MagicMock(return_value=iter([]))
         ))
@@ -307,7 +311,11 @@ class TestPrioridadeNoFluxo:
 
         assert r["submetidos"] == 1
         assert p.status == StatusPedidoEnum.AGUARDANDO_CONSOLIDADOR
-        assert p.prioridade == 3
+        # Sequência vazia neste escalão → primeira prioridade emitida é 1.
+        assert p.prioridade == 1
+        # A fila do escalão seguinte começa na ordem que este remetente definiu.
+        assert p.ordem_fila == 1
+        assert p.encaminhado_em is not None
 
 
 # ---------------------------------------------------------------------------
@@ -364,3 +372,143 @@ class TestOrdenacaoNaoPriorizados:
         # A prioridade 0 precisa ser desempatada por um CASE antes do ASC cru.
         assert "CASE" in sql.upper()
         assert sql.upper().index("CASE") < sql.upper().index("PRIORIDADE ASC")
+
+
+# ---------------------------------------------------------------------------
+# Sequência de prioridades: contínua, sem reuso
+# ---------------------------------------------------------------------------
+
+class TestSequenciaPrioridade:
+    """Reproduz o cenário que quebrou em produção.
+
+    O consolidador enviou 4 levas — [1031,1041,1034], [1006], [1023],
+    [1020,1032,1019] — e esperava as prioridades 1..8. O arrasto gravava
+    ``1..N`` sobre a fila pendente; como cada leva enviada saía da fila, a
+    seguinte reaproveitava números: 1006 e 1020 ficaram ambos com 8, e
+    1023 e 1032 ambos com 9.
+    """
+
+    @staticmethod
+    def _db_com_sequencia(inicial: int = 0):
+        db = AsyncMock()
+        db.add = MagicMock()
+        db.commit = AsyncMock()
+        db.scalar = AsyncMock(return_value=inicial or None)
+        return db
+
+    async def test_primeira_leva_comeca_em_1(self):
+        from app.services.prioridade_service import carimbar_encaminhamento
+
+        db = self._db_com_sequencia()
+        pedidos = [_make_pedido(pedido_id=i) for i in (1031, 1041, 1034)]
+        r = await carimbar_encaminhamento(db, pedidos, _consolidador())
+        assert r == {1031: 1, 1041: 2, 1034: 3}
+
+    async def test_leva_seguinte_continua_a_sequencia(self):
+        """Após 3 prioridades consumidas, o próximo envio começa em 4 — não em 1."""
+        from app.services.prioridade_service import carimbar_encaminhamento
+
+        db = self._db_com_sequencia(inicial=3)
+        r = await carimbar_encaminhamento(db, [_make_pedido(pedido_id=1006)], _consolidador())
+        assert r == {1006: 4}
+
+    async def test_cenario_completo_das_quatro_levas(self):
+        """As 4 levas devem produzir exatamente as prioridades 1..8, sem repetir."""
+        from app.services.prioridade_service import carimbar_encaminhamento
+
+        levas = [[1031, 1041, 1034], [1006], [1023], [1020, 1032, 1019]]
+        consolidador = _consolidador(PerfilEnum.CONSOLIDADOR_DSG)
+        emitidas: dict[int, int] = {}
+        ultima = 0
+
+        for leva in levas:
+            db = self._db_com_sequencia(inicial=ultima)
+            r = await carimbar_encaminhamento(
+                db, [_make_pedido(pedido_id=i) for i in leva], consolidador,
+            )
+            emitidas.update(r)
+            ultima = max(r.values())
+
+        assert emitidas == {
+            1031: 1, 1041: 2, 1034: 3,
+            1006: 4,
+            1023: 5,
+            1020: 6, 1032: 7, 1019: 8,
+        }
+        # Nenhum número reaproveitado — era exatamente o defeito em produção.
+        assert len(set(emitidas.values())) == len(emitidas)
+        # E a ordem final é a que o usuário pretendeu.
+        assert sorted(emitidas, key=emitidas.get) == [
+            1031, 1041, 1034, 1006, 1023, 1020, 1032, 1019,
+        ]
+
+    async def test_leva_e_numerada_na_ordem_da_fila(self):
+        """Quem está em primeiro na fila recebe a menor prioridade da leva."""
+        from app.services.prioridade_service import carimbar_encaminhamento
+
+        db = self._db_com_sequencia()
+        p1, p2, p3 = (_make_pedido(pedido_id=i) for i in (77, 88, 99))
+        p1.ordem_fila, p2.ordem_fila, p3.ordem_fila = 3, 1, 2
+        ordenados = sorted([p1, p2, p3], key=lambda x: x.ordem_fila)
+        r = await carimbar_encaminhamento(db, ordenados, _consolidador())
+        assert r == {88: 1, 99: 2, 77: 3}
+
+    async def test_escalao_registrado_no_historico(self):
+        from app.services.prioridade_service import carimbar_encaminhamento
+
+        db = self._db_com_sequencia()
+        await carimbar_encaminhamento(db, [_make_pedido(pedido_id=5)], _supervisor())
+        registro = db.add.call_args[0][0]
+        assert registro.escalao == "SUPERVISOR"
+        assert registro.escopo == "SUPERVISOR_CMP"
+        assert registro.prioridade == 1
+
+    async def test_leva_vazia_nao_consome_numero(self):
+        from app.services.prioridade_service import carimbar_encaminhamento
+
+        db = self._db_com_sequencia()
+        assert await carimbar_encaminhamento(db, [], _consolidador()) == {}
+        db.add.assert_not_called()
+
+
+class TestEscopoSequencia:
+    """Cada escalão tem a sua própria sequência — não compartilham numeração."""
+
+    def test_supervisores_de_cmila_distintos_tem_escopos_distintos(self):
+        from app.services.prioridade_service import escopo_de
+
+        assert escopo_de(_supervisor(PerfilEnum.SUPERVISOR_CMP)) == "SUPERVISOR_CMP"
+        assert escopo_de(_supervisor(PerfilEnum.SUPERVISOR_CML)) == "SUPERVISOR_CML"
+
+    def test_consolidadores_de_orgaos_distintos_tem_escopos_distintos(self):
+        from app.services.prioridade_service import escopo_de
+
+        assert escopo_de(_consolidador(PerfilEnum.CONSOLIDADOR_DSG)) == "CONSOLIDADOR_DSG"
+        assert escopo_de(_consolidador(PerfilEnum.CONSOLIDADOR_COTER)) == "CONSOLIDADOR_COTER"
+
+    def test_solicitantes_tem_sequencia_propria_por_usuario(self):
+        from app.services.prioridade_service import escopo_de
+
+        a = _make_user(user_id=7, perfil=PerfilEnum.SOLICITANTE)
+        b = _make_user(user_id=9, perfil=PerfilEnum.SOLICITANTE)
+        assert escopo_de(a) == "SOLICITANTE:7"
+        assert escopo_de(b) == "SOLICITANTE:9"
+        assert escopo_de(a) != escopo_de(b)
+
+
+class TestOrdemDeExibicao:
+    """A ordem exibida deve ser: leva mais antiga primeiro, prioridade dentro dela."""
+
+    def test_ordem_recebimento_usa_leva_antes_da_prioridade(self):
+        from sqlalchemy import select
+        from app.models.pedido import Pedido
+
+        sql = _sql(select(Pedido.id).order_by(*pedidos_router.ordem_recebimento())).upper()
+        assert sql.index("ENCAMINHADO_EM") < sql.index("PRIORIDADE ASC")
+
+    def test_ordem_fila_usa_ordem_de_trabalho(self):
+        from sqlalchemy import select
+        from app.models.pedido import Pedido
+
+        sql = _sql(select(Pedido.id).order_by(*pedidos_router.ordem_fila())).upper()
+        assert "ORDEM_FILA" in sql

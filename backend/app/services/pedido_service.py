@@ -31,6 +31,7 @@ from app.utils.diretorias_decex import diretoria_de_om
 from app.services.email_service import send_email
 from app.services.notification_service import NotificationService
 from app.services.historico_service import registrar_historico
+from app.services.prioridade_service import carimbar_encaminhamento
 from app.models.pedido_transferencia import PedidoTransferencia
 from app.utils.email_templates import (
     pedido_submetido, pedido_aprovado, pedido_reprovado, pedido_produzido,
@@ -257,6 +258,10 @@ async def submit_pedido(db: AsyncSession, pedido: Pedido, current_user: Usuario)
     status_anterior = pedido.status
     pedido.status = next_status
     pedido.submetido_gestor_em = datetime.now(timezone.utc)
+    pedido.encaminhado_em = pedido.submetido_gestor_em
+    # Prioridade definitiva do solicitante: sequencial na sua propria sequencia,
+    # continuando de onde o ultimo envio parou.
+    await carimbar_encaminhamento(db, [pedido], current_user)
     await registrar_historico(db, pedido, current_user, "submeter", status_anterior)
     await db.commit()
     await db.refresh(pedido)
@@ -452,6 +457,7 @@ async def consolidate_pedidos(
     from_status, to_status, notify_perfil = routing
     now = datetime.now(timezone.utc)
     submetidos = 0
+    encaminhados: list[Pedido] = []
 
     for pid in pedido_ids:
         p = await db.get(Pedido, pid)
@@ -491,10 +497,17 @@ async def consolidate_pedidos(
             continue
 
         p.status = to_status
+        p.encaminhado_em = now
         if to_status == StatusPedidoEnum.AGUARDANDO_CARTOGRAFICO:
             p.submetido_dsg_em = now
             p.gestor_demandante_id = gestor.id
+        encaminhados.append(p)
         submetidos += 1
+
+    # Carimba a prioridade definitiva da leva, na ordem da fila do remetente,
+    # continuando a sequência do escalão. É o que o escalão seguinte vai ler.
+    encaminhados.sort(key=lambda x: (x.ordem_fila == 0, x.ordem_fila, x.id))
+    await carimbar_encaminhamento(db, encaminhados, gestor)
 
     await db.commit()
 

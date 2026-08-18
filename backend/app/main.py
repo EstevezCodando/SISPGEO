@@ -120,6 +120,39 @@ async def _run_migrations():
         "ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS activation_email_sent_at TIMESTAMPTZ",
         # 2026-07: Diretoria supervisora do DECEx — roteia pedido ao supervisor da Diretoria
         "ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS diretoria VARCHAR(20)",
+
+        # ── 2026-08: prioridade de encaminhamento sequencial e sem reuso ──────
+        # Separa a ordem de trabalho (arrasto) da prioridade definitiva (envio).
+        "ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS ordem_fila SMALLINT DEFAULT 0",
+        "ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS encaminhado_em TIMESTAMPTZ",
+        # Backfill: a leva em que o pedido chegou ao escalão atual. Sem isto os
+        # pedidos anteriores à migração ficariam todos empatados na exibição.
+        """
+        UPDATE pedidos
+           SET encaminhado_em = COALESCE(submetido_dsg_em, submetido_gestor_em)
+         WHERE encaminhado_em IS NULL
+        """,
+        # Backfill: a fila do escalão atual começa na ordem que o remetente definiu.
+        "UPDATE pedidos SET ordem_fila = prioridade WHERE COALESCE(ordem_fila, 0) = 0",
+        # Histórico de prioridades por escalão. A UNIQUE em (escopo, ciclo,
+        # prioridade) é o que impede o reuso de um número já encaminhado —
+        # garantia de banco, não de aplicação.
+        """
+        CREATE TABLE IF NOT EXISTS prioridades_encaminhamento (
+            id              SERIAL PRIMARY KEY,
+            pedido_id       INTEGER NOT NULL REFERENCES pedidos(id) ON DELETE CASCADE,
+            escopo          VARCHAR(60) NOT NULL,
+            escalao         VARCHAR(20) NOT NULL,
+            ciclo           INTEGER NOT NULL,
+            prioridade      INTEGER NOT NULL,
+            definida_por_id INTEGER REFERENCES usuarios(id),
+            definida_em     TIMESTAMPTZ DEFAULT NOW(),
+            CONSTRAINT uq_prioridade_escopo_ciclo UNIQUE (escopo, ciclo, prioridade),
+            CONSTRAINT uq_prioridade_pedido_escopo UNIQUE (pedido_id, escopo, ciclo)
+        )
+        """,
+        "CREATE INDEX IF NOT EXISTS ix_prioridades_pedido ON prioridades_encaminhamento (pedido_id)",
+        "CREATE INDEX IF NOT EXISTS ix_prioridades_escopo ON prioridades_encaminhamento (escopo)",
     ]
     for stmt in migrations:
         try:

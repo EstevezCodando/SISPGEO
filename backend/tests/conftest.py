@@ -86,6 +86,8 @@ def _make_pedido(
     p.data_entrega = date(2025, 12, 31)
     p.finalidade = "Treinamento"
     p.prioridade = 1
+    p.ordem_fila = 1
+    p.encaminhado_em = None
     p.motivo_reprovacao = None
     p.observacoes = None
     p.submetido_gestor_em = None
@@ -106,6 +108,23 @@ def _make_pedido(
 # ---------------------------------------------------------------------------
 # Fixtures — banco de dados
 # ---------------------------------------------------------------------------
+
+@pytest.fixture(autouse=True)
+def ciclo_fixo(monkeypatch):
+    """Fixa o ciclo do PIT nos testes de serviço.
+
+    ``ciclo_atual`` lê ConfigEntrega via ``db.get``, e a AsyncSession mockada
+    devolve o mesmo objeto para qualquer ``get`` — o que traria um Pedido no
+    lugar da configuração. Os testes de fluxo não dependem do ano; os que
+    exercitam a sequência de prioridades usam a função real.
+    """
+    from app.services import prioridade_service
+
+    async def _ciclo(_db):
+        return 2026
+
+    monkeypatch.setattr(prioridade_service, "ciclo_atual", _ciclo)
+
 
 @pytest.fixture
 def mock_db():
