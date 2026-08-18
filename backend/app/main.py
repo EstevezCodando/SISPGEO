@@ -15,6 +15,7 @@ from app.config import settings
 from app.database import engine, Base, AsyncSessionLocal
 from app.routers import auth, users, pedidos, operacoes, janelas, map_layers, om_data, historico, metricas, transferencias, oms
 from app.routers import config as config_router
+from app.routers import prioridades
 from app.middleware.metrics import metrics_middleware
 from app.utils.logging_config import setup_logging, get_logger
 
@@ -263,6 +264,7 @@ app.include_router(metricas.router, prefix="/api/v1")
 app.include_router(transferencias.router, prefix="/api/v1")
 app.include_router(oms.router, prefix="/api/v1")
 app.include_router(config_router.router, prefix="/api/v1")
+app.include_router(prioridades.router, prefix="/api/v1")
 
 
 @app.get("/api/v1/health")
