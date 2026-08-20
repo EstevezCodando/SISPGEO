@@ -102,50 +102,148 @@ class TestSequenciasCorrigidas:
         assert novas[2] == 1 and novas[1] == 2
 
 
+class TestDeteccaoDeColunas:
+    """A planilha vem como o consolidador montou — nomes de coluna variam."""
+
+    def test_cabecalho_real_do_coter(self):
+        cabecalhos = ["ORDEM", "NR PEDIDO #", "MILITAR", "OM", "CMDO MILITAR",
+                      "FINALIDADE", "CONSOLIDAÇÃO EM", ""]
+        assert P.detectar_colunas(cabecalhos) == ("NR PEDIDO #", "ORDEM")
+
+    def test_cabecalho_da_nossa_exportacao(self):
+        assert P.detectar_colunas(P.COLUNAS) == ("Pedido_ID", "Nova_Prioridade")
+
+    def test_sequencia_nao_e_confundida_com_prioridade(self):
+        """`Sequencia`, na nossa exportação, guarda o escopo — não um número."""
+        _, prio = P.detectar_colunas(["Pedido_ID", "Sequencia", "Nova_Prioridade"])
+        assert prio == "Nova_Prioridade"
+
+    @pytest.mark.parametrize("cabecalho", [
+        "NR PEDIDO", "Nº do Pedido", "PEDIDO", "Pedido_ID", "ID",
+    ])
+    def test_apelidos_da_coluna_de_pedido(self, cabecalho):
+        assert P.detectar_colunas([cabecalho, "ORDEM"])[0] == cabecalho
+
+    @pytest.mark.parametrize("cabecalho", [
+        "ORDEM", "Prioridade", "PRIO", "Nova_Prioridade",
+    ])
+    def test_apelidos_da_coluna_de_prioridade(self, cabecalho):
+        assert P.detectar_colunas(["Pedido_ID", cabecalho])[1] == cabecalho
+
+    def test_coluna_vazia_no_fim_e_ignorada(self):
+        """O arquivo do COTER termina com uma coluna sem nome."""
+        assert P.detectar_colunas(
+            ["ORDEM", "NR PEDIDO #", "", "   "]
+        ) == ("NR PEDIDO #", "ORDEM")
+
+    def test_nao_identifica_o_que_nao_existe(self):
+        assert P.detectar_colunas(["Outra", "Coisa"]) == (None, None)
+
+
+class TestEncodingESeparador:
+    def test_cp1252_do_excel_pt_br(self):
+        """O arquivo real do COTER é ANSI — falha em UTF-8."""
+        bruto = "ORDEM,NR PEDIDO #\nOperação Militar,1144\n".encode("cp1252")
+        with pytest.raises(UnicodeDecodeError):
+            bruto.decode("utf-8")
+        assert "Operação Militar" in P.decodificar(bruto)
+
+    def test_utf8_com_bom(self):
+        bruto = "﻿Pedido_ID;Nova_Prioridade\n10;1\n".encode("utf-8-sig")
+        assert P.decodificar(bruto).lstrip("﻿").startswith("Pedido_ID")
+
+    @pytest.mark.parametrize("cabecalho,esperado", [
+        ("ORDEM,NR PEDIDO #,OM", ","),
+        ("Pedido_ID;Nova_Prioridade;OM", ";"),
+        ("Pedido_ID\tNova_Prioridade", "\t"),
+    ])
+    def test_separador(self, cabecalho, esperado):
+        assert P.detectar_separador(cabecalho) == esperado
+
+
 class TestLeituraPlanilha:
-    CABECALHO = "Pedido_ID;Nova_Prioridade;Prioridade_Atual\n"
+    COTER = "ORDEM,NR PEDIDO #,MILITAR,OM\n"
 
-    def test_planilha_valida(self):
-        novas, erros = P._ler_planilha(self.CABECALHO + "10;1;5\n20;2;7\n")
-        assert novas == {10: 1, 20: 2}
+    def test_planilha_do_coter(self):
+        novas, meta, erros = P.ler_planilha(
+            self.COTER
+            + "1,1144,Maj Lacerda,Cmdo CMAO\n"
+            + "2,1143,Maj Lacerda,Cmdo CMAO\n"
+        )
+        assert novas == {1144: 1, 1143: 2}
         assert erros == []
+        assert meta["colunas_detectadas"] == {
+            "pedido": "NR PEDIDO #", "prioridade": "ORDEM",
+        }
 
-    def test_aceita_separador_virgula(self):
-        novas, erros = P._ler_planilha("Pedido_ID,Nova_Prioridade\n10,1\n")
-        assert novas == {10: 1}
+    def test_linha_xx_e_ignorada_em_silencio(self):
+        """O COTER marca com "XX" o pedido a excluir — não é erro."""
+        novas, meta, erros = P.ler_planilha(
+            self.COTER
+            + "1,1144,Maj Lacerda,Cmdo CMAO\n"
+            + "XX,1132,3 Sgt Falconi,C Fron JAURU\n"
+        )
+        assert novas == {1144: 1}
         assert erros == []
+        assert meta["linhas_ignoradas"] == 1
 
-    def test_ignora_bom_do_excel(self):
-        novas, _ = P._ler_planilha("﻿" + self.CABECALHO + "10;1;5\n")
-        assert novas == {10: 1}
+    def test_nossa_exportacao_continua_sendo_lida(self):
+        novas, _, erros = P.ler_planilha(
+            "Pedido_ID;Nova_Prioridade;Prioridade_Atual\n10;1;5\n20;2;7\n"
+        )
+        assert novas == {10: 1, 20: 2} and erros == []
 
-    def test_linhas_em_branco_sao_ignoradas(self):
-        novas, erros = P._ler_planilha(self.CABECALHO + "10;1;5\n;;\n")
-        assert novas == {10: 1} and erros == []
+    def test_colunas_forcadas_vencem_a_deteccao(self):
+        novas, meta, _ = P.ler_planilha(
+            "A,B\n7,3\n", coluna_pedido="A", coluna_prioridade="B",
+        )
+        assert novas == {7: 3}
+        assert meta["colunas_detectadas"] == {"pedido": "A", "prioridade": "B"}
 
-    def test_prioridade_nao_numerica_vira_erro(self):
-        _, erros = P._ler_planilha(self.CABECALHO + "10;abc;5\n")
-        assert len(erros) == 1 and "inválida" in erros[0]
+    def test_linhas_em_branco_nao_contam_como_ignoradas(self):
+        novas, meta, erros = P.ler_planilha(self.COTER + "1,1144,x,y\n,,,\n")
+        assert novas == {1144: 1} and erros == []
+        assert meta["linhas_ignoradas"] == 0
 
-    def test_prioridade_zero_e_recusada(self):
-        _, erros = P._ler_planilha(self.CABECALHO + "10;0;5\n")
+    def test_prioridade_zero_vira_erro(self):
+        """Zero é numérico — diferente de "XX", é engano e merece ser apontado."""
+        _, _, erros = P.ler_planilha(self.COTER + "0,1144,x,y\n")
         assert len(erros) == 1 and "1 ou maior" in erros[0]
 
-    def test_pedido_repetido_na_planilha_vira_erro(self):
-        _, erros = P._ler_planilha(self.CABECALHO + "10;1;5\n10;2;5\n")
+    def test_pedido_nao_numerico_vira_erro(self):
+        _, _, erros = P.ler_planilha(self.COTER + "1,abc,x,y\n")
+        assert len(erros) == 1 and "inválido" in erros[0]
+
+    def test_pedido_repetido_vira_erro(self):
+        _, _, erros = P.ler_planilha(self.COTER + "1,1144,x,y\n2,1144,x,y\n")
         assert len(erros) == 1 and "mais de uma vez" in erros[0]
 
-    def test_coluna_obrigatoria_ausente(self):
-        _, erros = P._ler_planilha("Outra;Coisa\n1;2\n")
-        assert len(erros) == 1 and "Pedido_ID" in erros[0]
+    def test_colunas_irreconheciveis_explicam_o_que_foi_encontrado(self):
+        _, _, erros = P.ler_planilha("Outra;Coisa\n1;2\n")
+        assert len(erros) == 1
+        assert "Outra" in erros[0] and "Coisa" in erros[0]
 
-    def test_sem_coluna_nova_prioridade(self):
-        _, erros = P._ler_planilha("Pedido_ID;Status\n10;X\n")
-        assert len(erros) == 1 and "Nova_Prioridade" in erros[0]
+    def test_erros_acumulam_em_vez_de_parar_no_primeiro(self):
+        _, _, erros = P.ler_planilha(self.COTER + "0,10,x,y\n1,abc,x,y\n")
+        assert len(erros) == 2
 
-    def test_erros_acumulam_em_vez_de_parar_na_primeira(self):
-        _, erros = P._ler_planilha(self.CABECALHO + "10;abc;1\n20;0;1\nxx;1;1\n")
-        assert len(erros) == 3
+
+class TestConflitosDePrioridade:
+    def test_mesmo_numero_no_mesmo_escalao_e_conflito(self):
+        st = StatusPedidoEnum.AGUARDANDO_CARTOGRAFICO
+        pedidos = {
+            1: _pedido(1, status=st, prioridade=0, orgao=OrgaoVinculanteEnum.COTER),
+            2: _pedido(2, status=st, prioridade=0, orgao=OrgaoVinculanteEnum.COTER),
+        }
+        assert P.conflitos_de_prioridade({1: 5, 2: 5}, pedidos)
+
+    def test_mesmo_numero_em_escaloes_distintos_e_permitido(self):
+        st = StatusPedidoEnum.AGUARDANDO_CARTOGRAFICO
+        pedidos = {
+            1: _pedido(1, status=st, prioridade=0, orgao=OrgaoVinculanteEnum.COTER),
+            2: _pedido(2, status=st, prioridade=0, orgao=OrgaoVinculanteEnum.DSG),
+        }
+        assert P.conflitos_de_prioridade({1: 5, 2: 5}, pedidos) == []
 
 
 class TestRegraDeReconstrucao:

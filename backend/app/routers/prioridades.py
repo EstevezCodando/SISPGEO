@@ -16,10 +16,12 @@ qualquer linha. Uma planilha com erro não deixa o banco pela metade.
 import csv
 import io
 import logging
+import re
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
+from pydantic import BaseModel
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -31,10 +33,12 @@ from app.models.enums import (
     PerfilEnum,
     StatusPedidoEnum,
 )
+from app.models.audit_log import AuditLog
 from app.models.pedido import Pedido
 from app.models.prioridade import PrioridadeEncaminhamento
 from app.models.user import Usuario
 from app.services.prioridade_service import ciclo_atual
+from app.utils.busca import normalizar
 
 logger = logging.getLogger(__name__)
 
@@ -213,94 +217,166 @@ async def exportar_planilha(
     )
 
 
-def _ler_planilha(conteudo: str) -> tuple[dict[int, int], list[str]]:
-    """Extrai ``{pedido_id: nova_prioridade}`` da planilha, acumulando os erros."""
-    texto = conteudo.lstrip("﻿")
-    # O separador é ';' (padrão do Excel pt-BR), mas aceita ',' se vier assim.
-    dialeto = ";" if texto.splitlines()[0].count(";") >= texto.splitlines()[0].count(",") else ","
-    leitor = csv.DictReader(io.StringIO(texto), delimiter=dialeto)
+# ── Leitura tolerante de planilha ────────────────────────────────────────────
+# O gestor sobe o arquivo **como o consolidador enviou**. Cada consolidador
+# nomeia as colunas do seu jeito (o COTER usa ``ORDEM`` e ``NR PEDIDO #``),
+# salva no encoding do Excel dele (CP1252 no Windows pt-BR) e com o separador
+# da sua região. Exigir um formato fixo obrigaria o gestor a transcrever a
+# lista para outro arquivo — e a transcrição manual é justamente onde o erro
+# entra.
 
-    if not leitor.fieldnames or "Pedido_ID" not in leitor.fieldnames:
-        return {}, ["Planilha sem a coluna 'Pedido_ID' — use o arquivo exportado pelo sistema."]
-    if "Nova_Prioridade" not in leitor.fieldnames:
-        return {}, ["Planilha sem a coluna 'Nova_Prioridade'."]
+# Apelidos aceitos, em ordem de preferência: o primeiro que casar vence.
+# `sequencia` fica de fora de propósito — é o nome de uma coluna da nossa
+# própria exportação, que guarda o escopo e não um número de ordem.
+_ALIAS_PEDIDO = (
+    "pedido id", "nr pedido", "nr do pedido",
+    # `Nº` vira `no` na normalização NFKD — grafia comum em planilha brasileira.
+    "no do pedido", "no pedido", "n do pedido", "n pedido",
+    "numero do pedido", "numero pedido", "pedido", "id",
+)
+_ALIAS_PRIORIDADE = (
+    "nova prioridade", "ordem", "prioridade", "prio",
+)
+
+
+def _chave_cabecalho(nome: str) -> str:
+    """Reduz um cabeçalho à forma comparável: sem acento, caixa ou pontuação.
+
+    ``NR PEDIDO #`` vira ``nr pedido``; ``Pedido_ID`` vira ``pedido id``.
+    """
+    base = normalizar(nome or "")
+    return " ".join(re.sub(r"[^0-9a-z]+", " ", base).split())
+
+
+def detectar_colunas(cabecalhos: list[str]) -> tuple[str | None, str | None]:
+    """Descobre qual coluna traz o número do pedido e qual traz a prioridade."""
+    chaves = {c: _chave_cabecalho(c) for c in cabecalhos if c and c.strip()}
+
+    def _primeira(aliases: tuple[str, ...]) -> str | None:
+        for alias in aliases:
+            for original, chave in chaves.items():
+                if chave == alias:
+                    return original
+        return None
+
+    return _primeira(_ALIAS_PEDIDO), _primeira(_ALIAS_PRIORIDADE)
+
+
+def decodificar(bruto: bytes) -> str:
+    """Decodifica o CSV tentando os encodings que o Excel realmente produz."""
+    for enc in ("utf-8-sig", "cp1252", "latin-1"):
+        try:
+            return bruto.decode(enc)
+        except UnicodeDecodeError:
+            continue
+    # latin-1 aceita qualquer byte — este ramo é inalcançável na prática.
+    return bruto.decode("latin-1", errors="replace")
+
+
+def detectar_separador(cabecalho: str) -> str:
+    """Escolhe o separador pelo que mais aparece na linha de cabeçalho."""
+    return max((";", ",", "\t"), key=cabecalho.count)
+
+
+def ler_planilha(
+    conteudo: str,
+    coluna_pedido: str | None = None,
+    coluna_prioridade: str | None = None,
+) -> tuple[dict[int, int], dict, list[str]]:
+    """Extrai ``{pedido_id: prioridade}`` de uma planilha de consolidador.
+
+    Args:
+        conteudo:          Texto já decodificado do CSV.
+        coluna_pedido:     Força a coluna do número do pedido (opcional).
+        coluna_prioridade: Força a coluna da prioridade (opcional).
+
+    Returns:
+        ``(mapa, meta, erros)`` — ``meta`` traz os cabeçalhos lidos, as colunas
+        efetivamente usadas e quantas linhas foram ignoradas.
+    """
+    texto = conteudo.lstrip("﻿")
+    linhas_texto = texto.splitlines()
+    if not linhas_texto:
+        return {}, {"cabecalhos": [], "linhas_ignoradas": 0}, ["Arquivo vazio"]
+
+    leitor = csv.DictReader(
+        io.StringIO(texto), delimiter=detectar_separador(linhas_texto[0])
+    )
+    cabecalhos = [c for c in (leitor.fieldnames or []) if c and c.strip()]
+    meta: dict = {"cabecalhos": cabecalhos, "linhas_ignoradas": 0}
+
+    auto_pedido, auto_prioridade = detectar_colunas(cabecalhos)
+    col_pedido = coluna_pedido or auto_pedido
+    col_prioridade = coluna_prioridade or auto_prioridade
+    meta["colunas_detectadas"] = {"pedido": col_pedido, "prioridade": col_prioridade}
+
+    ausentes = []
+    if not col_pedido:
+        ausentes.append("o número do pedido")
+    if not col_prioridade:
+        ausentes.append("a prioridade")
+    if ausentes:
+        return {}, meta, [
+            "Não identifiquei a coluna com " + " nem ".join(ausentes) + ". "
+            f"Colunas encontradas: {', '.join(cabecalhos) or '(nenhuma)'}. "
+            "Selecione a coluna correta na tela."
+        ]
 
     novas: dict[int, int] = {}
     erros: list[str] = []
+    ignoradas = 0
+
     for n, linha in enumerate(leitor, start=2):   # linha 1 é o cabeçalho
-        bruto_id = (linha.get("Pedido_ID") or "").strip()
-        bruto_prio = (linha.get("Nova_Prioridade") or "").strip()
+        bruto_id = (linha.get(col_pedido) or "").strip()
+        bruto_prio = (linha.get(col_prioridade) or "").strip()
+
+        # Linha totalmente vazia (rodapé de planilha) — nem conta.
         if not bruto_id and not bruto_prio:
             continue
-        try:
-            pedido_id = int(bruto_id)
-        except ValueError:
-            erros.append(f"Linha {n}: Pedido_ID inválido ({bruto_id!r})")
-            continue
+
+        # Prioridade não numérica: é como o consolidador marca a linha que não
+        # entra na ordem — o COTER usa "XX" para pedido a excluir. Decisão do
+        # usuário: ignorar em silêncio, sem virar erro.
         try:
             prioridade = int(bruto_prio)
         except ValueError:
-            erros.append(f"Linha {n}: Nova_Prioridade inválida ({bruto_prio!r}) no pedido {pedido_id}")
+            ignoradas += 1
             continue
+
+        try:
+            pedido_id = int(bruto_id)
+        except ValueError:
+            erros.append(f"Linha {n}: número de pedido inválido ({bruto_id!r})")
+            continue
+
         if prioridade < 1:
-            erros.append(f"Linha {n}: Nova_Prioridade deve ser 1 ou maior (pedido {pedido_id})")
+            erros.append(f"Linha {n}: prioridade deve ser 1 ou maior (pedido {pedido_id})")
             continue
         if pedido_id in novas:
             erros.append(f"Linha {n}: pedido {pedido_id} aparece mais de uma vez na planilha")
             continue
+
         novas[pedido_id] = prioridade
-    return novas, erros
+
+    meta["linhas_ignoradas"] = ignoradas
+    return novas, meta, erros
 
 
-@router.post("/planilha")
-async def importar_planilha(
-    arquivo: UploadFile = File(...),
-    db: AsyncSession = Depends(get_db),
-    current_user: Usuario = Depends(require_profiles(PerfilEnum.GESTOR_CARTOGRAFICO)),
-):
-    """Aplica as prioridades da planilha. Valida tudo antes de gravar qualquer linha."""
-    bruto = await arquivo.read()
-    try:
-        conteudo = bruto.decode("utf-8-sig")
-    except UnicodeDecodeError:
-        conteudo = bruto.decode("latin-1")   # Excel pt-BR às vezes salva em ANSI
-    if not conteudo.strip():
-        raise HTTPException(status_code=422, detail="Arquivo vazio")
+def conflitos_de_prioridade(
+    novas: dict[int, int], pedidos: dict[int, Pedido]
+) -> list[str]:
+    """Dentro de um mesmo escalão, dois pedidos não podem dividir o número.
 
-    novas, erros = _ler_planilha(conteudo)
-    if erros:
-        raise HTTPException(status_code=422, detail={"erros": erros[:20]})
-    if not novas:
-        raise HTTPException(status_code=422, detail="Nenhuma linha válida na planilha")
-
-    pedidos = {
-        p.id: p for p in await db.scalars(select(Pedido).where(Pedido.id.in_(novas.keys())))
-    }
-    faltando = sorted(set(novas) - set(pedidos))
-    if faltando:
-        raise HTTPException(
-            status_code=422,
-            detail={"erros": [f"Pedidos inexistentes: {', '.join(map(str, faltando[:20]))}"]},
-        )
-
-    nao_submetidos = [
-        pid for pid, p in pedidos.items() if p.status not in STATUS_SUBMETIDOS
-    ]
-    if nao_submetidos:
-        raise HTTPException(
-            status_code=422,
-            detail={"erros": [
-                "Só é possível organizar pedidos já submetidos. "
-                f"Fora do fluxo: {', '.join(map(str, sorted(nao_submetidos)[:20]))}"
-            ]},
-        )
-
-    # Regra central: dentro de um mesmo escalão, dois pedidos não podem dividir
-    # o mesmo número — é exatamente o defeito que esta ferramenta vem consertar.
+    É exatamente o defeito que esta ferramenta veio consertar, então a regra
+    vale tanto na análise quanto na gravação.
+    """
     vistos: dict[tuple[str, int], int] = {}
     conflitos: list[str] = []
     for pid, prioridade in sorted(novas.items()):
-        chave = (escopo_remetente(pedidos[pid]), prioridade)
+        pedido = pedidos.get(pid)
+        if pedido is None:
+            continue
+        chave = (escopo_remetente(pedido), prioridade)
         if chave in vistos:
             conflitos.append(
                 f"Prioridade {prioridade} repetida em {chave[0]}: "
@@ -308,15 +384,28 @@ async def importar_planilha(
             )
         else:
             vistos[chave] = pid
-    if conflitos:
-        raise HTTPException(status_code=422, detail={"erros": conflitos[:20]})
+    return conflitos
 
-    # ── Validado: aplica tudo numa transação ────────────────────────────────
+
+async def gravar_prioridades(
+    db: AsyncSession,
+    novas: dict[int, int],
+    pedidos: dict[int, Pedido],
+    autor_id: int | None,
+) -> set[str]:
+    """Grava as prioridades e reescreve o histórico dos escalões afetados.
+
+    Não valida — o chamador é responsável por isso. Não faz commit, para que a
+    operação inteira caiba numa transação de quem chamou.
+
+    Returns:
+        Conjunto dos escopos tocados.
+    """
     ciclo = await ciclo_atual(db)
     escopos = {escopo_remetente(p) for p in pedidos.values()}
 
-    # Reescrever o histórico exige limpar os registros do escalão antes, senão a
-    # UNIQUE(escopo, ciclo, prioridade) barra estados intermediários.
+    # Reescrever o histórico exige limpar os registros do escalão antes, senão
+    # a UNIQUE(escopo, ciclo, prioridade) barra estados intermediários.
     await db.execute(
         delete(PrioridadeEncaminhamento).where(
             PrioridadeEncaminhamento.pedido_id.in_(novas.keys()),
@@ -338,16 +427,212 @@ async def importar_planilha(
                 escalao=_rotulo_escalao(escopo),
                 ciclo=ciclo,
                 prioridade=prioridade,
-                definida_por_id=current_user.id,
+                definida_por_id=autor_id,
             )
         )
 
+    db.add(AuditLog(
+        usuario_id=autor_id,
+        acao="importar_prioridades",
+        entidade="pedido",
+        entidade_id=min(novas) if novas else None,
+        dados_extras={
+            "escopos": sorted(escopos),
+            "ciclo": ciclo,
+            "aplicadas": {str(k): v for k, v in novas.items()},
+        },
+    ))
+    return escopos
+
+
+@router.post("/planilha/analisar")
+async def analisar_planilha(
+    arquivo: UploadFile = File(...),
+    coluna_pedido: str | None = Form(default=None),
+    coluna_prioridade: str | None = Form(default=None),
+    escopo_esperado: str | None = Form(default=None),
+    db: AsyncSession = Depends(get_db),
+    _: Usuario = Depends(require_profiles(PerfilEnum.GESTOR_CARTOGRAFICO)),
+):
+    """Lê a planilha e devolve o que mudaria — **sem gravar nada**.
+
+    O gestor confere o resultado na tela e só então confirma em
+    ``POST /prioridades/aplicar``. Nenhuma escrita acontece aqui.
+
+    ``escopo_esperado`` (ex.: ``CONSOLIDADOR_COTER``) restringe a análise aos
+    pedidos daquele escalão; os demais são listados à parte e não entram no
+    total a aplicar.
+    """
+    conteudo = decodificar(await arquivo.read())
+    if not conteudo.strip():
+        raise HTTPException(status_code=422, detail="Arquivo vazio")
+
+    novas, meta, erros = ler_planilha(conteudo, coluna_pedido, coluna_prioridade)
+    if erros:
+        raise HTTPException(status_code=422, detail={"erros": erros[:20], **meta})
+    if not novas:
+        raise HTTPException(
+            status_code=422,
+            detail={"erros": ["Nenhuma linha com prioridade numérica na planilha."], **meta},
+        )
+
+    pedidos = {
+        p.id: p for p in await db.scalars(select(Pedido).where(Pedido.id.in_(novas.keys())))
+    }
+    ids_usuarios = {p.usuario_id for p in pedidos.values()} or {0}
+    solicitantes = {
+        r.id: r for r in await db.execute(
+            select(Usuario.id, Usuario.nome, Usuario.om).where(Usuario.id.in_(ids_usuarios))
+        )
+    }
+
+    # ── Monta o diff, agrupado pelo escalão que encaminhou ───────────────────
+    por_escalao: dict[str, dict] = {}
+    problemas: list[dict] = []
+    fora_do_escopo: list[dict] = []
+    resumo = {"altera": 0, "sem_mudanca": 0, "nao_encontrado": 0,
+              "fora_do_fluxo": 0, "fora_do_escopo": 0}
+
+    for pid, prioridade in sorted(novas.items(), key=lambda kv: kv[1]):
+        pedido = pedidos.get(pid)
+        if pedido is None:
+            problemas.append({"pedido_id": pid, "prioridade_nova": prioridade,
+                              "situacao": "NAO_ENCONTRADO"})
+            resumo["nao_encontrado"] += 1
+            continue
+        if pedido.status not in STATUS_SUBMETIDOS:
+            problemas.append({"pedido_id": pid, "prioridade_nova": prioridade,
+                              "situacao": "FORA_DO_FLUXO", "status": pedido.status.value})
+            resumo["fora_do_fluxo"] += 1
+            continue
+
+        escopo = escopo_remetente(pedido)
+        if escopo_esperado and escopo != escopo_esperado:
+            fora_do_escopo.append({"pedido_id": pid, "prioridade_nova": prioridade,
+                                   "escopo": escopo, "situacao": "FORA_DO_ESCOPO"})
+            resumo["fora_do_escopo"] += 1
+            continue
+
+        grupo = por_escalao.setdefault(escopo, {
+            "escopo": escopo,
+            "escalao": _rotulo_escalao(escopo),
+            "alteracoes": [],
+            "ausentes_na_planilha": 0,
+        })
+        atual = pedido.prioridade or 0
+        situacao = "SEM_MUDANCA" if atual == prioridade else "ALTERA"
+        resumo["sem_mudanca" if situacao == "SEM_MUDANCA" else "altera"] += 1
+
+        u = solicitantes.get(pedido.usuario_id)
+        grupo["alteracoes"].append({
+            "pedido_id": pid,
+            "prioridade_atual": atual or None,
+            "prioridade_nova": prioridade,
+            "situacao": situacao,
+            "status": pedido.status.value,
+            "orgao_vinculante": pedido.orgao_vinculante.value if pedido.orgao_vinculante else None,
+            "c_mil_a": pedido.regiao_militar,
+            "om": getattr(u, "om", None),
+            "solicitante": getattr(u, "nome", None),
+        })
+
+    # Conflitos apenas entre os pedidos que de fato entram na aplicação.
+    aplicaveis = {
+        a["pedido_id"]: a["prioridade_nova"]
+        for g in por_escalao.values() for a in g["alteracoes"]
+    }
+    conflitos = conflitos_de_prioridade(aplicaveis, pedidos)
+
+    # Pedidos do mesmo escalão que a planilha não citou continuam intactos —
+    # decisão do usuário. Informar a contagem evita que isso passe batido.
+    if por_escalao:
+        no_sistema = await db.scalars(
+            select(Pedido).where(Pedido.status.in_(STATUS_SUBMETIDOS))
+        )
+        for pedido in no_sistema:
+            escopo = escopo_remetente(pedido)
+            if escopo in por_escalao and pedido.id not in aplicaveis:
+                por_escalao[escopo]["ausentes_na_planilha"] += 1
+
+    return {
+        **meta,
+        "arquivo": arquivo.filename,
+        "escopo_esperado": escopo_esperado,
+        "resumo": resumo,
+        "por_escalao": sorted(por_escalao.values(), key=lambda g: g["escopo"]),
+        "problemas": problemas,
+        "fora_do_escopo": fora_do_escopo,
+        "conflitos": conflitos,
+        "pode_aplicar": not conflitos and resumo["altera"] > 0,
+    }
+
+
+class AlteracaoPrioridade(BaseModel):
+    pedido_id: int
+    prioridade: int
+
+
+class AplicarPrioridadesRequest(BaseModel):
+    alteracoes: list[AlteracaoPrioridade]
+
+
+@router.post("/aplicar")
+async def aplicar_prioridades(
+    body: AplicarPrioridadesRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: Usuario = Depends(require_profiles(PerfilEnum.GESTOR_CARTOGRAFICO)),
+):
+    """Grava as prioridades conferidas na tela. Tudo-ou-nada.
+
+    Recebe o resultado já revisado em ``/planilha/analisar`` em vez de
+    reprocessar o arquivo, para que o gravado seja exatamente o que o gestor
+    viu. Ainda assim **revalida tudo aqui** — o cliente não é confiável.
+    """
+    if not body.alteracoes:
+        raise HTTPException(status_code=422, detail="Nenhuma alteração informada")
+
+    novas: dict[int, int] = {}
+    erros: list[str] = []
+    for a in body.alteracoes:
+        if a.prioridade < 1:
+            erros.append(f"Pedido {a.pedido_id}: prioridade deve ser 1 ou maior")
+            continue
+        if a.pedido_id in novas:
+            erros.append(f"Pedido {a.pedido_id} informado mais de uma vez")
+            continue
+        novas[a.pedido_id] = a.prioridade
+    if erros:
+        raise HTTPException(status_code=422, detail={"erros": erros[:20]})
+
+    pedidos = {
+        p.id: p for p in await db.scalars(select(Pedido).where(Pedido.id.in_(novas.keys())))
+    }
+    faltando = sorted(set(novas) - set(pedidos))
+    if faltando:
+        raise HTTPException(
+            status_code=422,
+            detail={"erros": [f"Pedidos inexistentes: {', '.join(map(str, faltando[:20]))}"]},
+        )
+
+    nao_submetidos = [pid for pid, p in pedidos.items() if p.status not in STATUS_SUBMETIDOS]
+    if nao_submetidos:
+        raise HTTPException(
+            status_code=422,
+            detail={"erros": [
+                "Só é possível organizar pedidos já submetidos. "
+                f"Fora do fluxo: {', '.join(map(str, sorted(nao_submetidos)[:20]))}"
+            ]},
+        )
+
+    conflitos = conflitos_de_prioridade(novas, pedidos)
+    if conflitos:
+        raise HTTPException(status_code=422, detail={"erros": conflitos[:20]})
+
+    escopos = await gravar_prioridades(db, novas, pedidos, current_user.id)
     await db.commit()
+
     logger.info(
-        "importar_planilha → %d pedidos reorganizados por %s (escalões: %s)",
+        "aplicar_prioridades → %d pedidos reorganizados por %s (escalões: %s)",
         len(novas), current_user.email, ", ".join(sorted(escopos)),
     )
-    return {
-        "atualizados": len(novas),
-        "escaloes": sorted(escopos),
-    }
+    return {"atualizados": len(novas), "escaloes": sorted(escopos)}
