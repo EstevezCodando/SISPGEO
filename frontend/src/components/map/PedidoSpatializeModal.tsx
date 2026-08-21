@@ -7,7 +7,7 @@ import { Loader2, X } from 'lucide-react'
 import { MapContainer, TileLayer, useMap } from 'react-leaflet'
 import { pedidosApi } from '../../api/pedidos'
 import type { Pedido } from '../../types/pedido'
-import { TIPO_PRODUTO_LABELS } from '../../types/pedido'
+import { TIPO_PRODUTO_LABELS, formatarMI } from '../../types/pedido'
 
 function GeoJSONLayer({ geojson }: { geojson: FeatureCollection }) {
   const map = useMap()
@@ -23,7 +23,7 @@ function GeoJSONLayer({ geojson }: { geojson: FeatureCollection }) {
       onEachFeature: (feature, lyr) => {
         const p = feature.properties ?? {}
         const inom = p.inom ?? '-'
-        const mi = p.mi ?? null
+        const mi = formatarMI(p.mi, p.escala) || null
         let tip = `<b>${inom}</b>`
         if (mi) tip += `<br><span style="color:#a1a1aa">MI:</span> <span style="color:#34d399;font-weight:600">${mi}</span>`
         if (p.tipo_produto) {

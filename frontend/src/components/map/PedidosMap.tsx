@@ -3,7 +3,7 @@ import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { TIPO_PRODUTO_LABELS } from '../../types/pedido'
+import { TIPO_PRODUTO_LABELS, formatarMI } from '../../types/pedido'
 import type { TipoProduto } from '../../types/pedido'
 
 const TIPO_COLORS: Record<string, string> = {
@@ -111,7 +111,7 @@ export function PedidosMap({ className = '' }: PedidosMapProps) {
               return `
                 <div style="min-width:160px${bordered ? ';border-left:1px solid #3f3f46;padding-left:10px' : ''}">
                   <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px">
-                    ${e.mi ? `<span style="font-weight:700;color:#34d399;font-family:monospace;font-size:11px">${e.mi as string}</span>` : `<span style="font-weight:600;color:#f4f4f5;font-size:11px">${e.inom as string}</span>`}
+                    ${e.mi ? `<span style="font-weight:700;color:#34d399;font-family:monospace;font-size:11px">${formatarMI(e.mi as string, e.escala as string)}</span>` : `<span style="font-weight:600;color:#f4f4f5;font-size:11px">${e.inom as string}</span>`}
                     <span style="color:#34d399;font-family:monospace;font-weight:700;font-size:11px;white-space:nowrap">
                       #${e.pedido_id as number}
                     </span>

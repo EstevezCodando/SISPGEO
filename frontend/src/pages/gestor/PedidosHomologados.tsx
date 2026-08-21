@@ -15,7 +15,7 @@ import { PedidosMap } from '../../components/map/PedidosMap'
 import { PedidoSpatializeModal } from '../../components/map/PedidoSpatializeModal'
 import { DuplicateItemsModal } from '../../components/shared/DuplicateItemsModal'
 import type { Pedido } from '../../types/pedido'
-import { TIPO_PRODUTO_LABELS, porPrioridade } from '../../types/pedido'
+import { TIPO_PRODUTO_LABELS, porPrioridade, formatarMI } from '../../types/pedido'
 import { useExportRelatorio } from '../../hooks/useExportRelatorio'
 import { formatNomeComPosto } from '../../data/postos'
 
@@ -237,7 +237,7 @@ function PedidoCard({ pedido: p, rank, isExpanded, onToggleExpand, onSpatialize 
                   <div key={item.id} className={`flex items-center flex-wrap gap-x-2 gap-y-1 text-xs border rounded-lg px-3 py-2 ${item.removido ? 'bg-red-950/20 border-red-500/20 text-zinc-500' : 'bg-zinc-800/40 border-zinc-700/30 text-zinc-400'}`}>
                     <span className="text-zinc-600 w-4 text-center shrink-0">{idx + 1}</span>
                     {item.mi
-                      ? <span className={`text-emerald-400 font-mono shrink-0 font-medium ${item.removido ? 'line-through decoration-red-400 decoration-2' : ''}`}>{item.mi}</span>
+                      ? <span className={`text-emerald-400 font-mono shrink-0 font-medium ${item.removido ? 'line-through decoration-red-400 decoration-2' : ''}`}>{formatarMI(item.mi, item.escala)}</span>
                       : <span className={`text-emerald-400 font-mono shrink-0 font-medium ${item.removido ? 'line-through decoration-red-400 decoration-2' : ''}`}>{item.inom}</span>
                     }
                     {item.mi && <span className={`text-zinc-500 font-mono shrink-0 text-[10px] ${item.removido ? 'line-through decoration-red-400 decoration-2' : ''}`}>({item.inom})</span>}

@@ -326,3 +326,23 @@ export function porPrioridade<T extends { prioridade: number }>(a: T, b: T): num
   if (pb === 0) return -1;
   return pa - pb;
 }
+
+// ─── MI para exibição ─────────────────────────────────────────────────────────
+// O número base do MI é gravado sempre com 4 dígitos (`0091`, `0490`), mas na
+// escala 1:250.000 a nomenclatura usa 3 — ali o zero à esquerda é só
+// preenchimento. Nas demais escalas o 4º dígito é significativo (`2263` em
+// 1:100.000), então nada pode ser removido.
+//
+// É só apresentação: o valor gravado no banco e o que sai nas exportações
+// continuam com os 4 dígitos.
+
+/** MI como deve ser lido na tela. Remove o zero de preenchimento no 1:250.000. */
+export function formatarMI(
+  mi: string | null | undefined,
+  escala?: string | null,
+): string {
+  if (!mi) return "";
+  if (escala !== "1:250.000") return mi;
+  // Remove um único zero: `0091` → `091`, preservando os 3 dígitos.
+  return mi.replace(/^0(\d{3})$/, "$1");
+}

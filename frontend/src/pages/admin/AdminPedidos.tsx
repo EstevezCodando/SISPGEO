@@ -10,7 +10,7 @@ import { pedidosApi } from '../../api/pedidos'
 import { StatusBadge } from '../../components/shared/StatusBadge'
 import { LoadingSpinner } from '../../components/shared/LoadingSpinner'
 import type { Pedido } from '../../types/pedido'
-import { TIPO_PRODUTO_LABELS, STATUS_LABELS, STATUS_RESPONSAVEL } from '../../types/pedido'
+import { TIPO_PRODUTO_LABELS, STATUS_LABELS, STATUS_RESPONSAVEL, formatarMI } from '../../types/pedido'
 import { CMILA_CODES, CMILA_LABELS, cmilaLabel } from '../../types/user'
 import { casaBusca } from '../../utils/busca'
 import { formatNomeComPosto } from '../../data/postos'
@@ -459,7 +459,7 @@ export function AdminPedidos() {
                               {p.itens.map((item) => (
                                 <div key={item.id} className="flex items-start gap-2 text-zinc-400">
                                   {item.mi
-                                    ? <span className="font-mono text-emerald-400 font-medium shrink-0">{item.mi}</span>
+                                    ? <span className="font-mono text-emerald-400 font-medium shrink-0">{formatarMI(item.mi, item.escala)}</span>
                                     : <span className="font-mono text-zinc-500 shrink-0">{item.inom}</span>
                                   }
                                   {item.mi && <span className="font-mono text-zinc-500 text-[10px] shrink-0">({item.inom})</span>}

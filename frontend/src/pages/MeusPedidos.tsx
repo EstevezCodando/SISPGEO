@@ -53,7 +53,7 @@ import { useExportRelatorio } from "../hooks/useExportRelatorio";
 import { useAuthStore } from "../store/authStore";
 import { cartKey, useCartStore } from "../store/cartStore";
 import type { ItemPedido, MaterialImpressao, Pedido } from "../types/pedido";
-import { TIPO_PRODUTO_LABELS, getStatusSolicitante, porPrioridade } from "../types/pedido";
+import { TIPO_PRODUTO_LABELS, getStatusSolicitante, porPrioridade, formatarMI } from "../types/pedido";
 
 // ─── Map layer helper ─────────────────────────────────────────────────────────
 function GeoJSONLayer({ geojson }: { geojson: FeatureCollection }) {
@@ -70,7 +70,7 @@ function GeoJSONLayer({ geojson }: { geojson: FeatureCollection }) {
       onEachFeature: (feature: any, lyr: L.Layer) => {
         const p = feature.properties ?? {};
         const inom = p.inom ?? "—";
-        const mi = p.mi ?? null;
+        const mi = formatarMI(p.mi, p.escala) || null;
         let tip = `<b>${inom}</b>`;
         if (mi)
           tip += `<br><span style="color:#a1a1aa">MI:</span> <span style="color:#34d399;font-weight:600">${mi}</span>`;
@@ -510,7 +510,7 @@ function SortablePedidoRow_Base({
                         <span className="text-zinc-500 shrink-0">
                           MI:{" "}
                           <span className="text-emerald-400 font-mono font-medium">
-                            {item.mi}
+                            {formatarMI(item.mi, item.escala)}
                           </span>
                         </span>
                         <span className="text-zinc-500 shrink-0">

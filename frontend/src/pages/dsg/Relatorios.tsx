@@ -7,7 +7,7 @@ import { BarChart2, Boxes, ClipboardList, Filter, Loader2, MapPinned, RefreshCw,
 import { MapContainer, TileLayer, useMap } from 'react-leaflet'
 import { pedidosApi, type RelatorioAnalitico } from '../../api/pedidos'
 import { LoadingSpinner } from '../../components/shared/LoadingSpinner'
-import { STATUS_LABELS, TIPO_PRODUTO_LABELS, type StatusPedido, type TipoProduto } from '../../types/pedido'
+import { STATUS_LABELS, TIPO_PRODUTO_LABELS, formatarMI, type StatusPedido, type TipoProduto } from '../../types/pedido'
 
 const ASC_OPTIONS = [
   { value: '', label: 'Todas as ASC' },
@@ -192,7 +192,7 @@ function RelatorioGeoLayer({ geojson }: { geojson: FeatureCollection }) {
               <strong style="color:#f4f4f5">${p.inom ?? '-'}</strong>
               <span style="color:#34d399;font-weight:700">#${p.pedido_id ?? '-'}</span>
             </div>
-            ${p.mi ? `<div style="font-size:11px"><span style="color:#71717a">MI:</span> ${p.mi}</div>` : ''}
+            ${p.mi ? `<div style="font-size:11px"><span style="color:#71717a">MI:</span> ${formatarMI(String(p.mi), p.escala ? String(p.escala) : null)}</div>` : ''}
             <div style="font-size:11px"><span style="color:#71717a">ASC:</span> ${p.asc_label ?? '-'}</div>
             <div style="font-size:11px"><span style="color:#71717a">Produto:</span> ${tipo}</div>
             <div style="font-size:11px"><span style="color:#71717a">Escala:</span> ${p.escala ?? '-'}</div>
@@ -561,7 +561,7 @@ export function Relatorios() {
                   {relatorio?.produtos_mais_pedidos.map((produto) => (
                     <tr key={`${produto.inom}-${produto.mi}-${produto.tipo_produto}-${produto.escala}`} className="border-b border-white/5 last:border-0">
                       <td className="py-3 pr-3 font-medium text-zinc-200">{produto.inom}</td>
-                      <td className="px-3 py-3 text-zinc-400">{produto.mi ?? '-'}</td>
+                      <td className="px-3 py-3 text-zinc-400">{formatarMI(produto.mi, produto.escala) || '-'}</td>
                       <td className="px-3 py-3 text-zinc-300">{produtoLabel(produto.tipo_produto)}</td>
                       <td className="px-3 py-3 text-zinc-400">{produto.escala}</td>
                       <td className="py-3 pl-3 text-right font-semibold tabular-nums text-zinc-100">{produto.total}</td>

@@ -14,7 +14,7 @@ import {
 import { StatusBadge } from '../../components/shared/StatusBadge'
 import { LoadingSpinner } from '../../components/shared/LoadingSpinner'
 import type { Pedido } from '../../types/pedido'
-import { TIPO_PRODUTO_LABELS, STATUS_LABELS, ALL_STATUSES, porPrioridade, eloDaCadeia, cadeiaPrioridades } from '../../types/pedido'
+import { TIPO_PRODUTO_LABELS, STATUS_LABELS, ALL_STATUSES, porPrioridade, eloDaCadeia, cadeiaPrioridades, formatarMI } from '../../types/pedido'
 import { CMILA_CODES, cmilaLabel } from '../../types/user'
 import { formatNomeComPosto } from '../../data/postos'
 
@@ -351,7 +351,7 @@ function DuplicatesPanel({ open, onToggle }: DuplicatesPanelProps) {
               <div key={idx} className="bg-zinc-800/60 border border-amber-500/20 rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-3 flex-wrap">
                   {dup.mi
-                    ? <span className="text-xs font-semibold text-emerald-400 font-mono">{dup.mi}</span>
+                    ? <span className="text-xs font-semibold text-emerald-400 font-mono">{formatarMI(dup.mi, dup.escala)}</span>
                     : <span className="text-xs font-semibold text-emerald-400 font-mono">{dup.inom}</span>
                   }
                   {dup.mi && <span className="text-xs text-zinc-500 font-mono">({dup.inom})</span>}
@@ -491,7 +491,7 @@ function BDGExAgePanel({ open, onToggle }: BDGExAgePanelProps) {
                   {/* Product header */}
                   <div className="flex items-start gap-2 mb-3 flex-wrap">
                     {item.mi
-                      ? <span className="text-xs font-semibold text-emerald-400 font-mono">{item.mi}</span>
+                      ? <span className="text-xs font-semibold text-emerald-400 font-mono">{formatarMI(item.mi, item.escala)}</span>
                       : <span className="text-xs font-semibold text-emerald-400 font-mono">{item.inom}</span>
                     }
                     {item.mi && <span className="text-xs text-zinc-500 font-mono">({item.inom})</span>}
@@ -820,7 +820,7 @@ function PedidoDSGCard({
                   <div key={item.id} className={`flex items-center flex-wrap gap-x-2 gap-y-1 text-xs text-zinc-400 border rounded-lg px-3 py-2 ${ageBgColor(age)}`}>
                     <span className="text-zinc-500 w-4 text-center shrink-0">{idx + 1}</span>
                     {item.mi
-                      ? <span className="text-emerald-400 font-mono shrink-0 font-medium">{item.mi}</span>
+                      ? <span className="text-emerald-400 font-mono shrink-0 font-medium">{formatarMI(item.mi, item.escala)}</span>
                       : <span className="text-emerald-400 font-mono shrink-0 font-medium">{item.inom}</span>
                     }
                     {item.mi && <span className="text-zinc-500 font-mono shrink-0 text-[10px]">({item.inom})</span>}
