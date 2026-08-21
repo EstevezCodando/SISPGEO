@@ -36,6 +36,7 @@ import {
     MATERIAIS_IMPRESSAO,
     TIPO_PRODUTO_LABELS,
     TIPOS_IMPRESSAO,
+    formatarMI,
 } from "../types/pedido";
 
 const ESCALAS: Escala[] = ["1:25.000", "1:50.000", "1:100.000", "1:250.000"];
@@ -111,7 +112,7 @@ function RevisaoGeoJSONLayer({
         // Prioridade: feature.properties.mi → CartItem.mi → ausente
         const mi = props.mi ?? cartItem?.mi ?? null;
         const tip = mi
-          ? `<b style="color:#34d399">${mi}</b><br><span style="color:#a1a1aa;font-size:11px">${inom}</span>` +
+          ? `<b style="color:#34d399">${formatarMI(mi, cartItem?.escala)}</b><br><span style="color:#a1a1aa;font-size:11px">${inom}</span>` +
             (cartItem
               ? `<br><span style="color:#71717a">${TIPO_PRODUTO_LABELS[cartItem.tipo_produto]} · ${cartItem.escala}</span>`
               : "")
@@ -337,7 +338,7 @@ function RevisaoModal({
                             {item.mi ? (
                               <>
                                 <p className="font-medium text-emerald-400 truncate">
-                                  MI: {item.mi}
+                                  MI: {formatarMI(item.mi, item.escala)}
                                 </p>
                                 <p className="font-mono text-zinc-500 text-[10px] truncate">
                                   Ind Nom: {item.inom}
@@ -1113,7 +1114,7 @@ export function SolicitarProdutos() {
                         {item.mi ? (
                           <>
                             <p className="font-medium text-emerald-400 truncate">
-                              MI: {item.mi}
+                              MI: {formatarMI(item.mi, item.escala)}
                             </p>
                             <p className="font-mono text-zinc-500 text-[10px] truncate">
                               Ind Nom: {item.inom}

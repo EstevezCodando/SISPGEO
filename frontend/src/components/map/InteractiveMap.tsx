@@ -3,6 +3,7 @@ import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import type { FeatureCollection, Feature } from 'geojson'
 import type { CartItem, TipoProduto, Escala } from '../../types/pedido'
+import { formatarMI } from '../../types/pedido'
 import { useCartStore } from '../../store/cartStore'
 
 /**
@@ -112,7 +113,7 @@ export function InteractiveMap({ inomGrid, showData = true, basemap = 'osm', som
         }
         const bloqueada = somenteBdgex && !disponivel
         let tip = mi
-          ? `<b style="color:#34d399">${mi}</b><br><span style="color:#a1a1aa;font-size:11px">${inom}</span>`
+          ? `<b style="color:#34d399">${formatarMI(mi, escala)}</b><br><span style="color:#a1a1aa;font-size:11px">${inom}</span>`
           : `<b>${inom}</b>`
         if (disponivel) {
           const ageStr = (idade_anos !== undefined && idade_anos !== null)

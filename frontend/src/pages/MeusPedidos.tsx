@@ -637,7 +637,7 @@ function SortableItemRow({
       {item.mi ? (
         <>
           <span className="text-zinc-500 shrink-0">
-            MI: <span className="text-emerald-400 font-mono font-medium">{item.mi}</span>
+            MI: <span className="text-emerald-400 font-mono font-medium">{formatarMI(item.mi, item.escala)}</span>
           </span>
           <span className="text-zinc-500 shrink-0">
             INOM: <span className="text-zinc-400 font-mono">{item.inom}</span>
@@ -840,7 +840,7 @@ function EnviarPedidosModal({
                             >
                               <span className="text-emerald-400/80 font-mono">{item.inom}</span>
                               {item.mi && (
-                                <span className="text-zinc-600">MI {item.mi}</span>
+                                <span className="text-zinc-600">MI {formatarMI(item.mi, item.escala)}</span>
                               )}
                               <span className="text-zinc-600">·</span>
                               <span>{TIPO_PRODUTO_LABELS[item.tipo_produto]}</span>
@@ -1225,7 +1225,7 @@ function SpatializeModal({ pedido, onClose }: SpatializeModalProps) {
                 {item.mi && (
                   <>
                     <span className="text-zinc-600">·</span>
-                    <span className="text-zinc-500">MI {item.mi}</span>
+                    <span className="text-zinc-500">MI {formatarMI(item.mi, item.escala)}</span>
                   </>
                 )}
                 <span className="text-zinc-600">·</span>
