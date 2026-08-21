@@ -346,3 +346,22 @@ export function formatarMI(
   // Remove um único zero: `0091` → `091`, preservando os 3 dígitos.
   return mi.replace(/^0(\d{3})$/, "$1");
 }
+
+/**
+ * Prioridade com que o pedido chegou ao escalão atual — o número do selo.
+ *
+ * Prefere o histórico, que diz exatamente qual escalão carimbou o quê. Sem
+ * histórico, cai para `prioridade` do próprio pedido: os pedidos anteriores à
+ * criação da tabela de histórico têm o número, mas não o registro, e mesmo
+ * assim precisam exibir a sua classificação.
+ *
+ * Devolve `null` quando não há prioridade nenhuma — aí o selo não aparece.
+ */
+export function prioridadeRecebida(pedido: {
+  prioridade?: number;
+  prioridades?: PrioridadeEncaminhamento[];
+}): number | null {
+  const ultima = pedido.prioridades?.[pedido.prioridades.length - 1];
+  if (ultima) return ultima.prioridade;
+  return pedido.prioridade && pedido.prioridade > 0 ? pedido.prioridade : null;
+}

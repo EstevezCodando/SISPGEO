@@ -24,7 +24,7 @@ import { PedidosMap } from '../../components/map/PedidosMap'
 import { PedidoSpatializeModal } from '../../components/map/PedidoSpatializeModal'
 import { DuplicateItemsModal } from '../../components/shared/DuplicateItemsModal'
 import type { Pedido } from '../../types/pedido'
-import { TIPO_PRODUTO_LABELS, porPrioridade, eloDaCadeia, cadeiaPrioridades, formatarMI } from '../../types/pedido'
+import { TIPO_PRODUTO_LABELS, porPrioridade, eloDaCadeia, cadeiaPrioridades, formatarMI, prioridadeRecebida } from '../../types/pedido'
 import { CMILA_CODES, cmilaLabel } from '../../types/user'
 import { casaBusca } from '../../utils/busca'
 import { useAuthStore } from '../../store/authStore'
@@ -349,14 +349,14 @@ function PedidoCard({
         <span className="font-mono font-semibold text-emerald-400 text-sm shrink-0">#{p.id}</span>
 
         {/* Prioridade com que o escalao anterior encaminhou este pedido */}
-        {p.prioridades && p.prioridades.length > 0 && (
+        {prioridadeRecebida(p) !== null && (
           <span
             className="shrink-0 px-2 py-0.5 rounded text-center leading-tight bg-sky-500/10 text-sky-300 border border-sky-500/20"
-            title={cadeiaPrioridades(p.prioridades, p.usuario_om)}
+            title={cadeiaPrioridades(p.prioridades, p.usuario_om) || undefined}
           >
             <span className="block text-[9px] text-sky-400/70 uppercase tracking-wide">Recebido em</span>
             <span className="block text-[11px] font-semibold">
-              Prioridade {p.prioridades[p.prioridades.length - 1].prioridade}
+              Prioridade {prioridadeRecebida(p)}
             </span>
           </span>
         )}

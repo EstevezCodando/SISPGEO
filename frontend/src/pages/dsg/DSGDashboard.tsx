@@ -14,7 +14,7 @@ import {
 import { StatusBadge } from '../../components/shared/StatusBadge'
 import { LoadingSpinner } from '../../components/shared/LoadingSpinner'
 import type { Pedido } from '../../types/pedido'
-import { TIPO_PRODUTO_LABELS, STATUS_LABELS, ALL_STATUSES, porPrioridade, eloDaCadeia, cadeiaPrioridades, formatarMI } from '../../types/pedido'
+import { TIPO_PRODUTO_LABELS, STATUS_LABELS, ALL_STATUSES, porPrioridade, eloDaCadeia, cadeiaPrioridades, formatarMI, prioridadeRecebida } from '../../types/pedido'
 import { CMILA_CODES, cmilaLabel } from '../../types/user'
 import { formatNomeComPosto } from '../../data/postos'
 
@@ -594,14 +594,14 @@ function PedidoDSGCard({
         {/* Prioridade com que o consolidador encaminhou este pedido à DSG.
             Mesmo selo do supervisor/consolidador, para a leitura ser a mesma
             em toda a cadeia. */}
-        {p.prioridades && p.prioridades.length > 0 && (
+        {prioridadeRecebida(p) !== null && (
           <span
             className="shrink-0 px-2 py-0.5 rounded text-center leading-tight bg-sky-500/10 text-sky-300 border border-sky-500/20"
-            title={cadeiaPrioridades(p.prioridades, p.usuario_om)}
+            title={cadeiaPrioridades(p.prioridades, p.usuario_om) || undefined}
           >
             <span className="block text-[9px] text-sky-400/70 uppercase tracking-wide">Recebido em</span>
             <span className="block text-[11px] font-semibold">
-              Prioridade {p.prioridades[p.prioridades.length - 1].prioridade}
+              Prioridade {prioridadeRecebida(p)}
             </span>
           </span>
         )}
