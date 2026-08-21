@@ -270,16 +270,24 @@ def ordem_recebimento():
     completo: a DSG via os pedidos por data de cadastro, e não na ordem em que
     o consolidador os encaminhou.
 
-    A leva entra antes da prioridade porque cada escalão tem a sua própria
-    sequência — dois órgãos distintos podem ambos ter enviado uma prioridade 1,
-    e o desempate correto entre elas é quem chegou primeiro.
+    A ordem tem três níveis, nesta sequência:
+
+    1. **Quem tem prioridade vem antes de quem não tem.** Um pedido sem
+       prioridade é um pedido que ninguém ordenou ainda; ele não pode encabeçar
+       a lista só porque foi consolidado cedo. Antes esta cláusula vinha depois
+       da leva, e o efeito era pedidos zerados do DEC/DECEx aparecerem à frente
+       da lista priorizada do COTER.
+    2. **A leva de envio**, entre os pedidos priorizados — cada escalão tem a
+       sua própria sequência, e dois órgãos podem ter enviado uma "prioridade
+       1" cada; o desempate entre elas é quem chegou primeiro.
+    3. **A prioridade** que o remetente atribuiu, dentro da leva.
     """
     from sqlalchemy import case
 
     return (
+        case((Pedido.prioridade == 0, 1), else_=0),
         # NULLs (pedidos anteriores à migração, sem leva) vão ao fim no ASC.
         Pedido.encaminhado_em.asc(),
-        case((Pedido.prioridade == 0, 1), else_=0),
         Pedido.prioridade.asc(),
         Pedido.criado_em.asc(),
     )

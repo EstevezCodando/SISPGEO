@@ -9,6 +9,7 @@ cláusulas SQLAlchemy geradas são compiladas para texto e inspecionadas.
 """
 
 import pytest
+from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, MagicMock
 
 from fastapi import HTTPException
@@ -23,6 +24,9 @@ from .conftest import _make_pedido, _make_user
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+AGORA = datetime(2026, 8, 20, 12, 0, tzinfo=timezone.utc)
+
 
 def _sql(clause) -> str:
     """Compila uma cláusula/statement SQLAlchemy com os literais embutidos."""
@@ -505,14 +509,55 @@ class TestEscopoSequencia:
 
 
 class TestOrdemDeExibicao:
-    """A ordem exibida deve ser: leva mais antiga primeiro, prioridade dentro dela."""
+    """Ordem: quem tem prioridade primeiro; depois leva; depois a prioridade."""
 
-    def test_ordem_recebimento_usa_leva_antes_da_prioridade(self):
+    @staticmethod
+    def _sql_ordem():
         from sqlalchemy import select
         from app.models.pedido import Pedido
 
-        sql = _sql(select(Pedido.id).order_by(*pedidos_router.ordem_recebimento())).upper()
+        return _sql(select(Pedido.id).order_by(*pedidos_router.ordem_recebimento())).upper()
+
+    def test_sem_prioridade_e_o_primeiro_criterio(self):
+        """Regressão: pedidos zerados do DEC/DECEx apareciam à frente da lista
+        já priorizada do COTER, porque a leva decidia antes."""
+        sql = self._sql_ordem()
+        assert sql.index("CASE") < sql.index("ENCAMINHADO_EM")
+
+    def test_leva_vem_antes_da_prioridade(self):
+        sql = self._sql_ordem()
         assert sql.index("ENCAMINHADO_EM") < sql.index("PRIORIDADE ASC")
+
+    def test_ordem_completa_em_python(self):
+        """Mesma regra aplicada a objetos, para conferir o efeito prático."""
+        def chave(p):
+            return (
+                1 if not p.prioridade else 0,
+                p.encaminhado_em or datetime.max.replace(tzinfo=timezone.utc),
+                p.prioridade or 0,
+                p.criado_em,
+            )
+
+        st = StatusPedidoEnum.AGUARDANDO_CARTOGRAFICO
+        # DEC consolidado ANTES, mas sem prioridade; COTER depois, priorizado.
+        dec_zerado = _make_pedido(pedido_id=900, status=st)
+        dec_zerado.prioridade = 0
+        dec_zerado.encaminhado_em = AGORA
+        dec_zerado.criado_em = AGORA
+
+        coter_1 = _make_pedido(pedido_id=100, status=st)
+        coter_1.prioridade = 1
+        coter_1.encaminhado_em = AGORA + timedelta(days=10)
+        coter_1.criado_em = AGORA
+
+        coter_2 = _make_pedido(pedido_id=101, status=st)
+        coter_2.prioridade = 2
+        coter_2.encaminhado_em = AGORA + timedelta(days=10)
+        coter_2.criado_em = AGORA
+
+        ordenados = sorted([dec_zerado, coter_1, coter_2], key=chave)
+        # O zerado vai para o fim, mesmo tendo sido consolidado primeiro.
+        assert [p.id for p in ordenados] == [100, 101, 900]
 
     def test_ordem_fila_usa_ordem_de_trabalho(self):
         from sqlalchemy import select
